@@ -114,8 +114,10 @@
     /* 아이템 슬롯은 아래 가운데.
        위쪽은 자막과 안내가 쓰고, 좌우 아래 구석은 조작 버튼이 쓴다.
        가운데 아래가 유일하게 비어 있고, 엄지로 눈을 옮기기에도 가깝다. */
-    body.touchUI #slotPanel  { top: auto; bottom: 112px; left: 50%; right: auto;
-                               transform: translateX(-50%); width: auto; padding: 4px 8px; }
+    /* 아이템 슬롯은 맨 아래 가운데 — 조향 패드와 아이템 버튼 사이의 빈 자리.
+       위쪽에 두면 달릴 때 앞을 가린다. */
+    body.touchUI #slotPanel  { top: auto; bottom: 14px; left: 50%; right: auto;
+                               transform: translateX(-50%); width: auto; padding: 4px 7px; }
     body.touchUI .slot       { width: 38px; height: 38px; font-size: 12px; }
     body.touchUI #slotPanel .t,
     body.touchUI #slotPanel .hint,
@@ -825,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0849</div>
+<div id="build">v260808.0852</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -3623,14 +3625,23 @@ function drawRoadLayer(g, secs, zoom, lift, alpha) {
             // 피가 밀려갈 때마다 살짝 여닫힌다
             const open = .52 + Math.sin(performance.now() / 700 + i * .35) * .1;
             g.save(); g.translate(p.x, p.y - (p.up || 0)); g.rotate(p.ang);
+            // 뿌리를 벽 안쪽(hw 보다 바깥)까지 밀어 넣어 틈이 보이지 않게 한다.
+            //   도로 가장자리에서 딱 끊기면 판막이 공중에 떠 보인다.
+            const root = hw * 1.06;
             for (const side of [-1, 1]) {
                 g.beginPath();
-                g.moveTo(-hw * .16, hw * side);                        // 벽에 붙은 뿌리
-                g.quadraticCurveTo(hw * .30, hw * side * .82, hw * .10, hw * side * (1 - open));
-                g.quadraticCurveTo(-hw * .10, hw * side * .66, -hw * .16, hw * side);
+                g.moveTo(-hw * .18, root * side);                      // 벽에 파묻힌 뿌리
+                g.quadraticCurveTo(hw * .30, hw * side * .84, hw * .10, hw * side * (1 - open));
+                g.quadraticCurveTo(-hw * .10, hw * side * .68, -hw * .18, root * side);
                 g.closePath();
-                g.fillStyle = 'rgba(236,206,212,.62)'; g.fill();
-                g.strokeStyle = 'rgba(110,32,42,.62)'; g.lineWidth = 3; g.stroke();
+                g.fillStyle = 'rgba(236,206,212,.66)'; g.fill();
+                // 테두리도 벽에 닿는 쪽은 그리지 않는다 (벽과 이어져 보이게)
+                g.beginPath();
+                g.moveTo(-hw * .18, hw * side);
+                g.quadraticCurveTo(hw * .30, hw * side * .84, hw * .10, hw * side * (1 - open));
+                g.quadraticCurveTo(-hw * .10, hw * side * .68, -hw * .18, hw * side);
+                g.strokeStyle = 'rgba(110,32,42,.62)'; g.lineWidth = 3;
+                g.lineCap = 'round'; g.stroke();
             }
             g.restore();
         }
