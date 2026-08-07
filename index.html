@@ -180,25 +180,39 @@
     .arw { display: block; width: 0; height: 0; border-top: 17px solid transparent; border-bottom: 17px solid transparent; }
     .arw.l { border-right: 24px solid currentColor; }
     .arw.r { border-left: 24px solid currentColor; }
-    /* 가속은 자동이라 왼손 엄지는 통째로 드리프트에 쓴다.
-       그래서 드리프트가 가장 크고, 엄지가 자연스럽게 놓이는 자리를 차지한다.
-       오른손은 조향 — 계속 붙어 있어야 하는 입력이다. */
-    #tDrift { width: 132px; height: 132px; font-size: 19px; left: 20px; bottom: 20px;
-              border-color: rgba(255,209,102,.85); background: rgba(70,52,16,.66); }
-    #tGas   { display: none; }                       /* 가속 자동 — 버튼이 필요 없다 */
-    #tBrake { width: 82px; height: 82px; font-size: 15px; left: 158px; bottom: 24px; }
+    /* 왼쪽 : 조향 패드. 넓게 잡아 엄지가 빗나갈 일이 없게 한다.
+       민 거리에 비례해 꺾이므로 살짝 밀면 살짝 돈다. */
+    #tPad {
+        position: absolute; pointer-events: auto; left: 14px; bottom: 14px;
+        width: 250px; height: 118px; border-radius: 59px;
+        background: rgba(20,40,66,.5); border: 3px solid rgba(160,210,255,.4);
+        box-shadow: 0 4px 12px rgba(0,0,0,.4);
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 24px; box-sizing: border-box;
+    }
+    #tPad .arw { opacity: .5; }
+    #padKnob {
+        position: absolute; left: 50%; top: 50%; width: 74px; height: 74px; margin: -37px 0 0 -37px;
+        border-radius: 50%; background: rgba(255,209,102,.26); border: 3px solid rgba(255,209,102,.72);
+        transition: transform .05s linear; pointer-events: none;
+    }
+    #tPad.act { background: rgba(30,60,96,.64); }
 
-    #tLeft, #tRight { width: 104px; height: 104px; bottom: 20px; }
-    #tRight { right: 20px; } #tLeft { right: 134px; }
-    #tItem  { width: 84px; height: 84px; font-size: 14px; right: 30px; bottom: 138px; }
+    /* 오른쪽 : 드리프트(가장 크게)와 아이템. 가속은 자동이라 버튼이 없다. */
+    #tDrift { width: 130px; height: 130px; font-size: 18px; right: 18px; bottom: 16px;
+              border-color: rgba(255,209,102,.85); background: rgba(70,52,16,.66); }
+    #tItem  { width: 84px; height: 84px; font-size: 14px; right: 156px; bottom: 26px; }
+    /* 브레이크·후진은 가끔만 쓰므로 작게, 조향 패드 위에 */
+    #tBrake { width: 74px; height: 74px; font-size: 13px; left: 24px; bottom: 142px; }
+    #tGas   { display: none; }               /* 가속 자동 */
 
     /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
     @media (max-height: 430px) {
-        #tDrift { width: 112px; height: 112px; font-size: 16px; bottom: 14px; }
-        #tBrake { width: 68px; height: 68px; font-size: 13px; left: 138px; bottom: 16px; }
-        #tLeft, #tRight { width: 88px; height: 88px; bottom: 14px; }
-        #tLeft  { right: 112px; }
-        #tItem  { width: 70px; height: 70px; font-size: 12px; bottom: 112px; }
+        #tPad { width: 210px; height: 98px; border-radius: 49px; padding: 0 18px; bottom: 10px; }
+        #padKnob { width: 62px; height: 62px; margin: -31px 0 0 -31px; }
+        #tDrift { width: 106px; height: 106px; font-size: 15px; bottom: 12px; }
+        #tItem  { width: 72px; height: 72px; font-size: 12px; right: 130px; bottom: 20px; }
+        #tBrake { width: 62px; height: 62px; font-size: 11px; left: 18px; bottom: 116px; }
         .arw { border-top-width: 14px; border-bottom-width: 14px; }
         .arw.l { border-right-width: 20px; } .arw.r { border-left-width: 20px; }
     }
@@ -677,17 +691,19 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1501</div>
+<div id="build">v260807.1514</div>
 
 <div id="touch">
-    <!-- 왼손 : 달리는 일 -->
-    <div class="tbtn" id="tGas">가속</div>
+    <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
+         조향은 밀면 민 만큼 꺾이는 패드 — 처음 닿은 자리가 중심이라 어디를 짚어도 되고,
+         손을 떼지 않고 좌우를 오갈 수 있다. -->
+    <div id="tPad">
+        <b class="arw l"></b><b class="arw r"></b>
+        <div id="padKnob"></div>
+    </div>
     <div class="tbtn" id="tDrift">드리프트</div>
-    <!-- 오른손 : 방향 잡는 일 -->
-    <div class="tbtn" id="tLeft"><b class="arw l"></b></div>
-    <div class="tbtn" id="tRight"><b class="arw r"></b></div>
-    <div class="tbtn" id="tBrake">브레이크</div>
     <div class="tbtn" id="tItem">아이템</div>
+    <div class="tbtn" id="tBrake">브레이크</div>
 </div>
 
 <!-- 카톡·인스타 같은 앱 안에서 열렸을 때 뜨는 안내.
@@ -1789,6 +1805,7 @@ function updateKart(k, dt) {
         if (input.brake) throttle = -1;
         if (input.left) steerIn -= 1;
         if (input.right) steerIn += 1;
+        if (input.axis) steerIn = input.axis;      // 패드를 쓰는 중이면 그 값이 우선
         wantDrift = input.drift;
     } else if (k.aiOff) {
         return;                                  // 온라인 상대 : 위치만 받아서 움직인다
@@ -4761,12 +4778,16 @@ requestAnimationFrame(loop);
 /* ============================================================================
    9. 입력 (키보드 + 터치)
    ========================================================================== */
-const input  = { gas: false, brake: false, left: false, right: false, drift: false };
+const input  = { gas: false, brake: false, left: false, right: false, drift: false, axis: 0 };
 const keys = {};
 
 /* 모바일 가속은 자동이다.
    엄지 두 개로 다룰 수 있는 한계가 대략 버튼 넷인데, 레이싱에서 가속은 거의 항상
    눌려 있는 입력이라 빼도 손해가 없다. 대신 왼손 엄지가 통째로 드리프트에 쓰인다.
+   브레이크를 밟는 동안에만 가속이 풀린다. */
+/* 모바일 가속은 자동이다.
+   레이싱에서 가속은 거의 항상 눌려 있는 입력이라 빼도 손해가 없고,
+   그만큼 손가락이 조향과 드리프트에만 쓰인다.
    브레이크를 밟는 동안에만 가속이 풀린다. */
 function autoGas() {
     if (!IS_TOUCH) return touchState.gas || touchState.drift;
@@ -4780,6 +4801,7 @@ function syncKeys() {
     input.left  = k('a') || k('A') || k('ArrowLeft') || touchState.left;
     input.right = k('d') || k('D') || k('ArrowRight') || touchState.right;
     input.drift = k(' ') || k('Shift') || touchState.drift;
+    input.axis  = touchState.axis;          // 조향 패드에서 온 아날로그 값 (-1 ~ 1)
 }
 
 window.addEventListener('keydown', e => {
@@ -4799,7 +4821,7 @@ window.addEventListener('keyup', e => { keys[e.key] = false; syncKeys(); });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; syncKeys(); });
 
 /* ---- 터치 버튼 ---- */
-const touchState = { gas: false, brake: false, left: false, right: false, drift: false };
+const touchState = { gas: false, brake: false, left: false, right: false, drift: false, axis: 0 };
 function bindTouch(id, key, onPress) {
     const node = el(id);
     const down = e => { e.preventDefault(); node.classList.add('act'); if (key) { touchState[key] = true; syncKeys(); } if (onPress) onPress(); };
@@ -4811,9 +4833,61 @@ function bindTouch(id, key, onPress) {
     node.addEventListener('mouseup', up);
     node.addEventListener('mouseleave', up);
 }
-bindTouch('tLeft', 'left'); bindTouch('tRight', 'right');
-bindTouch('tGas', 'gas'); bindTouch('tBrake', 'brake'); bindTouch('tDrift', 'drift');
+bindTouch('tDrift', 'drift'); bindTouch('tBrake', 'brake');
 bindTouch('tItem', null, () => { if (state === 'race') useItemFor(player); });
+
+/* ---- 조향 패드 (왼손) ----
+   좌·우 버튼을 정확히 눌러야 하는 방식은 폰에서 어렵다. 엄지가 조금만 빗나가도
+   안 먹고, 왼쪽에서 오른쪽으로 바꾸려면 손을 뗐다 다시 짚어야 하고,
+   무엇보다 항상 최대로만 꺾여 미세 조정이 안 된다.
+
+   그래서 '처음 닿은 자리'를 중심으로 삼고, 거기서 민 거리만큼 꺾이게 한다.
+   어디를 짚어도 되고, 손을 떼지 않고 좌우를 오갈 수 있고, 살짝 밀면 살짝 꺾인다. */
+const PAD_DEAD = 5;                    // 손 떨림을 무시하는 범위(px)
+const PAD_FULL = 58;                   // 이만큼 밀면 최대로 꺾인다
+let padId = null, padOrigin = 0;
+
+(function bindPad() {
+    const pad = el('tPad'), knob = el('padKnob');
+    if (!pad) return;
+
+    const setAxis = dx => {
+        const d = Math.abs(dx) < PAD_DEAD ? 0 : dx - Math.sign(dx) * PAD_DEAD;
+        touchState.axis = clamp(d / (PAD_FULL - PAD_DEAD), -1, 1);
+        knob.style.transform = 'translateX(' + clamp(dx, -PAD_FULL, PAD_FULL) + 'px)';
+        syncKeys();
+    };
+    const release = () => {
+        padId = null; touchState.axis = 0;
+        knob.style.transform = 'translateX(0px)';
+        pad.classList.remove('act'); syncKeys();
+    };
+    const mine = e => { for (const t of e.changedTouches) if (t.identifier === padId) return t; return null; };
+
+    pad.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (padId !== null) return;
+        const t = e.changedTouches[0];
+        padId = t.identifier; padOrigin = t.clientX;      // 짚은 자리가 중심이 된다
+        pad.classList.add('act'); setAxis(0);
+    }, { passive: false });
+
+    pad.addEventListener('touchmove', e => {
+        const t = mine(e); if (!t) return;
+        e.preventDefault();
+        setAxis(t.clientX - padOrigin);
+    }, { passive: false });
+
+    ['touchend', 'touchcancel'].forEach(ev =>
+        pad.addEventListener(ev, e => { if (mine(e)) { e.preventDefault(); release(); } }, { passive: false }));
+
+    // 마우스로도 확인할 수 있게
+    let down = false;
+    pad.addEventListener('mousedown', e => { down = true; padOrigin = e.clientX; pad.classList.add('act'); setAxis(0); });
+    window.addEventListener('mousemove', e => { if (down) setAxis(e.clientX - padOrigin); });
+    window.addEventListener('mouseup', () => { if (down) { down = false; release(); } });
+})();
+
 
 /* ---- 두 손가락 핀치 줌 ---- */
 let pinchDist = 0;
