@@ -825,7 +825,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1756</div>
+<div id="build">v260808.0841</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -877,6 +877,7 @@
         <input type="range" id="volSlider" min="0" max="100" step="1" title="음량">
         <span id="volNum">70</span>
         <button class="optBtn" id="fsBtn" title="전체 화면">전체 화면</button>
+        <button class="optBtn" id="langBtn" title="Language">EN</button>
     </div>
     <div class="titleSign"><div class="titleBoard">
         <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
@@ -952,7 +953,7 @@
             <div id="gradeBox"></div>
             <div class="resCols">
                 <div class="resCol">
-                    <div class="line">순위 <b id="resRank">1위</b></div>
+                    <div class="line">순위 <b id="resRank">-</b></div>
                     <div class="line">기록 <b id="resTime">00:00.00</b></div>
                     <div class="line">최고 속도 <b id="resTop">0</b> km/h</div>
                     <div class="line" id="resBest" style="color:#9fd0ff"></div>
@@ -1072,6 +1073,341 @@ function shade(hex, amt) {
     const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
     const f = v => Math.round(clamp(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt, 0, 255));
     return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+
+/* ============================================================================
+   0. 언어
+   화면에 뜨는 한국어를 그대로 열쇠로 쓴다. 사전에 없으면 한국어가 그대로 나오므로,
+   번역이 빠져도 게임이 깨지지 않는다. 데이터(SYSTEMS·KNOW_QS)도 손대지 않는다.
+   ========================================================================== */
+const EN = {
+// ── 메뉴 · 버튼
+'오장육부 레이싱': 'ORGAN RACING',
+'몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성되고, 아이템과 장애물은 그 기관에 실제로 있는 물질입니다.':
+    'Race through a living body. Every course is generated from how the organ system actually flows, and every item is a real substance found there.',
+'레이스 시작': 'START RACE', '퀴즈방': 'QUIZ ROOM',
+'혼자 하기': 'Solo', '친구와 온라인': 'Play Online',
+'방 만들기': 'Create Room', '또는': 'or', '참가': 'Join', '코드 6자리': '6-digit code',
+'자동차 고르기': 'Choose Your Kart', '카트 성능 강화': 'Upgrades', '보유': 'You have',
+'소리': 'Sound', '소리 꺼짐': 'Muted', '전체 화면': 'Fullscreen', '창으로': 'Windowed',
+'나가기': 'Quit', '메뉴로': 'Menu', '← 그만두기': '← Give up',
+'다시 도전': 'Race Again', '맵 선택': 'Choose Map', '← 기록 다시 보기': '← Back to results',
+'포인트 받기 →': 'Get Points →', '다른 단계 풀기': 'Another Level',
+'이 차로 달리는 중': 'Currently racing', '이 차로 바꾸기': 'Switch to this kart',
+'선택': 'Select', '사용 중': 'In use', '보유': 'Owned', '잠김': 'Locked',
+'화면을 눌러 시작': 'Tap to start', '화면을 눌러 시작 (아무 곳이나)': 'Tap anywhere to start',
+'화면을 가로로 눕혀 주세요': 'Please rotate your phone',
+'그냥 여기서 할래요': 'Play here anyway', '브라우저로 열기': 'Open in browser', '주소 복사': 'Copy link',
+'복사': 'Copy', '복사됨': 'Copied', '닫기': 'Close',
+'기다리지 않고 출발': 'Start without waiting',
+
+// ── 조작 안내
+'W 가속': 'W Accelerate', 'S 브레이크 · 계속 누르면 후진': 'S Brake · hold to reverse',
+'A / D 조향': 'A / D Steer', 'SPACE 드리프트 → 터보 충전': 'SPACE Drift → charge turbo',
+'E 터보 발사': 'E Fire turbo', 'ENTER 아이템': 'ENTER Item',
+'느려졌을 때 드리프트하면 탈출!': 'Drift to break free when slowed!',
+'휠 · 손가락 두 개 = 줌': 'Wheel / pinch to zoom', 'M 전체 맵': 'M Full map',
+'드리프트': 'DRIFT', '터보': 'TURBO', '아이템': 'ITEM', '브레이크': 'BRAKE', '가속': 'GAS',
+'왼쪽 드리프트 버튼을': 'the DRIFT button', 'SPACE 키를': 'SPACE',
+'드리프트 버튼으로': 'the DRIFT button', 'SPACE 로': 'SPACE',
+
+// ── HUD
+'MINI MAP': 'MINI MAP', 'CHECKPOINTS': 'CHECKPOINTS',
+'드리프트 게이지': 'Drift gauge', '드리프트 게이지 (SPACE)': 'Drift gauge (SPACE)',
+'드리프트로 탈출!': 'Drift to escape!', '진행도': 'Progress',
+'아이템 슬롯': 'Items', '사용': 'use', '아이템': 'Items', '장애물': 'Hazards',
+'반대 방향! 돌아가세요': 'WRONG WAY! Turn around',
+'마지막 바퀴!': 'FINAL LAP!', '🏁 마지막 바퀴!': 'FINAL LAP!',
+'한계!': 'Limit!', '부스터': 'Boost', '터보!': 'TURBO!', '슈퍼 터보!!': 'SUPER TURBO!!',
+'터보 가득!': 'Turbo full!', '떨쳐낸다!': 'Broke free!',
+'냠! 다시 출발!': 'Yum! Off again!', '쿵!': 'Bonk!', '빙글!': 'Spin!',
+'막았다!': 'Blocked!', '분해!': 'Destroyed!', '위': 'Rank',
+
+// ── 결과
+'완주!': 'Finished!', '1위로 완주!': '1st place!', '보상': 'Rewards',
+'순위': 'Rank', '기록': 'Time', '최고 속도': 'Top speed', '최고 기록': 'Best',
+'베스트랩': 'Best lap', '최속': 'fastest', '신기록': 'NEW RECORD', '수집': 'Collected', '없음': 'none',
+'가속 유지': 'Throttle', '무사고': 'Clean', '충돌': 'crashes', '회': 'x',
+'완벽한 주행!': 'Flawless!', '훌륭해요!': 'Great!', '좋아요!': 'Good!',
+'조금만 더!': 'Almost!', '다시 도전!': 'Try again!',
+'점': 'pts', '주행': 'Driving', '등급': 'Grade',
+
+// ── 퀴즈
+'경로 퀴즈': 'Route Quiz', '기초': 'Easy', '보통': 'Normal', '어려움': 'Hard', '전문가': 'Expert',
+'다음에 어디로 가는지 맞혀 보세요': 'Guess where the course goes next',
+'앞뒤를 모두 물어봅니다': 'Asks what comes before and after',
+'순서에 교과 지식이 섞여 나옵니다': 'Order plus science questions',
+'다섯 계통 · 교과 지식까지 모두': 'All five systems, plus science',
+'코스 순서를 맞히면 포인트를 받습니다': 'Earn points by recalling the course order',
+'계통 :': 'System:', '4단계는 다섯 계통이 섞여 나옵니다': 'Level 4 mixes all five systems',
+'아직 안 풀어봤어요': 'Not tried yet', '최고': 'Best',
+'문제': 'questions', '보기': 'choices', '문제당': 'each', '단계': 'Level', '결과': 'Result',
+'맞았습니다!': 'Correct!', '아니에요. 정답은': 'Nope. The answer is',
+' 다음은 어디일까요?': ' — what comes next?', ' 바로 앞은 어디일까요?': ' — what comes before?',
+'번째로 지나는 곳은?': 'th stop on the course?', '문제 중': 'of',
+'문제 정답': 'correct', '전부 정답! 보너스 50% 를 더 받았습니다': 'Perfect! 50% bonus added',
+'코스를 완전히 외웠습니다!': 'You know the whole course!',
+
+// ── 로비 · 온라인
+'방 코드': 'Room code', '참가자': 'Players', '방장': 'Host', '(나)': '(you)',
+'준비': 'Ready', '준비 취소': 'Not ready', '준비 완료': 'READY', '대기 중': 'Waiting',
+'모두 준비하면 시작': 'Start when all ready', '친구를 기다리는 중': 'Waiting for friends',
+'방장이 시작하기를 기다립니다': 'Waiting for the host to start',
+'준비를 눌러 주세요': 'Press Ready',
+'곧 출발합니다!': 'Starting soon!', '남은 대기 시간': 'Time left',
+'그런 방이 없습니다. 코드를 다시 확인해 주세요.': 'No such room. Check the code.',
+'코드 6자리를 정확히 입력해 주세요.': 'Enter the 6-digit code.',
+'방이 가득 찼습니다 (최대 4명).': 'Room is full (max 4).',
+'온라인 기능을 사용할 수 없습니다.': 'Online play is unavailable.',
+'온라인 기능을 사용할 수 없습니다. 인터넷 연결을 확인해 주세요.':
+    'Online play is unavailable. Check your connection.',
+'5분 동안 친구가 들어오지 않아 방을 닫았습니다.': 'No one joined for 5 minutes, so the room closed.',
+'다시 만들거나, 친구에게 코드를 보내고 참가해 보세요.': 'Create another room or join with a code.',
+
+// ── 광고 · 안내
+'광고': 'Ad', '5초 후 건너뛰기': 'Skip in 5s', '초 후 건너뛰기': 's until skip',
+'건너뛰기': 'Skip', '광고 자리': 'Ad slot',
+'광고 수익으로 게임이 지속적으로 발전합니다': 'Ad revenue keeps this game growing',
+'앱 안에서 열렸습니다': 'Opened inside an app',
+'여기서는 전체 화면이 안 되고 화면이 예전 것으로 남기 쉽습니다.':
+    'Fullscreen will not work here, and you may see an old version.',
+'크롬': 'Chrome', '사파리': 'Safari', '로 열어 주세요.': ' works better.'
+};
+
+
+/* ---- 기관 · 구간 · 아이템 이름 ----
+   기관 이름은 세계 공통이라 정확한 영어 단어가 이미 있다. 그대로 쓴다. */
+Object.assign(EN, {
+// 맵 이름
+'순환계 서킷': 'Circulatory Circuit', '소화계 어드벤처': 'Digestive Adventure',
+'호흡계 서킷': 'Respiratory Circuit', '신경계 · 뇌 탐험': 'Nervous System · Brain Run',
+'배설계 코스': 'Urinary Course',
+
+// 순환계
+'우심방': 'Right Atrium', '우심실': 'Right Ventricle', '좌심방': 'Left Atrium',
+'좌심실': 'Left Ventricle', '폐': 'Lungs', '온몸 모세혈관': 'Body Capillaries',
+'삼첨판': 'Tricuspid Valve', '이첨판': 'Mitral Valve',
+'폐동맥': 'Pulmonary Artery', '폐정맥': 'Pulmonary Vein',
+'대동맥': 'Aorta', '대정맥': 'Vena Cava',
+
+// 소화계
+'입': 'Mouth', '식도': 'Esophagus', '위': 'Stomach', '소장': 'Small Intestine',
+'대장': 'Large Intestine', '직장 · 항문': 'Rectum · Anus', '직장': 'Rectum',
+'십이지장': 'Duodenum', '다음 끼니로 점프!': 'Jump to the next meal!',
+
+// 호흡계
+'코 · 입': 'Nose · Mouth', '기관': 'Trachea', '기관지': 'Bronchi', '폐포': 'Alveoli',
+'산소 교환': 'Gas Exchange', '날숨': 'Exhale',
+'인두 · 후두': 'Pharynx · Larynx', '세기관지': 'Bronchiole',
+'폐포 모세혈관': 'Alveolar Capillaries', '날숨 통로': 'Exhale Passage', '기도 복귀': 'Airway Return',
+
+// 신경계
+'감각 기관': 'Sense Organs', '척수': 'Spinal Cord', '뇌줄기 · 소뇌': 'Brainstem · Cerebellum',
+'대뇌': 'Cerebrum', '운동 신경': 'Motor Nerve', '근육(반응)': 'Muscle (Response)',
+'감각 신경': 'Sensory Nerve', '뇌줄기': 'Brainstem',
+'후두엽 · 두정엽': 'Occipital · Parietal Lobe',
+'신경 근육 이음부': 'Neuromuscular Junction', '감각 되먹임': 'Sensory Feedback',
+'소뇌': 'Cerebellum', '연수': 'Medulla', '간뇌': 'Diencephalon',
+'망막': 'Retina', '수정체': 'Lens', '각막': 'Cornea', '홍채': 'Iris',
+
+// 배설계
+'콩팥 동맥': 'Renal Artery', '사구체': 'Glomerulus', '세뇨관': 'Renal Tubule',
+'오줌관 · 방광': 'Ureter · Bladder', '배출': 'Excretion', '깨끗한 피': 'Clean Blood',
+'보먼주머니 · 세뇨관': "Bowman's Capsule · Tubule", '집합관': 'Collecting Duct',
+'요도 · 배출': 'Urethra · Out', '콩팥 정맥': 'Renal Vein', '온몸 순환': 'Body Circulation',
+'콩팥': 'Kidney', '방광': 'Bladder', '오줌관': 'Ureter', '요도': 'Urethra',
+
+// 아이템 · 장애물
+'적혈구 터보': 'Red Cell Turbo', '백혈구 포획': 'White Cell Grab',
+'이산화탄소 연막': 'CO2 Smoke', '콜레스테롤': 'Cholesterol', '혈전 발사': 'Clot Shot',
+'이산화탄소': 'Carbon Dioxide', '혈전': 'Blood Clot', '병원균': 'Pathogen',
+'아밀레이스': 'Amylase', '펩신 포획': 'Pepsin Grab', '가스 연막': 'Gas Smoke',
+'지방 덩어리': 'Fat Blob', '음식 덩어리': 'Food Chunk', '위산 웅덩이': 'Acid Pool',
+'나쁜 세균': 'Bad Bacteria',
+'산소': 'Oxygen', '점액 포획': 'Mucus Grab', '가래': 'Phlegm', '미세먼지': 'Fine Dust',
+'바이러스': 'Virus',
+'활동 전위': 'Action Potential', '말이집 포획': 'Myelin Grab', '신호 간섭': 'Signal Jam',
+'피로 물질': 'Fatigue Toxin', '신경 압박': 'Nerve Pinch', '염증': 'Inflammation',
+'물': 'Water', '보먼주머니': "Bowman's Capsule", '요소': 'Urea',
+'무기염류': 'Minerals', '콩팥 결석': 'Kidney Stone', '세균': 'Bacteria',
+
+// 자동차
+'적혈구 루키': 'Red Cell Rookie', '혈소판 터프': 'Platelet Tough',
+'백혈구 가드': 'White Cell Guard', '산소 러너': 'Oxygen Runner',
+'신경 스파크': 'Nerve Spark', 'ATP 하이퍼': 'ATP Hyper',
+'최고 속도': 'Top Speed', '가속력': 'Acceleration', '접지력': 'Grip',
+'드리프트 지속': 'Drift Hold',
+'더 빨리 달립니다': 'Higher top speed', '더 빨리 속도가 붙습니다': 'Faster acceleration',
+'코너에서 덜 미끄러집니다': 'Less slide in corners',
+'부스터가 더 오래갑니다': 'Boost lasts longer',
+'더 오래 미끄러져 큰 부스터까지 갑니다': 'Hold drifts longer for bigger boosts',
+
+// 펌프 · 구간 연출
+'들숨!': 'Inhale!', '날숨! 후—': 'Exhale!', '반사!': 'Reflex!', '반응!': 'React!',
+'여과 시작!': 'Filtering!', '시원하게 배출!': 'Flush!', '펌프': 'PUMP', '점프': 'JUMP'
+});
+
+
+Object.assign(EN, {
+'체크포인트': 'checkpoints', '흰 눈금 = 지금 타는 차': 'White tick = your current kart',
+'모자람': 'short', '소리': 'Sound', '전체 화면': 'Fullscreen',
+'SPACE 드리프트': 'SPACE Drift', '이나': 'or',
+// 자동차 설명
+'산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.':
+    'Carries oxygen. Nothing sharp about it — the easiest kart to learn on.',
+'상처를 막는 세포. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.':
+    'Seals wounds. High grip, so it holds a line and rarely gets pushed into walls.',
+'몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.':
+    'Defends the body. Well balanced, with slightly longer boosts.',
+'폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.':
+    'Fresh from the alveoli. Very fast, but low grip keeps your hands busy.',
+'전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.':
+    'Leaps away like a nerve impulse. Top-tier acceleration and boost.',
+'세포가 쓰는 에너지 그 자체. 모든 수치가 최고인 마지막 카트입니다.':
+    'The energy cells actually run on. The final kart, best at everything.',
+// 강화 배지 (짧은 라벨)
+'속도': 'SPD', '가속': 'ACC', '접지': 'GRP', '부스': 'BST', '지속': 'HLD',
+// 아이템 배지
+'적혈': 'RBC', '백혈': 'WBC', '탄소': 'CO2', '콜레': 'CHOL', '혈전': 'CLOT',
+'아밀': 'AMY', '펩신': 'PEP', '가스': 'GAS', '지방': 'FAT', '음식': 'FOOD',
+'위산': 'ACID', '병원': 'GERM', '세균': 'BACT', '산소': 'O2', '점액': 'MUC',
+'가래': 'PHL', '먼지': 'DUST', '바이': 'VIR', '전위': 'AP', '말이': 'MYE',
+'간섭': 'JAM', '피로': 'FAT', '압박': 'PIN', '염증': 'INF', '물': 'H2O',
+'보먼': 'BOW', '요소': 'UREA', '염류': 'MIN', '결석': 'STONE', '적': 'R'
+});
+
+
+Object.assign(EN, {
+'후진 중': 'REVERSE',
+// 기관 역할
+'혈액 받기': 'blood in', '폐로 밀기': 'push to lungs', '기체 교환': 'gas exchange',
+'산소 받기': 'oxygen in', '온몸으로': 'to the body', '산소 전달': 'oxygen delivery',
+'공기 흡입': 'air in', '공기 길': 'airway', '좌우 분기': 'splits left/right',
+'혈액에 전달': 'into the blood', '이산화탄소 배출': 'CO2 out',
+'자극 받기': 'receive stimulus', '반사 중추': 'reflex centre', '균형 조절': 'balance',
+'판단 · 기억': 'judgement · memory', '명령 전달': 'send command', '반응': 'response',
+'혈액 공급': 'blood supply', '여과': 'filtration', '재흡수': 'reabsorption',
+'저장': 'storage', '몸 밖으로': 'out of the body',
+'음식 받기': 'food in',
+'씹기 · 아밀레이스': 'chew · amylase', '연동 운동': 'peristalsis',
+'펩신 · 위산': 'pepsin · acid', '융모 흡수': 'villi absorb', '수분 흡수': 'water uptake', '내려보내기': 'push down', '주무르기': 'churn',
+'영양소 흡수': 'absorb nutrients', '물 흡수': 'absorb water', '내보내기': 'out',
+// 자주 뜨는 안내
+'혈전에 막혔다!': 'Blocked by a clot!',
+'혈관이 막히면 피가 못 흐릅니다. 잠시 멈춰 서요.': 'A blocked vessel stops the blood. You stall for a moment.',
+'콜레스테롤에 빠졌다!': 'Stuck in cholesterol!',
+'백혈구에 붙잡혔다!': 'Caught by a white cell!',
+'재흡수 구역!': 'Reabsorption zone!',
+'세뇨관 벽이 잡아당깁니다. 드리프트로 뿌리치세요!': 'The tubule wall pulls you in. Drift to break free!',
+'드리프트하면 빠져나옵니다!': 'Drift to slip out!',
+'드리프트하면 떨쳐낼 수 있어요!': 'Drift to shake it off!',
+'누른 채 코너를 돌아보세요': ' — hold it through a corner',
+'미끄러지며 게이지가 차고, 손을 떼면 부스터가 터집니다!':
+    'You slide, the gauge fills, and letting go fires a boost!',
+'포획!': ' captured!',
+'백혈구가 세균을 잡아먹듯 붙잡았습니다. 화면 가장자리 화살표로 위치를 확인하세요.':
+    'Grabbed like a white cell eating a germ. The edge arrow shows where it went.'
+});
+
+
+Object.assign(EN, {
+// ── 순환계
+'심장에서 벽이 가장 두꺼운 곳은?': 'Which heart chamber has the thickest wall?',
+'온몸으로 피를 보내야 해서 압력이 가장 셉니다.': 'It pushes blood to the whole body, so it needs the most pressure.',
+'피가 거꾸로 흐르지 못하게 막는 것은?': 'What stops blood from flowing backwards?',
+'판막': 'Valve',
+'심방과 심실 사이, 심실과 동맥 사이에 있습니다.': 'They sit between atrium and ventricle, and between ventricle and artery.',
+'동맥인데 정맥혈이 흐르는 혈관은?': 'Which artery carries oxygen-poor blood?',
+'우심실에서 폐로 가는 피는 산소가 적습니다.': 'Blood heading from the right ventricle to the lungs is low in oxygen.',
+'벽이 가장 얇아 물질이 오가는 혈관은?': 'Which vessel is thin enough for substances to pass through?',
+'모세혈관': 'Capillary', '동맥': 'Artery', '정맥': 'Vein',
+'세포 한 겹이라 산소와 영양소가 드나듭니다.': 'Just one cell thick, so oxygen and nutrients can cross.',
+'산소를 운반하는 혈액 성분은?': 'Which blood component carries oxygen?',
+'적혈구': 'Red blood cell', '백혈구': 'White blood cell', '혈소판': 'Platelet', '혈장': 'Plasma',
+'헤모글로빈이 산소와 결합합니다.': 'Haemoglobin binds to oxygen.',
+'출혈을 멎게 하는 혈액 성분은?': 'Which blood component stops bleeding?',
+'상처에서 피를 굳혀 줍니다.': 'It clots the blood at a wound.',
+
+// ── 소화계
+'녹말을 분해하는 소화 효소는?': 'Which enzyme breaks down starch?',
+'침과 이자액에 들어 있습니다.': 'Found in saliva and pancreatic juice.',
+'위에서 단백질을 분해하는 효소는?': 'Which enzyme breaks down protein in the stomach?',
+'펩신': 'Pepsin', '라이페이스': 'Lipase', '쓸개즙': 'Bile', '이자액': 'Pancreatic juice',
+'강한 산성에서만 작동합니다.': 'It only works in strong acid.',
+'지방을 분해하는 소화 효소는?': 'Which enzyme breaks down fat?',
+'지방을 지방산과 모노글리세리드로 나눕니다.': 'It splits fat into fatty acids and monoglycerides.',
+'영양소를 흡수하는 소장 벽의 돌기는?': 'What are the tiny projections that absorb nutrients?',
+'융털': 'Villi',
+'표면적을 넓혀 흡수를 빠르게 합니다.': 'They widen the surface area so absorption is fast.',
+'쓸개즙이 하는 일은?': 'What does bile do?',
+'지방을 잘게 쪼갬': 'Breaks fat into droplets', '녹말 분해': 'Breaks down starch',
+'단백질 분해': 'Breaks down protein', '물 흡수': 'Absorbs water',
+'효소가 아니라 지방 덩어리를 작게 만듭니다.': 'It is not an enzyme — it just breaks fat into smaller droplets.',
+'대장이 주로 하는 일은?': 'What does the large intestine mainly do?',
+'지방 분해': 'Breaks down fat', '산소 교환': 'Exchanges gas',
+'남은 물을 빨아들이고 나머지를 내보냅니다.': 'It absorbs the remaining water and sends the rest out.',
+
+// ── 호흡계
+'산소와 이산화탄소가 교환되는 곳은?': 'Where are oxygen and carbon dioxide exchanged?',
+'표면적이 아주 넓어 기체 교환에 유리합니다.': 'Their huge surface area makes gas exchange easy.',
+'들숨을 쉴 때 가로막은?': 'When you breathe in, the diaphragm...',
+'내려간다': 'moves down', '올라간다': 'moves up',
+'가만히 있다': 'stays still', '옆으로 움직인다': 'moves sideways', '앞으로 나온다': 'moves forward',
+'가슴 속 공간이 넓어져 공기가 들어옵니다.': 'The chest space widens and air flows in.',
+'날숨을 쉴 때 갈비뼈는?': 'When you breathe out, the ribs...',
+'가슴이 좁아져 공기가 밀려 나갑니다.': 'The chest narrows and air is pushed out.',
+'기관에 연골 고리가 있는 이유는?': 'Why does the trachea have cartilage rings?',
+'길이 눌리지 않게': 'So the airway cannot collapse', '소리를 내려고': 'To make sound',
+'산소를 만들려고': 'To make oxygen', '먼지를 거르려고': 'To filter dust',
+'공기 통로를 늘 열어 둡니다.': 'They keep the air passage open at all times.',
+'기체가 저절로 이동하는 원리는?': 'How do gases move on their own?',
+'농도가 높은 곳에서 낮은 곳으로': 'From high concentration to low',
+'압력이 낮은 곳에서 높은 곳으로': 'From low pressure to high',
+'무거운 것이 아래로': 'Heavier things sink', '따뜻한 것이 위로': 'Warm things rise',
+'에너지를 쓰지 않고 저절로 퍼집니다(확산).': 'They spread by themselves, without using energy (diffusion).',
+
+// ── 신경계
+'자극에서 반응까지 올바른 순서는?': 'What is the correct order from stimulus to response?',
+'감각기관 → 감각신경 → 중추 → 운동신경 → 근육':
+    'sense organ → sensory nerve → centre → motor nerve → muscle',
+'근육 → 뇌 → 감각기관': 'muscle → brain → sense organ',
+'중추 → 감각기관 → 근육': 'centre → sense organ → muscle',
+'감각신경 → 근육 → 중추': 'sensory nerve → muscle → centre',
+'중추가 판단하고 명령을 내려보냅니다.': 'The centre decides and sends the command out.',
+'몸의 균형과 정교한 운동을 맡는 곳은?': 'Which part handles balance and fine movement?',
+'자전거를 탈 때 균형을 잡아 줍니다.': 'It keeps you balanced when riding a bike.',
+'생각·판단·기억을 맡는 곳은?': 'Which part handles thinking, judgement and memory?',
+'가장 크고 주름이 많은 부분입니다.': 'The largest, most folded part.',
+'뜨거운 것을 만졌을 때 손을 빼는 반사의 중추는?':
+    'What is the centre for pulling your hand from something hot?',
+'뇌를 거치지 않아 아주 빠릅니다.': 'It skips the brain, which makes it very fast.',
+'눈에서 빛을 받아들이는 곳은?': 'Which part of the eye receives light?',
+'시각 세포가 모여 있습니다.': 'This is where the light-sensing cells gather.',
+
+// ── 배설계
+'오줌을 만드는 기관은?': 'Which organ makes urine?',
+'혈액 속 노폐물을 걸러 냅니다.': 'It filters waste out of the blood.',
+'혈액이 걸러지는 곳은?': 'Where is blood filtered?',
+'높은 압력으로 물과 노폐물을 밀어냅니다.': 'High pressure pushes water and waste through.',
+'포도당이 다시 혈액으로 돌아가는 과정은?': 'What is it called when glucose returns to the blood?',
+'분비': 'Secretion', '배설': 'Excretion',
+'그래서 건강하면 오줌에 포도당이 없습니다.': 'That is why healthy urine has no glucose.',
+'재흡수가 일어나는 곳은?': 'Where does reabsorption happen?',
+'필요한 물과 영양소를 되찾아 갑니다.': 'It takes back the water and nutrients the body needs.',
+'단백질이 분해될 때 생기는 노폐물은?': 'What waste comes from breaking down protein?',
+'암모니아': 'Ammonia', '포도당': 'Glucose',
+'간에서 독성이 약한 요소로 바뀝니다.': 'The liver turns it into less toxic urea.',
+'암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
+'심장': 'Heart', '코': 'Nose', '간': 'Liver',
+'요소는 콩팥에서 걸러져 오줌으로 나갑니다.': 'Urea is filtered by the kidney and leaves as urine.'
+});
+
+let LANG = 'ko';
+/* 사전에 없으면 원문 그대로. 번역이 빠져도 게임은 멀쩡히 돈다. */
+function T(s) {
+    if (LANG !== 'en' || s == null) return s;
+    return EN[s] !== undefined ? EN[s] : s;
 }
 
 /* ============================================================================
@@ -1501,30 +1837,32 @@ const UPGRADES = [
    "혈소판 카트는 잘 안 밀린다" 같은 감각이 그대로 지식이 된다.
    위로 갈수록 비싸고 빠르다. 첫 차(적혈구)는 처음부터 준다. */
 const CARS = [
-    { id: 'rbc', hold: 1.00,   name: '적혈구 루키',  motif: '적', color: '#d4353f', sprite: 'red',   cost: 0,
+    { id: 'rbc', hold: 1.00,   name: '적혈구 루키',  motif: '적', motifEn: 'R', color: '#d4353f', sprite: 'red',   cost: 0,
       speed: 1.00, accel: 1.00, grip: 1.00, boost: 1.00,
       desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
-    { id: 'plt', hold: 1.10,   name: '혈소판 터프',  motif: '판', color: '#e8a33d', sprite: 'red',   cost: 260,
+    { id: 'plt', hold: 1.10,   name: '혈소판 터프',  motif: '판', motifEn: 'P', color: '#e8a33d', sprite: 'red',   cost: 260,
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
       desc: '상처를 막는 세포. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
-    { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', color: '#e8eef5', sprite: 'blue',  cost: 520,
+    { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#e8eef5', sprite: 'blue',  cost: 520,
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
       desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
-    { id: 'o2', hold: 0.95,    name: '산소 러너',    motif: '산', color: '#4fb8e8', sprite: 'blue',  cost: 900,
+    { id: 'o2', hold: 0.95,    name: '산소 러너',    motif: '산', motifEn: 'O', color: '#4fb8e8', sprite: 'blue',  cost: 900,
       speed: 1.12, accel: 1.10, grip: 0.96, boost: 1.14,
       desc: '폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.' },
-    { id: 'nerve', hold: 1.15, name: '신경 스파크',  motif: '신', color: '#c77dff', sprite: 'pink',  cost: 1400,
+    { id: 'nerve', hold: 1.15, name: '신경 스파크',  motif: '신', motifEn: 'N', color: '#c77dff', sprite: 'pink',  cost: 1400,
       speed: 1.10, accel: 1.22, grip: 1.04, boost: 1.20,
       desc: '전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.' },
-    { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: 'A', color: '#ffd166', sprite: 'green', cost: 2200,
+    { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: 'A', motifEn: 'A', color: '#ffd166', sprite: 'green', cost: 2200,
       speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
       desc: '세포가 쓰는 에너지 그 자체. 모든 수치가 최고인 마지막 카트입니다.' }
 ];
 const carById = id => CARS.find(c => c.id === id) || CARS[0];
+/* 카트 표식 한 글자도 언어를 따른다 */
+const mo = c => (LANG === 'en' && c.motifEn) ? c.motifEn : c.motif;
 
 const SAVE_KEY = 'bodyRacing.save.v1';
 let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
-             cars: ['rbc'], car: 'rbc', vol: .7 };
+             cars: ['rbc'], car: 'rbc', vol: .7, lang: null };
 
 function loadSave() {
     try {
@@ -1538,6 +1876,7 @@ function loadSave() {
             if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
             save.car = save.cars.includes(d.car) ? d.car : 'rbc';
             save.vol = typeof d.vol === 'number' ? clamp(d.vol, 0, 1) : .7;
+            save.lang = d.lang === 'en' || d.lang === 'ko' ? d.lang : null;
         }
     } catch (e) { /* 저장이 막힌 환경이면 그냥 진행 */ }
 }
@@ -1953,7 +2292,7 @@ function makeKart(isPlayer, ci, name) {
         isPlayer, name,
         color: mine ? mine.color : CAR_COLORS[ci],
         sprite: mine ? mine.sprite : KART_KEYS[ci],
-        motif: mine ? mine.motif : null,
+        motif: mine ? mo(mine) : null,
         x: 0, y: 0, ang: 0, vx: 0, vy: 0, speed: 0, slip: 0, steer: 0, wobble: Math.random() * TAU,
         si: 0, prevSi: 0, lap: 1, cpIndex: 0, cpDone: 0, progress: 0,
         finished: false, finishTime: 0, rank: 1,
@@ -2357,7 +2696,7 @@ function updateProgress(k) {
             else if (k.isPlayer) {
                 const last = k.lap >= track.sys.laps;
                 playBeep(last ? 1600 : 1250, last ? .22 : .14);
-                flashBig(last ? '마지막 바퀴!' : 'LAP ' + k.lap);
+                flashBig(last ? T('마지막 바퀴!') : 'LAP ' + k.lap);
                 cam.flash = 1; k.earned += 25;
             }
         }
@@ -3499,7 +3838,7 @@ function drawPads(g) {
             }
             g.rotate(-p.ang);
             g.font = 'bold 56px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-            g.fillStyle = '#fff'; g.fillText('점프', 0, 0);
+            g.fillStyle = '#fff'; g.fillText(T('점프'), 0, 0);
             g.restore();
             continue;
         }
@@ -3538,7 +3877,7 @@ function drawPads(g) {
         g.rotate(-p.ang);
         g.font = `bold ${isPump ? 44 : 38}px sans-serif`;
         g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillStyle = '#fff'; g.fillText(isPump ? '펌프' : '부스터', 0, 0);
+        g.fillStyle = '#fff'; g.fillText(T(isPump ? '펌프' : '부스터'), 0, 0);
         g.restore();
     }
 }
@@ -3562,7 +3901,7 @@ function drawCheckerLine(g, p, hw, rows) {
 function drawGate(g, p, cp) {
     const hw = (p.hw || track.halfWidth);
     const col = cp.node.color;
-    const label = cp.node.name;
+    const label = T(cp.node.name);
     const up = p.up || 0;                         // 다리 위라면 같이 올라간다
 
     g.save(); g.translate(p.x, p.y - up); g.rotate(p.ang);
@@ -3657,7 +3996,7 @@ function drawLapFlags(g, inView) {
     g.save(); g.translate(p.x, p.y); g.rotate(p.ang + Math.PI / 2);
     g.globalAlpha = glow; g.fillStyle = '#ffd84a';
     g.font = 'bold 46px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('마지막 바퀴!', 0, 0);
+    g.fillText(T('마지막 바퀴!'), 0, 0);
     g.restore();
 }
 
@@ -3771,8 +4110,9 @@ function drawHazards(g, inView) {
         g.font = 'bold ' + Math.round(h.kind.r * .62) + 'px sans-serif';
         g.textAlign = 'center'; g.textBaseline = 'middle';
         g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.55)';
-        g.strokeText(h.kind.icon, 0, 1);
-        g.fillStyle = '#fff'; g.fillText(h.kind.icon, 0, 1);
+        const hn = T(h.kind.icon);
+        g.strokeText(hn, 0, 1);
+        g.fillStyle = '#fff'; g.fillText(hn, 0, 1);
         g.restore();
     }
 }
@@ -3800,9 +4140,10 @@ function drawLabels(g, zoom) {
             g.font = 'bold ' + Math.round(clamp(hw * .58, 26, 74)) + 'px sans-serif';
             g.textAlign = 'center'; g.textBaseline = 'middle';
             g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 9;
-            g.strokeText(s.name, 0, 0);
+            const nm = T(s.name);
+            g.strokeText(nm, 0, 0);
             g.fillStyle = 'rgba(255,255,255,.9)';
-            g.fillText(s.name, 0, 0);
+            g.fillText(nm, 0, 0);
             g.restore();
         }
     });
@@ -4006,18 +4347,18 @@ function buildHudStatic() {
     el('lapTot').textContent = s.laps;
     el('cpRows').innerHTML = track.checkpoints.map(cp =>
         `<div class="cpRow"><div class="cpNum" style="background:${cp.node.color}">${cp.num}</div>
-         <div>${cp.node.name} <span style="color:#9fd0ff;font-weight:normal">· ${cp.node.role}</span></div></div>`).join('');
+         <div>${T(cp.node.name)} <span style="color:#9fd0ff;font-weight:normal">· ${T(cp.node.role)}</span></div></div>`).join('');
     el('legItems').innerHTML = s.pickups.map(p => {
         const k = p.img || EFFECT_ICON[p.effect];
         const im = k && ITEM_IMAGES[k];
         const ic = (im && im.ready)
             ? `<img src="${im.src}" style="width:18px;height:18px;object-fit:contain;vertical-align:middle">`
-            : p.icon;
-        return `<div class="row"><span class="ic">${ic}</span>${p.name}</div>`;
+            : T(p.icon);
+        return `<div class="row"><span class="ic">${ic}</span>${T(p.name)}</div>`;
     }).join('');
-    el('legObs').innerHTML = s.hazards.map(h => `<div class="row"><span class="ic">${h.icon}</span>${h.name}</div>`).join('');
+    el('legObs').innerHTML = s.hazards.map(h => `<div class="row"><span class="ic">${T(h.icon)}</span>${T(h.name)}</div>`).join('');
     el('resPanel').innerHTML = s.pickups.slice(0, 4).map(p =>
-        `<div class="resItem"><span class="ic">${p.icon}</span><span data-cnt="${p.icon}">00</span></div>`).join('');
+        `<div class="resItem"><span class="ic">${T(p.icon)}</span><span data-cnt="${p.icon}">00</span></div>`).join('');
 
     // 아이템을 끈 상태에서는 관련 패널을 숨겨 화면을 비운다
     ['resPanel', 'slotPanel', 'legend'].forEach(id => el(id).style.display = SPAWN_ITEMS ? '' : 'none');
@@ -4028,14 +4369,15 @@ function updateHud() {
     if (!player || !track) return;
     el('lapNow').textContent = Math.min(player.lap, track.sys.laps);
     el('timeTxt').textContent = fmtTime(raceTime);
-    el('rankBadge').textContent = player.rank + ' 위';
+    el('rankBadge').textContent = LANG === 'en'
+        ? (['1st','2nd','3rd','4th'][player.rank - 1] || player.rank) : player.rank + ' 위';
     el('kmh').textContent = Math.round(Math.abs(player.speed) * .22);
 
     // 브레이크 버튼은 후진 페달이기도 하다.
     //   달릴 때 누르면 감속, 멈춘 뒤에도 누르고 있으면 뒤로 간다.
     //   지금 뭘 하고 있는지 버튼 이름으로 알려 준다.
     const bBtn = el('tBrake');
-    if (bBtn) bBtn.textContent = player.speed < -8 ? '후진 중' : '브레이크';
+    if (bBtn) bBtn.textContent = T(player.speed < -8 ? '후진 중' : '브레이크');
 
     // 역주행 : 벽에 박혀 방향이 돌아갔을 때 스스로 알아채기 어렵다
     const road = track.pts[player.si].ang;
@@ -4062,7 +4404,8 @@ function updateHud() {
     const stuck = player.trapTime > 0 || player.stickyTime > 0 || player.hitTime > 0;
     const gLabel = el('gaugeWrap').querySelector('.t');
     if (gLabel) {
-        gLabel.textContent = stuck ? 'SPACE 드리프트로 탈출!' : '드리프트 게이지 (SPACE)';
+        gLabel.textContent = T(stuck ? '드리프트로 탈출!'
+            : (IS_TOUCH ? '드리프트 게이지' : '드리프트 게이지 (SPACE)'));
         gLabel.style.color = stuck ? '#7ee081' : '';
     }
     const prog = track.closed
@@ -4141,15 +4484,15 @@ function drawMinimap() {
 let toastTimer = 0;
 function showToast(title, desc) {
     const t = el('toast');
-    t.querySelector('.tt').textContent = title;
-    t.querySelector('.td').textContent = desc || '';
+    t.querySelector('.tt').textContent = T(title);
+    t.querySelector('.td').textContent = T(desc || '');
     t.classList.add('show'); toastTimer = 4.5;
 }
 /* 기관·혈관을 지날 때 화면 아래에 자막을 띄운다 */
 function showSubtitle(name, desc) {
     const n = el('subtitle');
-    n.querySelector('.sname').textContent = name;
-    n.querySelector('.sdesc').textContent = desc || '';
+    n.querySelector('.sname').textContent = T(name);
+    n.querySelector('.sdesc').textContent = T(desc || '');
     n.classList.add('show');
     subTimer = 3.2;
 }
@@ -4644,26 +4987,26 @@ function renderRoomStatus(players) {
     const rows = ids.map(id => {
         const p = ps[id], me = id === net.myId;
         return `<div class="lbRow${me ? ' me' : ''}">
-            <span class="lbName">${p.name}${me ? ' (나)' : ''}${id === net.hostId ? ' · 방장' : ''}</span>
-            <span class="lbReady${p.ready ? ' on' : ''}">${p.ready ? '준비 완료' : '대기 중'}</span>
+            <span class="lbName">${p.name}${me ? ' ' + T('(나)') : ''}${id === net.hostId ? ' · ' + T('방장') : ''}</span>
+            <span class="lbReady${p.ready ? ' on' : ''}">${p.ready ? T('준비 완료') : T('대기 중')}</span>
         </div>`;
     }).join('');
 
     const m = Math.floor(Math.max(0, net.waitLeft) / 60);
     const sec = String(Math.max(0, net.waitLeft) % 60).padStart(2, '0');
     const timer = net.waitLeft > 0 && ids.length < 2
-        ? `<div class="lbHint">친구를 기다리는 중 · ${m}:${sec}</div>` : '';
+        ? `<div class="lbHint">${T('친구를 기다리는 중')} · ${m}:${sec}</div>` : '';
 
     netStatus(
-        (net.roomId ? `<div class="lbCode">방 코드 <b>${net.roomId}</b></div>` : '') +
+        (net.roomId ? `<div class="lbCode">${T('방 코드')} <b>${net.roomId}</b></div>` : '') +
         `<div class="lbList">${rows}</div>` + timer +
         `<div class="lbBtns">
-            <button class="btn small" id="readyBtn">${meReady ? '준비 취소' : '준비'}</button>` +
+            <button class="btn small" id="readyBtn">${meReady ? T('준비 취소') : T('준비')}</button>` +
         (net.isHost
             ? `<button class="btn small" id="hostStartBtn" ${allReady ? '' : 'disabled'}>${
-                 ids.length < 2 ? '친구를 기다리는 중' : allReady ? '레이스 시작' : '모두 준비하면 시작'}</button>`
-            : `<span class="lbHint">${allReady ? '방장이 시작하기를 기다립니다' : '준비를 눌러 주세요'}</span>`) +
-        `<button class="btn small" id="soloStartBtn">혼자 하기</button>
+                 ids.length < 2 ? T('친구를 기다리는 중') : allReady ? T('레이스 시작') : T('모두 준비하면 시작')}</button>`
+            : `<span class="lbHint">${allReady ? T('방장이 시작하기를 기다립니다') : T('준비를 눌러 주세요')}</span>`) +
+        `<button class="btn small" id="soloStartBtn">${T('혼자 하기')}</button>
         </div>`);
 
     el('readyBtn').onclick = () => {
@@ -4828,7 +5171,7 @@ function startRace(id) {
     el('touch').classList.toggle('on', IS_TOUCH);
     document.body.classList.toggle('touchUI', IS_TOUCH);
     if (IS_TOUCH) el('driftLabel').textContent = '드리프트 게이지';
-    showToast(track.sys.name, track.sys.flow.map(f => f.name).join(' → '));
+    showToast(track.sys.name, track.sys.flow.map(f => T(f.name)).join(' → '));
 }
 
 /* ---- 주행 등급 : 드리프트 · 가속 유지 · 무사고 세 가지로 평가한다 ---- */
@@ -4868,7 +5211,7 @@ function renderGarage() {
         return `<i style="width:${Math.round(v * 100)}%"></i>`;
     }).map((h, i) => `<span class="statBar" title="${['속도','가속','접지','부스터'][i]}">${h}</span>`).join('');
 
-    const carHtml = `<div class="gh"><span>자동차 고르기</span><span>보유 <b style="color:#ffe066">${save.points} P</b></span></div>` +
+    const carHtml = `<div class="gh"><span>${T('자동차 고르기')}</span><span>${T('보유')} <b style="color:#ffe066">${save.points} P</b></span></div>` +
         CARS.map(c => {
             const owned = save.cars.includes(c.id);
             const picked = save.car === c.id;
@@ -4884,7 +5227,7 @@ function renderGarage() {
         }).join('');
 
     // 자동차 고르기는 초기 화면이 담당한다. 여기서는 강화만.
-    g.innerHTML = `<div class="gh"><span>카트 성능 강화</span><span>보유 <b style="color:#ffe066">${save.points} P</b></span></div>` +
+    g.innerHTML = `<div class="gh"><span>${T('카트 성능 강화')}</span><span>${T('보유')} <b style="color:#ffe066">${save.points} P</b></span></div>` +
         UPGRADES.map(u => {
             const lv = save.lv[u.key];
             const maxed = lv >= u.max;
@@ -4893,8 +5236,8 @@ function renderGarage() {
             const pips = Array.from({ length: u.max }, (_, i) =>
                 `<span class="pip${i < lv ? ' on' : ''}"></span>`).join('');
             return `<div class="upRow">
-                <span class="ic">${u.icon}</span>
-                <span class="nm">${u.name}<small>${u.desc}</small></span>
+                <span class="ic">${T(u.icon)}</span>
+                <span class="nm">${T(u.name)}<small>${T(u.desc)}</small></span>
                 <span class="pips">${pips}</span>
                 <button data-up="${u.key}" ${maxed || !can ? 'disabled' : ''} class="${can ? 'can' : ''}">
                     ${maxed ? 'MAX' : cost + ' P'}
@@ -4998,8 +5341,8 @@ function endRace() {
     state = 'finish';
     updateRanks(); burstConfetti(player.x, player.y);
     sfxWin(player.rank === 1);
-    el('resTitle').textContent = player.rank === 1 ? '1위로 완주!' : '완주!';
-    el('resRank').textContent = player.rank + '위';
+    el('resTitle').textContent = T(player.rank === 1 ? '1위로 완주!' : '완주!');
+    el('resRank').textContent = LANG === 'en' ? ['1st','2nd','3rd','4th'][player.rank-1] || player.rank : player.rank + '위';
     el('resTime').textContent = fmtTime(player.finishTime);
     el('resTop').textContent = Math.round(player.topSpeed * .22);
     const byIcon = {};
@@ -5011,7 +5354,7 @@ function endRace() {
             : ic;
         return `${tag} ${v}`;
     }).join('&nbsp;&nbsp;');
-    el('resCollect').innerHTML = '수집 : ' + (items || '없음');
+    el('resCollect').innerHTML = T('수집') + ' : ' + (items || T('없음'));
 
     // ── 주행 등급
     const G = gradeRace(player);
@@ -5019,12 +5362,12 @@ function endRace() {
         <div class="gwrap">
             <div class="gletter" style="color:${G.color}">${G.grade}</div>
             <div class="gbars">
-                <div class="gbar"><span class="lb">드리프트</span><span class="tr"><i style="width:${G.drift}%"></i></span><b>${G.driftCount}회</b></div>
-                <div class="gbar"><span class="lb">가속 유지</span><span class="tr"><i style="width:${G.throttle}%"></i></span><b>${G.throttle}%</b></div>
-                <div class="gbar"><span class="lb">무사고</span><span class="tr"><i style="width:${G.crash}%"></i></span><b>충돌 ${G.wallHits}</b></div>
+                <div class="gbar"><span class="lb">${T('드리프트')}</span><span class="tr"><i style="width:${G.drift}%"></i></span><b>${G.driftCount}${T('회')}</b></div>
+                <div class="gbar"><span class="lb">${T('가속 유지')}</span><span class="tr"><i style="width:${G.throttle}%"></i></span><b>${G.throttle}%</b></div>
+                <div class="gbar"><span class="lb">${T('무사고')}</span><span class="tr"><i style="width:${G.crash}%"></i></span><b>${T('충돌')} ${G.wallHits}</b></div>
             </div>
         </div>
-        <div class="gword" style="color:${G.color}">${G.word} · ${G.total}점</div>`;
+        <div class="gword" style="color:${G.color}">${T(G.word)} · ${G.total}${T('점')}</div>`;
 
     // ── 랩 타임
     const lt = player.lapTimes.slice();
@@ -5036,9 +5379,9 @@ function endRace() {
         if (newLapRecord) save.bestLap[track.sys.id] = fastest;
         el('lapBox').innerHTML = '<table>' + lt.map((v, i) =>
             `<tr class="${v === fastest ? 'best' : ''}"><td class="n">LAP ${i + 1}</td>` +
-            `<td class="t">${fmtTime(v)}${v === fastest ? ' 최속' : ''}</td></tr>`).join('') +
-            `<tr><td class="n" style="color:#ffe066">베스트랩</td><td class="t" style="color:#ffe066">` +
-            `${fmtTime(save.bestLap[track.sys.id])}${newLapRecord ? ' 신기록' : ''}</td></tr></table>`;
+            `<td class="t">${fmtTime(v)}${v === fastest ? ' ' + T('최속') : ''}</td></tr>`).join('') +
+            `<tr><td class="n" style="color:#ffe066">${T('베스트랩')}</td><td class="t" style="color:#ffe066">` +
+            `${fmtTime(save.bestLap[track.sys.id])}${newLapRecord ? ' ' + T('신기록') : ''}</td></tr></table>`;
     } else el('lapBox').innerHTML = '';
 
     // ── 포인트 정산 : 순위 보너스 + 신기록 보너스
@@ -5053,12 +5396,12 @@ function endRace() {
     writeSave();
 
     el('resPoints').innerHTML =
-        `주행 <b>${player.earned}</b> + 순위 <b>${rankBonus}</b>` +
-        ` + <b style="color:${G.color}">${G.grade}등급 ${gradeBonus}</b>` +
-        (bestBonus ? ` + <b style="color:#7ee081">신기록 ${bestBonus}</b>` : '') +
+        `${T('주행')} <b>${player.earned}</b> + ${T('순위')} <b>${rankBonus}</b>` +
+        ` + <b style="color:${G.color}">${G.grade} ${gradeBonus}</b>` +
+        (bestBonus ? ` + <b style="color:#7ee081">${T('신기록')} ${bestBonus}</b>` : '') +
         ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>`;
-    if (isBest) el('resBest').textContent = '신기록! ' + fmtTime(player.finishTime);
-    else el('resBest').textContent = '최고 기록 ' + fmtTime(save.best[id]);
+    if (isBest) el('resBest').textContent = T('신기록') + ' ' + fmtTime(player.finishTime);
+    else el('resBest').textContent = T('최고 기록') + ' ' + fmtTime(save.best[id]);
     renderGarage();
 
     if (!SHOW_QUIZ) {
@@ -5285,10 +5628,10 @@ function buildMenu() {
     Object.values(SYSTEMS).forEach(sys => {
         const card = document.createElement('div');
         card.className = 'card' + (sys.id === selectedId ? ' sel' : '');
-        card.innerHTML = `<h3>${sys.name}</h3>
-            <div class="route">${sys.flow.map(f => f.name).join(' → ')}</div>
+        card.innerHTML = `<h3>${T(sys.name)}</h3>
+            <div class="route">${sys.flow.map(f => T(f.name)).join(' → ')}</div>
             <canvas width="420" height="230"></canvas>
-            <div class="meta">${sys.laps} LAP · 체크포인트 ${sys.flow.length}개</div>`;
+            <div class="meta">${sys.laps} LAP · ${T('체크포인트')} ${sys.flow.length}</div>`;
         card.onclick = () => {
             selectedId = sys.id;
             Array.from(wrap.children).forEach(c => c.classList.remove('sel'));
@@ -5327,10 +5670,10 @@ function renderCarPick() {
         const owned = save.cars.includes(c.id);
         const can = !owned && save.points >= c.cost;
         return `<div class="cpCar${carPreview === c.id ? ' on' : ''}${owned ? '' : ' locked'}" data-cp="${c.id}">
-            <div class="em" style="background:${owned ? c.color : '#33445c'}">${owned ? c.motif : '잠김'}</div>
-            <div class="nm">${c.name}</div>
+            <div class="em" style="background:${owned ? c.color : '#33445c'}">${owned ? mo(c) : T('잠김')}</div>
+            <div class="nm">${T(c.name)}</div>
             <div class="pr ${owned ? 'own' : can ? 'can' : ''}">${
-                save.car === c.id ? '사용 중' : owned ? '보유' : c.cost + ' P'}</div>
+                save.car === c.id ? T('사용 중') : owned ? T('보유') : c.cost + ' P'}</div>
         </div>`;
     }).join('');
     list.querySelectorAll('[data-cp]').forEach(n => {
@@ -5343,23 +5686,23 @@ function renderCarPick() {
     const picked = save.car === c.id;
 
     el('cpDetail').innerHTML =
-        `<div class="dn" style="color:${c.color}">${c.motif} ${c.name}</div>
-         <div class="dd">${c.desc}</div>` +
+        `<div class="dn" style="color:${c.color}">${mo(c)} ${T(c.name)}</div>
+         <div class="dd">${T(c.desc)}</div>` +
         CAR_STATS.map(s => {
             const { lo, hi } = statRange(s.key);
             const pct = v => clamp((v - lo) / (hi - lo), .04, 1) * 100;
             return `<div class="gRow">
-                <span class="gl">${s.label}</span>
+                <span class="gl">${T(s.label)}</span>
                 <span class="gt"><i style="width:${pct(c[s.key])}%"></i>
                     <u style="left:${pct(now[s.key])}%"></u></span>
                 <span class="gv">${Math.round(c[s.key] * 100)}</span>
             </div>`;
         }).join('') +
-        `<div class="dd" style="margin:8px 0 0;font-size:11px">흰 눈금 = 지금 타는 ${now.name}</div>
+        `<div class="dd" style="margin:8px 0 0;font-size:11px">${T('흰 눈금 = 지금 타는 차')} · ${T(now.name)}</div>
          <button class="cpBuy ${picked ? 'on' : (owned || can) ? 'can' : ''}"
                  id="cpBuyBtn" ${picked || owned || can ? '' : 'disabled'}>${
-            picked ? '이 차로 달리는 중' : owned ? '이 차로 바꾸기'
-                   : can ? `${c.cost} P 로 구입` : `${c.cost} P 필요 (${c.cost - save.points} P 모자람)`
+            picked ? T('이 차로 달리는 중') : owned ? T('이 차로 바꾸기')
+                   : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
          }</button>`;
 
     const btn = el('cpBuyBtn');
@@ -5540,21 +5883,21 @@ const shuffle = a => {
 function makeQ(sys, i, kind, nChoices, pool) {
     const names = sys.flow.map(f => f.name);
     const n = names.length;
-    const chain = i2 => names.map((x, xi) => xi === i2 ? `<b>${x}</b>` : x).join(' → ');
+    const chain = i2 => names.map((x, xi) => xi === i2 ? `<b>${T(x)}</b>` : T(x)).join(' → ');
     let ask, answer, ansIdx;
 
     if (kind === 'prev') {
         ansIdx = (i - 1 + n) % n;
         answer = names[ansIdx];
-        ask = `<b>${names[i]}</b> 바로 앞은 어디일까요?`;
+        ask = `<b>${T(names[i])}</b>${T(' 바로 앞은 어디일까요?')}`;
     } else if (kind === 'nth') {
         ansIdx = i;
         answer = names[i];
-        ask = `${sys.name}에서 <b>${i + 1}번째</b>로 지나는 곳은?`;
+        ask = `${T(sys.name)} — <b>${i + 1}</b>${T('번째로 지나는 곳은?')}`;
     } else {
         ansIdx = (i + 1) % n;
         answer = names[ansIdx];
-        ask = `<b>${names[i]}</b> 다음은 어디일까요?`;
+        ask = `<b>${T(names[i])}</b>${T(' 다음은 어디일까요?')}`;
     }
 
     // 오답은 같은 계통에서. 부족하면 다른 계통에서 채운다 (전문가 단계)
@@ -5584,7 +5927,7 @@ function makeKnowQ(sysId, nChoices) {
         }
     }
     const choices = shuffle([k.a].concat(wrong.slice(0, nChoices - 1)));
-    return { ask: k.q, answer: k.a, choices, order: k.ex,
+    return { ask: T(k.q), answer: k.a, choices, order: T(k.ex),
              sysName: SYSTEMS[sysId].name, know: true };
 }
 
@@ -5617,24 +5960,24 @@ function openQuizRoom() {
     el('quizTitle').textContent = '퀴즈방';
     el('quizDots').innerHTML = '';
     el('quizStage').innerHTML =
-        `<div class="qIntro">코스 순서를 맞히면 포인트를 받습니다 ·
-            보유 <b>${save.points} P</b></div>
+        `<div class="qIntro">${T('코스 순서를 맞히면 포인트를 받습니다')} ·
+            ${T('보유')} <b>${save.points} P</b></div>
          <div class="qLvList">${QUIZ_LEVELS.map(L => {
             const best = (save.quizBest || {})[L.lv] || 0;
             return `<button class="qLv" data-lv="${L.lv}" style="border-color:${L.color}">
-                <span class="qLvName" style="color:${L.color}">${L.lv}단계 · ${L.name}</span>
-                <span class="qLvDesc">${L.desc}</span>
-                <span class="qLvMeta">${L.count}문제 · 보기 ${L.choices}개
-                    · <b style="color:${L.color}">문제당 ${L.reward} P</b></span>
-                <span class="qLvBest">${best ? '최고 ' + best + ' / ' + L.count : '아직 안 풀어봤어요'}</span>
+                <span class="qLvName" style="color:${L.color}">${T('단계')} ${L.lv} · ${T(L.name)}</span>
+                <span class="qLvDesc">${T(L.desc)}</span>
+                <span class="qLvMeta">${L.count} ${T('문제')} · ${T('보기')} ${L.choices}
+                    · <b style="color:${L.color}">${L.reward} P ${T('문제당')}</b></span>
+                <span class="qLvBest">${best ? T('최고') + ' ' + best + ' / ' + L.count : T('아직 안 풀어봤어요')}</span>
             </button>`;
          }).join('')}</div>
-         <div class="qPick">계통 :
+         <div class="qPick">${T('계통 :')}
             <select id="quizSysPick">
                 ${Object.values(SYSTEMS).map(x =>
-                    `<option value="${x.id}">${x.name}</option>`).join('')}
+                    `<option value="${x.id}">${T(x.name)}</option>`).join('')}
             </select>
-            <span class="qPickHint">4단계는 다섯 계통이 섞여 나옵니다</span>
+            <span class="qPickHint">${T('4단계는 다섯 계통이 섞여 나옵니다')}</span>
          </div>`;
 
     el('quizStage').querySelectorAll('.qLv').forEach(b => {
@@ -5663,13 +6006,13 @@ function drawQuizQ() {
 
     const q = quizQs[quizAt];
     el('quizTitle').innerHTML =
-        `<span style="color:${quizLv.color}">${quizLv.lv}단계 ${quizLv.name}</span>
+        `<span style="color:${quizLv.color}">${T('단계')} ${quizLv.lv} ${T(quizLv.name)}</span>
          <span style="font-size:.6em;color:#9fd0ff"> ${quizAt + 1} / ${quizQs.length}</span>`;
     el('quizStage').innerHTML =
-        (quizLv.lv >= 4 ? `<div class="qWhich">${q.sysName}</div>` : '') +
+        (quizLv.mix ? `<div class="qWhich">${T(q.sysName)}</div>` : '') +
         `<div class="qAsk">${q.ask}</div>
          <div class="qChoices">${q.choices.map(c =>
-            `<button class="qBtn" data-c="${c}">${c}</button>`).join('')}</div>
+            `<button class="qBtn" data-c="${c}">${T(c)}</button>`).join('')}</div>
          <div class="qFeed"></div>`;
 
     el('quizStage').querySelectorAll('.qBtn').forEach(b => {
@@ -5682,8 +6025,8 @@ function drawQuizQ() {
                 else if (x === b) x.classList.add('wrong');
             });
             el('quizStage').querySelector('.qFeed').innerHTML =
-                (ok ? `<span class="qOk">맞았습니다! +${quizLv.reward} P</span>`
-                    : `<span class="qNo">아니에요. 정답은 ${q.answer}</span>`) +
+                (ok ? `<span class="qOk">${T('맞았습니다!')} +${quizLv.reward} P</span>`
+                    : `<span class="qNo">${T('아니에요. 정답은')} ${T(q.answer)}</span>`) +
                 `<div class="qRoute">${q.order}</div>`;
             if (ok) { quizGot++; playBeep(1400, .12); } else playBeep(300, .18);
             setTimeout(() => { quizAt++; drawQuizQ(); }, ok ? 1500 : 2400);
@@ -5700,14 +6043,70 @@ function finishRouteQuiz() {
     save.quizBest[quizLv.lv] = Math.max(save.quizBest[quizLv.lv] || 0, quizGot);
     writeSave();
 
-    el('quizTitle').innerHTML = `<span style="color:${quizLv.color}">${quizLv.lv}단계 결과</span>`;
+    el('quizTitle').innerHTML = `<span style="color:${quizLv.color}">${T('단계')} ${quizLv.lv} ${T('결과')}</span>`;
     el('quizStage').innerHTML =
-        `<div class="qDone">${quizQs.length}문제 중 <b>${quizGot}</b>문제 정답
+        `<div class="qDone"><b>${quizGot}</b> / ${quizQs.length} ${T('문제 정답')}
             <span class="qGain">+${got} P</span></div>` +
-        (perfect ? '<div class="qPerfect">전부 정답! 보너스 50% 를 더 받았습니다</div>' : '') +
-        `<div class="qFull">${(quizSys || SYSTEMS.circulatory).flow.map(f => f.name).join(' → ')}</div>`;
+        (perfect ? `<div class="qPerfect">${T('전부 정답! 보너스 50% 를 더 받았습니다')}</div>` : '') +
+        `<div class="qFull">${(quizSys || SYSTEMS.circulatory).flow.map(f => T(f.name)).join(' → ')}</div>`;
     el('quizNav').style.display = '';
 }
+
+
+/* ---- 언어 전환 ----
+   화면에 이미 박혀 있는 글자(정적 HTML)는 처음 한 번 원문을 기억해 두고,
+   언어를 바꿀 때마다 그 원문을 다시 번역해 넣는다. 그래야 오갈 수 있다. */
+const staticKo = new WeakMap();
+
+function translateDOM() {
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const jobs = [];
+    let n;
+    while ((n = walk.nextNode())) {
+        if (!n.nodeValue.trim()) continue;
+        const p = n.parentElement;
+        if (!p || p.closest('script, style, canvas')) continue;
+        jobs.push(n);
+    }
+    for (const t of jobs) {
+        if (!staticKo.has(t)) staticKo.set(t, t.nodeValue);
+        const src = staticKo.get(t);
+        const key = src.trim();
+        const out = T(key);
+        if (out !== key) t.nodeValue = src.replace(key, out);
+        else t.nodeValue = src;
+    }
+    // 자리표시자와 툴팁
+    document.querySelectorAll('[placeholder]').forEach(e => {
+        if (!staticKo.has(e)) staticKo.set(e, e.placeholder);
+        e.placeholder = T(staticKo.get(e));
+    });
+}
+
+function setLang(l) {
+    LANG = l;
+    // 제목 아래 작은 글씨 : 한글판은 영문 이름, 영문판은 한 줄 소개
+    const te = document.querySelector('.titleEn');
+    if (te) te.textContent = l === 'en' ? 'RACE THROUGH A LIVING BODY' : 'ORGAN RACING';
+    save.lang = l;
+    writeSave();
+    document.documentElement.lang = l;
+    el('langBtn').textContent = l === 'en' ? '한국어' : 'EN';
+    document.title = l === 'en' ? 'Organ Racing' : '오장육부 레이싱 · Organ Racing';
+    translateDOM();
+    // 자바스크립트가 만든 화면은 다시 그려야 한다
+    if (typeof buildMenu === 'function') buildMenu();
+    if (typeof renderCarPick === 'function') renderCarPick();
+    if (typeof renderGarage === 'function') renderGarage();
+    if (typeof refreshVolUI === 'function') refreshVolUI();
+    if (typeof refreshFsUI === 'function') refreshFsUI();
+    if (track && typeof buildHudStatic === 'function' && state !== 'menu') buildHudStatic();
+}
+
+el('langBtn').onclick = () => setLang(LANG === 'en' ? 'ko' : 'en');
+
+// 저장된 설정이 있으면 그것을, 없으면 기기 언어를 따른다
+setLang(save.lang || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en'));
 
 el('quizBtn').onclick = openQuizRoom;
 el('quizAgain').onclick = openQuizRoom;
@@ -5763,7 +6162,7 @@ function refreshVolUI() {
     el('volSlider').value = Math.round(save.vol * 100);
     el('volNum').textContent = Math.round(save.vol * 100);
     const off = save.vol <= 0;
-    el('muteBtn').textContent = off ? '소리 꺼짐' : '소리';
+    el('muteBtn').textContent = T(off ? '소리 꺼짐' : '소리');
     el('muteBtn').classList.toggle('off', off);
 }
 el('volSlider').oninput = e => {
@@ -5796,7 +6195,7 @@ function exitFullscreen() {
 function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 
 function refreshFsUI() {
-    el('fsBtn').textContent = isFullscreen() ? '창으로' : '전체 화면';
+    el('fsBtn').textContent = T(isFullscreen() ? '창으로' : '전체 화면');
 }
 el('fsBtn').onclick = () => {
     isFullscreen() ? exitFullscreen() : goFullscreen().then(() => {
