@@ -180,23 +180,31 @@
     .arw { display: block; width: 0; height: 0; border-top: 17px solid transparent; border-bottom: 17px solid transparent; }
     .arw.l { border-right: 24px solid currentColor; }
     .arw.r { border-left: 24px solid currentColor; }
-    /* 왼쪽 : 조향 패드. 넓게 잡아 엄지가 빗나갈 일이 없게 한다.
-       민 거리에 비례해 꺾이므로 살짝 밀면 살짝 돈다. */
+    /* 왼쪽 : 조향 패드.
+       가운데를 기준으로 삼아서, 왼쪽을 누르면 그 즉시 왼쪽으로 꺾인다.
+       버튼 두 개처럼 눌러도 되고, 손을 뗄 필요 없이 좌우로 미끄러뜨려도 된다.
+       바깥쪽일수록 많이 꺾이므로 살짝만 꺾고 싶으면 가운데 가까이 짚으면 된다. */
     #tPad {
         position: absolute; pointer-events: auto; left: 14px; bottom: 14px;
         width: 250px; height: 118px; border-radius: 59px;
         background: rgba(20,40,66,.5); border: 3px solid rgba(160,210,255,.4);
         box-shadow: 0 4px 12px rgba(0,0,0,.4);
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0 24px; box-sizing: border-box;
+        padding: 0 24px; box-sizing: border-box; overflow: hidden;
     }
-    #tPad .arw { opacity: .5; }
+    /* 좌·우가 눌러야 할 자리로 보이도록 반쪽씩 나눈 티를 낸다 */
+    #tPad::before {
+        content: ''; position: absolute; left: 50%; top: 14%; bottom: 14%; width: 2px;
+        margin-left: -1px; background: rgba(160,210,255,.3);
+    }
+    #tPad .arw { position: relative; z-index: 1; opacity: .85; }
     #padKnob {
-        position: absolute; left: 50%; top: 50%; width: 74px; height: 74px; margin: -37px 0 0 -37px;
-        border-radius: 50%; background: rgba(255,209,102,.26); border: 3px solid rgba(255,209,102,.72);
-        transition: transform .05s linear; pointer-events: none;
+        position: absolute; left: 50%; top: 50%; width: 82px; height: 82px; margin: -41px 0 0 -41px;
+        border-radius: 50%; background: rgba(255,209,102,.3); border: 3px solid rgba(255,209,102,.8);
+        transition: transform .04s linear; pointer-events: none; opacity: 0;
     }
-    #tPad.act { background: rgba(30,60,96,.64); }
+    #tPad.act #padKnob { opacity: 1; }
+    #tPad.act { background: rgba(30,60,96,.66); border-color: rgba(255,209,102,.6); }
 
     /* 오른쪽 : 드리프트(가장 크게)와 아이템. 가속은 자동이라 버튼이 없다. */
     #tDrift { width: 130px; height: 130px; font-size: 18px; right: 18px; bottom: 16px;
@@ -691,7 +699,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1514</div>
+<div id="build">v260807.1523</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -4837,24 +4845,28 @@ bindTouch('tDrift', 'drift'); bindTouch('tBrake', 'brake');
 bindTouch('tItem', null, () => { if (state === 'race') useItemFor(player); });
 
 /* ---- 조향 패드 (왼손) ----
-   좌·우 버튼을 정확히 눌러야 하는 방식은 폰에서 어렵다. 엄지가 조금만 빗나가도
-   안 먹고, 왼쪽에서 오른쪽으로 바꾸려면 손을 뗐다 다시 짚어야 하고,
-   무엇보다 항상 최대로만 꺾여 미세 조정이 안 된다.
+   기준은 '패드의 한가운데'다. 그래서 왼쪽을 누르면 그 즉시 왼쪽으로 꺾인다 —
+   버튼처럼 눌러서 쓸 수 있다는 뜻이다. 끝까지 짚으면 최대로, 가운데 가까이
+   짚으면 살짝 꺾인다. 손을 뗄 필요 없이 좌우로 미끄러뜨려도 그대로 따라온다.
 
-   그래서 '처음 닿은 자리'를 중심으로 삼고, 거기서 민 거리만큼 꺾이게 한다.
-   어디를 짚어도 되고, 손을 떼지 않고 좌우를 오갈 수 있고, 살짝 밀면 살짝 꺾인다. */
-const PAD_DEAD = 5;                    // 손 떨림을 무시하는 범위(px)
-const PAD_FULL = 58;                   // 이만큼 밀면 최대로 꺾인다
-let padId = null, padOrigin = 0;
+   (처음엔 '닿은 자리'를 기준으로 삼았는데, 그러면 화살표를 눌러도 아무 일이
+    안 일어나고 거기서 더 밀어야 해서 눌렀다는 느낌이 나지 않았다.) */
+const PAD_DEAD = 8;                    // 한가운데 근처는 직진으로 본다(px)
+const PAD_FULL = 74;                   // 여기부터 바깥은 최대로 꺾인다(px)
+let padId = null;
 
 (function bindPad() {
     const pad = el('tPad'), knob = el('padKnob');
     if (!pad) return;
 
-    const setAxis = dx => {
+    const centerX = () => { const b = pad.getBoundingClientRect(); return b.left + b.width / 2; };
+
+    const setAt = x => {
+        const dx = x - centerX();                        // 한가운데에서 얼마나 벗어났나
         const d = Math.abs(dx) < PAD_DEAD ? 0 : dx - Math.sign(dx) * PAD_DEAD;
         touchState.axis = clamp(d / (PAD_FULL - PAD_DEAD), -1, 1);
         knob.style.transform = 'translateX(' + clamp(dx, -PAD_FULL, PAD_FULL) + 'px)';
+        pad.classList.add('act');
         syncKeys();
     };
     const release = () => {
@@ -4868,14 +4880,14 @@ let padId = null, padOrigin = 0;
         e.preventDefault();
         if (padId !== null) return;
         const t = e.changedTouches[0];
-        padId = t.identifier; padOrigin = t.clientX;      // 짚은 자리가 중심이 된다
-        pad.classList.add('act'); setAxis(0);
+        padId = t.identifier;
+        setAt(t.clientX);                                // 누른 그 순간 바로 꺾인다
     }, { passive: false });
 
     pad.addEventListener('touchmove', e => {
         const t = mine(e); if (!t) return;
         e.preventDefault();
-        setAxis(t.clientX - padOrigin);
+        setAt(t.clientX);
     }, { passive: false });
 
     ['touchend', 'touchcancel'].forEach(ev =>
@@ -4883,8 +4895,8 @@ let padId = null, padOrigin = 0;
 
     // 마우스로도 확인할 수 있게
     let down = false;
-    pad.addEventListener('mousedown', e => { down = true; padOrigin = e.clientX; pad.classList.add('act'); setAxis(0); });
-    window.addEventListener('mousemove', e => { if (down) setAxis(e.clientX - padOrigin); });
+    pad.addEventListener('mousedown', e => { down = true; setAt(e.clientX); });
+    window.addEventListener('mousemove', e => { if (down) setAt(e.clientX); });
     window.addEventListener('mouseup', () => { if (down) { down = false; release(); } });
 })();
 
