@@ -3109,8 +3109,12 @@ function playBeep(freq, dur) {
    온라인 멀티 — Firebase Realtime Database
    방 코드 6자리로 친구끼리만 만난다. 채팅·닉네임 입력 없음(아동 안전).
    ========================================================================== */
+const WAIT_LIMIT = 300;   // 방에서 친구를 기다리는 최대 시간(초)
+
 const net = {
     on: false,            // 온라인 모드로 달리는 중인가
+    waitLeft: 0,          // 남은 대기 시간
+    waitTimer: null,      // 카운트다운 인터벌
     roomId: null,
     myId: null,
     isHost: false,
@@ -3130,6 +3134,8 @@ function randomCode() {
 function netStatus(html) { el('roomState').innerHTML = html; }
 
 function netCleanup() {
+    if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
+    net.waitLeft = 0;
     net.unsub.forEach(f => { try { f(); } catch (e) {} });
     net.unsub = [];
     if (window.FB && net.roomId && net.myId) {
@@ -3156,7 +3162,8 @@ async function createRoom() {
     });
     FB.onDisconnect(FB.ref(FB.db, `rooms/${code}`)).remove();
     watchRoom(code);
-    netStatus(`친구에게 이 코드를 알려주세요<br><span class="code">${code}</span><br>친구가 들어오면 자동으로 시작됩니다`);
+    startWaitTimer();
+    renderRoomStatus({ [net.myId]: { name: '1P' } });
 }
 
 async function joinRoom() {
@@ -3181,7 +3188,44 @@ async function joinRoom() {
         { name: (count + 1) + 'P', color: count, ready: true, joinedAt: FB.serverTimestamp() });
     FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`)).remove();
     watchRoom(code);
-    netStatus(`방 <b>${code}</b> 에 들어왔습니다<br>곧 시작합니다...`);
+    startWaitTimer();
+}
+
+// 5분 안에 아무도 안 들어오면 방을 닫는다
+function startWaitTimer() {
+    if (net.waitTimer) clearInterval(net.waitTimer);
+    net.waitLeft = WAIT_LIMIT;
+    net.waitTimer = setInterval(() => {
+        if (net.on || state !== 'menu') { clearInterval(net.waitTimer); net.waitTimer = null; return; }
+        net.waitLeft--;
+        renderRoomStatus();
+        if (net.waitLeft <= 0) {
+            const code = net.roomId;
+            clearInterval(net.waitTimer); net.waitTimer = null;
+            if (window.FB && code) { try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {} }
+            netCleanup();
+            netStatus('⏰ 5분 동안 친구가 들어오지 않아 방을 닫았습니다.<br>' +
+                      '다시 만들거나, 친구에게 코드를 보내고 참가해 보세요.');
+        }
+    }, 1000);
+}
+
+// 대기 화면을 한곳에서 그린다 (인원 + 남은 시간)
+function renderRoomStatus(players) {
+    if (net.on || state !== 'menu') return;
+    if (players) net.lastPlayers = players;
+    const ps = net.lastPlayers || {};
+    const names = Object.entries(ps).map(([id, p]) =>
+        id === net.myId ? `<span class="who">${p.name}(나)</span>` : p.name);
+    const codeHtml = net.roomId ? `<span class="code">${net.roomId}</span><br>` : '';
+    const m = Math.floor(Math.max(0, net.waitLeft) / 60);
+    const sec = String(Math.max(0, net.waitLeft) % 60).padStart(2, '0');
+    const low = net.waitLeft <= 60;
+    const timer = net.waitLeft > 0
+        ? `<br><span style="color:${low ? '#ff8a8a' : '#9fd0ff'}">⏳ 남은 대기 시간 ${m}:${sec}</span>`
+        : '';
+    netStatus(`${codeHtml}참가자 ${names.length}명 : ${names.join(', ')}` +
+        (names.length >= 2 ? '<br>🚦 곧 출발합니다!' : '<br>친구를 기다리는 중...' + timer));
 }
 
 function watchRoom(code) {
@@ -3189,13 +3233,7 @@ function watchRoom(code) {
     const pRef = FB.ref(FB.db, `rooms/${code}/players`);
     net.unsub.push(FB.onValue(pRef, snap => {
         const players = snap.val() || {};
-        const names = Object.entries(players).map(([id, p]) =>
-            id === net.myId ? `<span class="who">${p.name}(나)</span>` : p.name);
-        if (state === 'menu') {
-            const codeHtml = net.isHost ? `<span class="code">${code}</span><br>` : '';
-            netStatus(`${codeHtml}참가자 ${names.length}명 : ${names.join(', ')}` +
-                (names.length >= 2 ? '<br>🚦 곧 출발합니다!' : '<br>친구를 기다리는 중...'));
-        }
+        renderRoomStatus(players);
         // 방장이 2명 이상 모이면 시작 신호를 보낸다
         if (net.isHost && Object.keys(players).length >= 2 && state === 'menu') {
             setTimeout(() => {
@@ -3211,6 +3249,7 @@ function watchRoom(code) {
 }
 
 function startOnlineRace() {
+    if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
     net.on = true;
     twoPlayer = false;
     startRace(net.mapId);
