@@ -115,7 +115,14 @@
     body.touchUI #gaugeWrap .t { font-size: 11px; margin-bottom: 3px; }
     /* 진행도 막대는 미니맵이 대신하므로 접는다 (아래 버튼과 겹치지 않게) */
     body.touchUI #gaugeWrap > *:nth-child(n+3) { display: none; }
-    body.touchUI #toast      { top: auto; bottom: 132px; max-width: min(420px, 64vw); padding: 8px 14px; }
+    /* 안내는 화면 맨 위 한 줄로. 달리는 길을 가리면 안 된다 */
+    body.touchUI #toast {
+        top: 6px; bottom: auto; max-width: min(460px, 56vw); padding: 5px 14px;
+        border-width: 3px; border-radius: 12px; box-shadow: 3px 4px 0 rgba(0,0,0,.3);
+    }
+    body.touchUI #toast.show { transform: translateX(-50%) translateY(0); }
+    body.touchUI #toast .tt { font-size: 13px; margin-bottom: 0; }
+    body.touchUI #toast .td { font-size: 11px; line-height: 1.35; }
 
     #toast {
         position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%);
@@ -165,28 +172,27 @@
     .arw { display: block; width: 0; height: 0; border-top: 17px solid transparent; border-bottom: 17px solid transparent; }
     .arw.l { border-right: 24px solid currentColor; }
     .arw.r { border-left: 24px solid currentColor; }
-    /* 왼손 엄지 = 달리는 일(가속·드리프트), 오른손 엄지 = 방향 잡는 일(조향·브레이크).
-       엄지가 계속 붙어 있어야 하는 조향을 오른쪽에 두는 배치. */
-    #tGas   { width: 112px; height: 112px; font-size: 21px; left: 22px;  bottom: 26px; }
-    #tDrift { width: 92px;  height: 92px;  font-size: 15px; left: 30px;  bottom: 152px; }
+    /* 가속은 자동이라 왼손 엄지는 통째로 드리프트에 쓴다.
+       그래서 드리프트가 가장 크고, 엄지가 자연스럽게 놓이는 자리를 차지한다.
+       오른손은 조향 — 계속 붙어 있어야 하는 입력이다. */
+    #tDrift { width: 132px; height: 132px; font-size: 19px; left: 20px; bottom: 20px;
+              border-color: rgba(255,209,102,.85); background: rgba(70,52,16,.66); }
+    #tGas   { display: none; }                       /* 가속 자동 — 버튼이 필요 없다 */
+    #tBrake { width: 82px; height: 82px; font-size: 15px; left: 158px; bottom: 24px; }
 
-    #tLeft, #tRight { width: 94px; height: 94px; font-size: 34px; bottom: 26px; }
-    #tRight { right: 22px; } #tLeft { right: 130px; }
-    #tBrake { width: 80px; height: 80px; font-size: 16px; right: 28px;  bottom: 152px; }
-    #tItem  { width: 80px; height: 80px; font-size: 15px; right: 132px; bottom: 158px; }
+    #tLeft, #tRight { width: 104px; height: 104px; bottom: 20px; }
+    #tRight { right: 20px; } #tLeft { right: 134px; }
+    #tItem  { width: 84px; height: 84px; font-size: 14px; right: 30px; bottom: 138px; }
 
-    /* 드리프트는 가속과 짝이므로 눈에 띄게 */
-    #tDrift { border-color: rgba(255,209,102,.8); background: rgba(60,45,15,.62); }
-    #tGas   { border-color: rgba(140,255,190,.6); }
-
-    /* 화면이 낮으면 버튼을 조금 줄여 맵을 더 보여 준다 */
-    @media (max-height: 460px) {
-        #tGas   { width: 92px; height: 92px; font-size: 18px; bottom: 18px; }
-        #tDrift { width: 76px; height: 76px; font-size: 13px; bottom: 122px; }
-        #tLeft, #tRight { width: 78px; height: 78px; font-size: 29px; bottom: 18px; }
-        #tLeft { right: 108px; }
-        #tBrake { width: 68px; height: 68px; font-size: 14px; bottom: 122px; }
-        #tItem  { width: 68px; height: 68px; font-size: 13px; right: 112px; bottom: 126px; }
+    /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
+    @media (max-height: 430px) {
+        #tDrift { width: 112px; height: 112px; font-size: 16px; bottom: 14px; }
+        #tBrake { width: 68px; height: 68px; font-size: 13px; left: 138px; bottom: 16px; }
+        #tLeft, #tRight { width: 88px; height: 88px; bottom: 14px; }
+        #tLeft  { right: 112px; }
+        #tItem  { width: 70px; height: 70px; font-size: 12px; bottom: 112px; }
+        .arw { border-top-width: 14px; border-bottom-width: 14px; }
+        .arw.l { border-right-width: 20px; } .arw.r { border-left-width: 20px; }
     }
 
     /* ================= 오버레이 ================= */
@@ -254,13 +260,6 @@
         border: 2px solid #3f6c9c; border-radius: 12px; font-family: inherit;
     }
     .modeBtn.sel { background: #2f6ea8; color: #fff; border-color: #7fd4ff; }
-    #multiPick { display: flex; gap: 8px; }
-    .subBtn {
-        padding: 8px 18px; font-size: 13px; font-weight: bold; cursor: pointer;
-        background: rgba(255,255,255,.05); color: #9fd0ff;
-        border: 2px solid #2f5a85; border-radius: 10px; font-family: inherit;
-    }
-    .subBtn.sel { background: #1d4d78; color: #fff; border-color: #7fd4ff; }
     #onlineBox { text-align: center; }
     #onlineBox .obRow { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
     #onlineBox .obOr { color: #9fd0ff; font-size: 12px; }
@@ -277,8 +276,6 @@
     }
     #roomState .who { color: #7ee081; font-weight: bold; }
 
-    #p2Keys { font-size: 12px; color: #9fd0ff; text-align: center; line-height: 1.7; }
-    #p2Keys b { color: #ffe066; }
 
     .btn {
         padding: 13px 42px; font-size: 21px; font-weight: 900; cursor: pointer;
@@ -379,6 +376,43 @@
     .quiz button.no { background: #6b1f1f; border-color: #ff8a8a; }
     .quiz .ex { margin-top: 9px; font-size: 13px; color: #cfe6ff; line-height: 1.6; display: none; }
 
+    /* ================= 음량 · 전체 화면 ================= */
+    #opts {
+        position: absolute; top: 10px; right: 12px; z-index: 2;
+        display: flex; align-items: center; gap: 7px;
+        background: rgba(0,0,0,.32); border-radius: 11px; padding: 6px 10px;
+    }
+    .optBtn {
+        padding: 5px 10px; font-size: 11px; font-weight: bold; border-radius: 7px; cursor: pointer;
+        background: #2f6ea8; color: #fff; border: 2px solid #4d8ac9; font-family: inherit; white-space: nowrap;
+    }
+    .optBtn.off { background: #3a3f48; border-color: #5a626e; color: #9aa5b3; }
+    #volSlider { width: 96px; accent-color: #ffd166; }
+    #volNum { font-size: 11px; color: #9fd0ff; width: 24px; text-align: right; }
+    @media (max-height: 500px) { #opts { top: 6px; right: 8px; padding: 4px 8px; gap: 5px; }
+                                 #volSlider { width: 74px; } }
+
+    /* ================= 터치 시작 화면 ================= */
+    #tapStart { gap: 22px; }
+    #rotateHint { text-align: center; color: #9fd0ff; }
+    /* 세로로 들고 있을 때만 폰을 눕히라고 알려 준다 */
+    #rotateHint { display: none; }
+    @media (orientation: portrait) { #rotateHint { display: block; } }
+    #rotateHint .phone {
+        width: 54px; height: 92px; margin: 0 auto 12px; border-radius: 11px;
+        border: 4px solid #7fd4ff; position: relative;
+        animation: rotPhone 2.2s ease-in-out infinite;
+    }
+    #rotateHint .phone::after {
+        content: ''; position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%);
+        width: 18px; height: 3px; border-radius: 2px; background: #7fd4ff;
+    }
+    @keyframes rotPhone {
+        0%, 32% { transform: rotate(0deg); }
+        62%, 100% { transform: rotate(-90deg); }
+    }
+    #rotateHint .rt { font-size: 14px; font-weight: bold; }
+
     /* ================= 초기 화면 자동차 고르기 ================= */
     #carPick { width: min(96vw, 1180px); background: rgba(0,0,0,.28); border-radius: 16px; padding: 12px 14px; }
     .cpHead { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;
@@ -420,6 +454,66 @@
     @media (max-width: 760px) {
         .cpDetail { width: 100%; }
         .cpCar { width: 78px; }
+    }
+
+    /* ================= 폰 가로 : 메뉴를 한 화면에 담는다 =================
+       스크롤을 해야 시작 버튼이 보이면 아이는 거기서 멈춘다.
+       그래서 낮은 화면에서는 전부 눌러 담고, 자동차 목록만 옆으로 넘긴다. */
+    @media (max-height: 500px) {
+        .overlay { padding: 8px 12px; gap: 7px; justify-content: flex-start; }
+
+        /* 메뉴만 2단으로 : 왼쪽에 맵, 오른쪽에 자동차.
+           세로로 쌓으면 시작 버튼이 화면 밖으로 밀려난다. */
+        #menu {
+            display: grid; align-content: start; justify-items: stretch;
+            grid-template-columns: 1fr 288px;
+            grid-template-areas: "title title" "maps cars" "mode cars" "start cars" "online cars";
+            column-gap: 10px; row-gap: 6px;
+        }
+        #menu > .titleSign { grid-area: title; justify-self: center; }
+        #menu > #mapCards  { grid-area: maps; align-content: start; }
+        #menu > #carPick   { grid-area: cars; width: auto; align-self: start; }
+        #menu > #modePick  { grid-area: mode; justify-self: center; align-self: center; }
+        #menu > #startBtn  { grid-area: start; justify-self: center; align-self: start; }
+        #menu > #onlineBox { grid-area: online; align-self: start; }
+
+        .titleSign { margin: 2px 0 0; }
+        .titleBoard { padding: 5px 22px 7px; border-width: 4px; border-radius: 12px; }
+        .titleBoard::before, .titleBoard::after { display: none; }
+        .titleSign::before, .titleSign::after { display: none; }
+        .title { font-size: 26px; -webkit-text-stroke-width: 4px; }
+        .titleEn { font-size: 10px; letter-spacing: 4px; margin-top: 1px; }
+        .subtitle { display: none; }
+
+        .cards { gap: 5px; max-width: none; flex-wrap: nowrap; }
+        /* 테두리·안쪽 여백까지 폭에 포함해야 다섯 장이 한 줄에 들어간다 */
+        .card { box-sizing: border-box; width: 92px; flex: none; padding: 5px;
+                border-radius: 10px; border-width: 2px; }
+        .card h3 { font-size: 11px; line-height: 1.2; }
+        .card .route { display: none; }
+        .card canvas { height: 52px; margin-top: 4px; }
+        .card .meta { font-size: 9px; margin-top: 3px; }
+
+        #carPick { padding: 7px 9px; }
+        .cpHead { font-size: 12px; margin-bottom: 5px; }
+        .cpBody { gap: 9px; flex-wrap: nowrap; }
+        .cpList { flex-wrap: nowrap; overflow-x: auto; gap: 6px; min-width: 0; padding-bottom: 3px; }
+        .cpCar { width: 66px; flex: none; padding: 5px 4px 6px; border-width: 2px; border-radius: 9px; }
+        .cpCar .em { width: 28px; height: 28px; line-height: 28px; font-size: 11px; }
+        .cpCar .nm { font-size: 9px; }
+        .cpCar .pr { font-size: 9px; margin-top: 2px; }
+        .cpBody { flex-direction: column; gap: 6px; }
+        .cpList { width: 100%; }
+        .cpDetail { width: 100%; padding: 6px 8px; }
+        .cpDetail .dn { font-size: 12px; }
+        .cpDetail .dd { display: none; }        /* 설명은 접는다 — 이름과 그래프면 고를 수 있다 */
+        .gRow { margin: 3px 0; font-size: 10px; gap: 6px; }
+        .gRow .gl { width: 46px; } .gRow .gt { height: 8px; }
+        .cpBuy { margin-top: 6px; padding: 6px; font-size: 11px; }
+
+        .keys { display: none; }                    /* 터치에서는 키 안내가 의미 없다 */
+        #modePick .modeBtn { padding: 7px 16px; font-size: 13px; }
+        .btn { padding: 9px 26px; font-size: 16px; }
     }
 
     /* ================= 좁은 화면 대응 ================= */
@@ -513,7 +607,24 @@
     <div class="tbtn" id="tItem">아이템</div>
 </div>
 
+<!-- 터치 기기 전용 시작 화면.
+     브라우저는 사용자가 한 번 건드리기 전에는 전체 화면·화면 잠금·소리를 못 켠다.
+     그래서 탭 한 번을 받아 세 가지를 한꺼번에 연다. -->
+<div class="overlay hidden" id="tapStart">
+    <div class="titleSign"><div class="titleBoard">
+        <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
+    </div></div>
+    <div id="rotateHint"><div class="phone"></div><div class="rt">화면을 가로로 눕혀 주세요</div></div>
+    <button class="btn" id="tapStartBtn">화면을 눌러 시작</button>
+</div>
+
 <div class="overlay" id="menu">
+    <div id="opts">
+        <button class="optBtn" id="muteBtn" title="소리 끄기/켜기">소리</button>
+        <input type="range" id="volSlider" min="0" max="100" step="1" title="음량">
+        <span id="volNum">70</span>
+        <button class="optBtn" id="fsBtn" title="전체 화면">전체 화면</button>
+    </div>
     <div class="titleSign"><div class="titleBoard">
         <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
     </div></div>
@@ -539,13 +650,8 @@
     </div>
     <div id="modePick">
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
-        <button class="modeBtn" data-mode="2">멀티 모드</button>
+        <button class="modeBtn" data-mode="2">친구와 온라인</button>
     </div>
-    <div id="multiPick" style="display:none">
-        <button class="subBtn sel" data-sub="split">한 화면에서 둘이</button>
-        <button class="subBtn" data-sub="online">온라인으로 친구와</button>
-    </div>
-    <div id="p2Keys" style="display:none"></div>
     <div id="onlineBox" style="display:none">
         <div class="obRow">
             <button class="btn small" id="createRoom">방 만들기</button>
@@ -1083,7 +1189,7 @@ const carById = id => CARS.find(c => c.id === id) || CARS[0];
 
 const SAVE_KEY = 'bodyRacing.save.v1';
 let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
-             cars: ['rbc'], car: 'rbc' };
+             cars: ['rbc'], car: 'rbc', vol: .7 };
 
 function loadSave() {
     try {
@@ -1096,6 +1202,7 @@ function loadSave() {
             save.cars = Array.isArray(d.cars) && d.cars.length ? d.cars : ['rbc'];
             if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
             save.car = save.cars.includes(d.car) ? d.car : 'rbc';
+            save.vol = typeof d.vol === 'number' ? clamp(d.vol, 0, 1) : .7;
         }
     } catch (e) { /* 저장이 막힌 환경이면 그냥 진행 */ }
 }
@@ -1390,9 +1497,18 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 
 const cam  = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
-const cam2 = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
 const ZOOM_MIN = .12, ZOOM_MAX = 2.2;
 let bridgeAlpha = 1;                    // 다리 밑을 지날 때 위 도로가 비치는 정도
+// 터치 기기인가 — 조작 안내와 화면 배치가 여기서 갈린다
+const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+// 안내 문구에 쓸 조작 이름 — 폰에서 'SPACE' 라고 하면 알아들을 수 없다.
+//   조사가 어긋나지 않도록 목적격·도구격을 따로 둔다
+const DRIFT_KEY  = IS_TOUCH ? '왼쪽 드리프트 버튼을' : 'SPACE 키를';   // ~를 누르다
+const DRIFT_KEY2 = IS_TOUCH ? '드리프트 버튼으로'   : 'SPACE 로';     // ~로 드리프트하다
+
+/* 짧은 진동. 폰에서는 소리보다 손맛에 더 크게 기여한다. */
+function buzz(ms) { if (IS_TOUCH && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+
 let driftHint = 0;                      // 드리프트 안내를 다시 띄우기까지 남은 시간
 let countShown = -1;                    // 카운트다운에서 방금 울린 숫자
 let stickyHint = 0;                     // 끈적임 파훼 안내를 다시 띄우기까지
@@ -1413,6 +1529,7 @@ const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움
 //   기본 상태로는 게이지를 절반쯤밖에 못 채운다.
 //   '드리프트 지속'을 올려야 오래 물 수 있고, 그래야 슈퍼 부스터가 열린다.
 const DRIFT_HOLD = 1.05, DRIFT_FILL = 45;
+const DRIFT_COOLDOWN = .3;   // 한계 뒤 타이어가 다시 물기까지 쉬는 시간(초)
 const STEER_SMOOTH = .035;   // 조향 입력이 반영되는 속도. 클수록 부드럽고 덜 예민하다
 const STABLE_MIN = .88;      // 고속에서 남는 선회력 비율 (낮출수록 고속 안정, 대신 코너를 못 돈다)
 const ASSIST = 4.2;          // 도로 방향으로 스스로 정렬되는 세기 (초보 보조)
@@ -1460,7 +1577,7 @@ function makeKart(isPlayer, ci, name) {
         si: 0, prevSi: 0, lap: 1, cpIndex: 0, cpDone: 0, progress: 0,
         finished: false, finishTime: 0, rank: 1,
         drifting: false, driftAmt: 0, driftCharge: 0, driftCount: 0, driftHold: 0,
-        wasDrifting: false, driftStage: 0, driftLocked: false,
+        wasDrifting: false, driftStage: 0, driftLocked: 0,
         boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
         trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
         air: 0, airMax: 0, spin: 0,
@@ -1531,11 +1648,13 @@ function updateKart(k, dt) {
     // 부드럽게 보정된 조향값도 함께 본다 — 키를 뗀 직후에도 잠시 남아 있어 관대하다
     const turning = Math.abs(steerIn) > .02 || Math.abs(k.steer) > .12;
 
-    // 한계까지 물어서 타이어가 놓친 뒤에는, 키를 한 번 떼야 다시 걸린다.
-    // (안 그러면 누르고만 있어도 무한히 다시 걸려 한계가 의미를 잃는다)
-    if (!wantDrift) k.driftLocked = false;
+    // 한계까지 물면 타이어가 놓친다. 아주 짧게 쉬었다가 다시 걸린다.
+    //   손을 떼면 즉시 풀리고, 누르고 있으면 잠깐 뒤 저절로 풀린다.
+    //   (쉬는 시간이 없으면 누르고만 있어도 무한히 걸려 한계가 의미를 잃는다)
+    if (!wantDrift) k.driftLocked = 0;
+    else if (k.driftLocked > 0) k.driftLocked = Math.max(0, k.driftLocked - dt);
 
-    if (!wantDrift || !fastEnough || k.driftLocked) k.drifting = false;
+    if (!wantDrift || !fastEnough || k.driftLocked > 0) k.drifting = false;
     else if (k.drifting) k.drifting = true;                     // 유지 : 방향키를 요구하지 않는다
     else k.drifting = turning;                                  // 진입 : 방향키가 필요
     // 접지력을 한 번에 풀지 않고 서서히 — 차가 튕기듯 도는 것을 막는다
@@ -1571,14 +1690,14 @@ function updateKart(k, dt) {
             k.driftHold = 0; k.driftStage = 0;
             if (k.isPlayer) {
                 cam.shake = Math.max(cam.shake, 5.5);
-                sfxSkid(.55);
+                sfxSkid(.55); buzz(12);
                 for (let i = 0; i < 8; i++) addDriftSmoke(k);
             }
         }
         k.driftHold += dt;
         if (k.driftHold >= holdMax) {                              // 한계 도달 → 자동으로 놓는다
-            k.drifting = false; k.wasDrifting = false; k.driftLocked = true;
-            if (k.isPlayer) popup(k.x, k.y, '한계! 다시 눌러요', '#9fd0ff');
+            k.drifting = false; k.wasDrifting = false; k.driftLocked = DRIFT_COOLDOWN;
+            if (k.isPlayer) popup(k.x, k.y, '한계!', '#9fd0ff');
         }
     } else k.driftHold = 0;
 
@@ -1604,7 +1723,8 @@ function updateKart(k, dt) {
             k.driftCount++;
             if (k.isPlayer) {
                 // 잘 물수록 터지는 반응도 커진다 — 참은 만큼 돌려받는 감각
-                sfxBoost(); cam.shake = 5 + q * 9; cam.kick = .6 + q * .8;
+                sfxBoost(); buzz(20 + q * 40);
+                cam.shake = 5 + q * 9; cam.kick = .6 + q * .8;
                 cam.flash = Math.max(cam.flash || 0, q * .45);
                 k.earned += 8 + Math.round(q * 10);
                 popup(k.x, k.y, q > .78 ? '슈퍼 부스터!!' : q > .45 ? '부스터!' : '부스터',
@@ -1642,7 +1762,7 @@ function updateKart(k, dt) {
     if (k.isPlayer && !k.drifting && k.lap === 1 && driftHint <= 0 &&
         Math.abs(vF) > 300 && Math.abs(steerIn) > .5) {
         driftHint = 9;
-        showToast('SPACE 를 누른 채 코너를 돌아보세요', '미끄러지며 게이지가 차고, 손을 떼면 부스터가 터집니다!');
+        showToast(DRIFT_KEY + ' 누른 채 코너를 돌아보세요', '미끄러지며 게이지가 차고, 손을 떼면 부스터가 터집니다!');
     }
     driftHint -= dt;
 
@@ -1827,12 +1947,8 @@ function finishKart(k) {
     if (k.finished) return;
     k.finished = true; k.finishTime = raceTime;
     k.rank = karts.filter(o => o.finished).length;
-    if (k.isPlayer) {
-        if (twoPlayer) {
-            popup(k.x, k.y, k.name + ' 완주!', k.color);
-            if (player.finished && player2 && player2.finished) endRace();
-        } else endRace();
-    } else if (state === 'race') popup(k.x, k.y, k.name + ' 완주!', k.color);
+    if (k.isPlayer) endRace();
+    else if (state === 'race') popup(k.x, k.y, k.name + ' 완주!', k.color);
 }
 
 /* ---- 아이템 / 장애물 ---- */
@@ -1892,7 +2008,7 @@ function checkSkillZones(k) {
         if (sp.owner !== k && (sp.x - k.x) ** 2 + (sp.y - k.y) ** 2 < sp.r * sp.r) {
             if (k.isPlayer && k.stickyTime <= 0 && stickyHint <= 0) {
                 stickyHint = 14;
-                showToast('콜레스테롤에 빠졌다!', 'SPACE 로 드리프트하면 미끄러져 빠져나옵니다!');
+                showToast('콜레스테롤에 빠졌다!', DRIFT_KEY2 + ' 드리프트하면 빠져나옵니다!');
             }
             k.stickyTime = Math.max(k.stickyTime, .5);
         }
@@ -2027,7 +2143,7 @@ function useItemFor(k) {
             }
             if (best.isPlayer) {
                 cam.shake = 14;
-                showToast('백혈구에 붙잡혔다!', 'SPACE 로 드리프트하면 떨쳐낼 수 있어요!');
+                showToast('백혈구에 붙잡혔다!', DRIFT_KEY2 + ' 드리프트하면 떨쳐낼 수 있어요!');
             }
         }
 
@@ -2140,31 +2256,11 @@ function updateEffects(dt) {
 /* ============================================================================
    6. 렌더링 (의사 3D : 그림자 + 베벨 + 하이라이트)
    ========================================================================== */
-// 2인 분할 : 위/아래 두 화면으로 나눠 각자 시점을 그린다
 function render() {
     const g = ctx;
     g.setTransform(DPR, 0, 0, DPR, 0, 0);
     g.clearRect(0, 0, VW, VH);
     if (!track) return;
-
-    if (twoPlayer && player2) {
-        // 좌우 분할 : 위아래로 자르면 코스가 세로로 긴 맵에서 안 보인다
-        const w = VW / 2;
-        renderView(g, cam,  player,  0, 0, w - 3, VH);
-        renderView(g, cam2, player2, w + 3, 0, w - 3, VH);
-        // 가운데 구분선
-        g.setTransform(DPR, 0, 0, DPR, 0, 0);
-        g.fillStyle = '#0a1420'; g.fillRect(w - 4, 0, 8, VH);
-        g.fillStyle = '#3f6c9c'; g.fillRect(w - 1, 0, 2, VH);
-        // 각 화면 라벨
-        g.font = 'bold 15px sans-serif'; g.textAlign = 'left'; g.textBaseline = 'top';
-        [['1P', 8], ['2P', w + 11]].forEach(([t, x]) => {
-            g.fillStyle = 'rgba(10,20,32,.7)';
-            g.beginPath(); g.roundRect(x, 8, 38, 22, 7); g.fill();
-            g.fillStyle = '#ffe066'; g.fillText(t, x + 9, 12);
-        });
-        return;
-    }
     renderView(g, cam, player, 0, 0, VW, VH);
 }
 
@@ -3526,7 +3622,7 @@ function updateEngine() {
         engineBody.Q.value = 1.1; engineBody.gain.value = 6;
         engineGain = audioCtx.createGain(); engineGain.gain.value = 0;
         engineSrc.connect(engineLP); engineLP.connect(engineBody);
-        engineBody.connect(engineGain); engineGain.connect(audioCtx.destination);
+        engineBody.connect(engineGain); engineGain.connect(masterOut());
         engineSrc.start();
 
         windSrc = audioCtx.createBufferSource();
@@ -3534,7 +3630,7 @@ function updateEngine() {
         const wf = audioCtx.createBiquadFilter();
         wf.type = 'bandpass'; wf.frequency.value = 900; wf.Q.value = .7;
         windGain = audioCtx.createGain(); windGain.gain.value = 0;
-        windSrc.connect(wf); wf.connect(windGain); windGain.connect(audioCtx.destination);
+        windSrc.connect(wf); wf.connect(windGain); windGain.connect(masterOut());
         windSrc.start();
     }
 
@@ -3666,6 +3762,24 @@ function noiseBuffer(sec) {
 }
 
 // 충돌 : 낮은 쿵 + 부서지는 잡음
+/* ---- 마스터 볼륨 ----
+   폰마다 스피커 크기가 달라 어떤 기기는 안 들리고 어떤 기기는 시끄럽다.
+   모든 소리를 이 한 마디를 거쳐 나가게 하고, 설정에서 그 크기만 바꾼다. */
+let masterGain = null;
+function masterOut() {
+    if (!masterGain) {
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = save.vol;
+        masterGain.connect(audioCtx.destination);
+    }
+    return masterGain;
+}
+function setVolume(v) {
+    save.vol = clamp(v, 0, 1);
+    if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(save.vol, audioCtx.currentTime, .02);
+    writeSave();
+}
+
 function sfxCrash(power = 1) {
     if (!audioCtx) return;
     if (playSfx('crash', .55 * power, .9 + Math.random() * .2)) return;
@@ -3675,13 +3789,13 @@ function sfxCrash(power = 1) {
     f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(180, t + .3);
     const g = audioCtx.createGain();
     g.gain.setValueAtTime(.16 * power, t); g.gain.exponentialRampToValueAtTime(.001, t + .32);
-    src.connect(f); f.connect(g); g.connect(audioCtx.destination); src.start(); src.stop(t + .35);
+    src.connect(f); f.connect(g); g.connect(masterOut()); src.start(); src.stop(t + .35);
 
     const o = audioCtx.createOscillator(), og = audioCtx.createGain();
     o.type = 'sine';
     o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + .22);
     og.gain.setValueAtTime(.22 * power, t); og.gain.exponentialRampToValueAtTime(.001, t + .26);
-    o.connect(og); og.connect(audioCtx.destination); o.start(); o.stop(t + .28);
+    o.connect(og); og.connect(masterOut()); o.start(); o.stop(t + .28);
 }
 
 // 타이어 마찰음 : 드리프트/브레이크 중 계속 울린다
@@ -3695,7 +3809,7 @@ function sfxSkid(amount) {
         const f = audioCtx.createBiquadFilter();
         f.type = 'bandpass'; f.frequency.value = 2100; f.Q.value = 5.5;
         skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
-        skidSrc.connect(f); f.connect(skidGain); skidGain.connect(audioCtx.destination);
+        skidSrc.connect(f); f.connect(skidGain); skidGain.connect(masterOut());
         skidSrc.start();
     }
     skidGain.gain.setTargetAtTime(clamp(amount, 0, 1) * .10, audioCtx.currentTime, .06);
@@ -3712,7 +3826,7 @@ function sfxPickup() {
         g.gain.setValueAtTime(0, t + i * .07);
         g.gain.linearRampToValueAtTime(.09, t + i * .07 + .01);
         g.gain.exponentialRampToValueAtTime(.001, t + i * .07 + .16);
-        o.connect(g); g.connect(audioCtx.destination);
+        o.connect(g); g.connect(masterOut());
         o.start(t + i * .07); o.stop(t + i * .07 + .18);
     });
 }
@@ -3727,7 +3841,7 @@ function sfxBoost() {
     f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(3200, t + .45);
     const g = audioCtx.createGain();
     g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .5);
-    src.connect(f); f.connect(g); g.connect(audioCtx.destination);
+    src.connect(f); f.connect(g); g.connect(masterOut());
     src.start(); src.stop(t + .55);
 }
 
@@ -3744,7 +3858,7 @@ function sfxWin(first) {
         g.gain.setValueAtTime(0, st);
         g.gain.linearRampToValueAtTime(.11, st + .02);
         g.gain.exponentialRampToValueAtTime(.001, st + .45);
-        o.connect(g); g.connect(audioCtx.destination);
+        o.connect(g); g.connect(masterOut());
         o.start(st); o.stop(st + .5);
     });
 }
@@ -3765,7 +3879,7 @@ function sfxGo() {
     o.frequency.exponentialRampToValueAtTime(1500, t + .18);
     g.gain.setValueAtTime(.10, t);
     g.gain.exponentialRampToValueAtTime(.001, t + .38);
-    o.connect(g); g.connect(audioCtx.destination);
+    o.connect(g); g.connect(masterOut());
     o.start(); o.stop(t + .4);
 }
 
@@ -3775,7 +3889,7 @@ function playBeep(freq, dur) {
         const o = audioCtx.createOscillator(), g = audioCtx.createGain();
         o.frequency.value = freq; o.type = 'square'; g.gain.value = .05;
         g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
-        o.connect(g); g.connect(audioCtx.destination);
+        o.connect(g); g.connect(masterOut());
         o.start(); o.stop(audioCtx.currentTime + dur);
     } catch (e) {}
 }
@@ -3915,7 +4029,6 @@ function renderRoomStatus(players) {
         if (window.FB && code) { try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {} }
         netCleanup();
         netStatus('');
-        twoPlayer = false;
         startRace(selectedId);                 // 혼자 + AI 로 바로 시작
     };
 }
@@ -3943,7 +4056,6 @@ function watchRoom(code) {
 function startOnlineRace() {
     if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
     net.on = true;
-    twoPlayer = false;
     startRace(net.mapId);
     // 상대 위치 구독
     const gRef = FB.ref(FB.db, `rooms/${net.roomId}/ghosts`);
@@ -3994,7 +4106,7 @@ function netInterp(dt) {
 /* ============================================================================
    8. 게임 흐름
    ========================================================================== */
-let track = null, karts = [], player = null, player2 = null;
+let track = null, karts = [], player = null;
 let state = 'menu', raceTime = 0, countdown = 0, fullMap = false, selectedId = 'circulatory';
 
 function placeOnStart(k, lane) {
@@ -4014,12 +4126,8 @@ function startRace(id) {
     reabsorbHint = 0;
     karts = [];
     player = makeKart(true, 0, '1P'); player.pad = input; karts.push(player);
-    player2 = null;
-    if (twoPlayer) {
-        player2 = makeKart(true, 1, '2P'); player2.pad = input2; karts.push(player2);
-    }
-    for (let i = 0; i < (twoPlayer ? 2 : 3); i++) {
-        const ai = makeKart(false, (twoPlayer ? i + 2 : i + 1), AI_NAMES[i]);
+    for (let i = 0; i < 3; i++) {
+        const ai = makeKart(false, i + 1, AI_NAMES[i]);
         ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
         karts.push(ai);
     }
@@ -4037,7 +4145,6 @@ function startRace(id) {
     el('touch').classList.toggle('on', IS_TOUCH);
     document.body.classList.toggle('touchUI', IS_TOUCH);
     if (IS_TOUCH) el('driftLabel').textContent = '드리프트 게이지';
-    el('miniPanel').style.display = twoPlayer ? 'none' : '';
     showToast(track.sys.name, track.sys.flow.map(f => f.name).join(' → '));
 }
 
@@ -4344,35 +4451,25 @@ requestAnimationFrame(loop);
 /* ============================================================================
    9. 입력 (키보드 + 터치)
    ========================================================================== */
-const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const input  = { gas: false, brake: false, left: false, right: false, drift: false };
-const input2 = { gas: false, brake: false, left: false, right: false, drift: false };
 const keys = {};
-let twoPlayer = false;                       // 2인 분할 화면 여부
+
+/* 모바일 가속은 자동이다.
+   엄지 두 개로 다룰 수 있는 한계가 대략 버튼 넷인데, 레이싱에서 가속은 거의 항상
+   눌려 있는 입력이라 빼도 손해가 없다. 대신 왼손 엄지가 통째로 드리프트에 쓰인다.
+   브레이크를 밟는 동안에만 가속이 풀린다. */
+function autoGas() {
+    if (!IS_TOUCH) return touchState.gas || touchState.drift;
+    return !touchState.brake;
+}
 
 function syncKeys() {
     const k = key => !!keys[key];
-    if (twoPlayer) {
-        // 1P : WASD + Space
-        input.gas   = k('w') || k('W') || touchState.gas || touchState.drift;
-        input.brake = k('s') || k('S') || touchState.brake;
-        input.left  = k('a') || k('A') || touchState.left;
-        input.right = k('d') || k('D') || touchState.right;
-        input.drift = k(' ') || touchState.drift;
-        // 2P : 방향키 + Ctrl
-        input2.gas   = k('ArrowUp');
-        input2.brake = k('ArrowDown');
-        input2.left  = k('ArrowLeft');
-        input2.right = k('ArrowRight');
-        input2.drift = k('Control');
-    } else {
-        // 드리프트 중에는 가속이 자동으로 유지된다 (엄지 하나로 둘 다 누를 수 없으므로)
-        input.gas   = k('w') || k('W') || k('ArrowUp') || touchState.gas || touchState.drift;
-        input.brake = k('s') || k('S') || k('ArrowDown') || touchState.brake;
-        input.left  = k('a') || k('A') || k('ArrowLeft') || touchState.left;
-        input.right = k('d') || k('D') || k('ArrowRight') || touchState.right;
-        input.drift = k(' ') || k('Shift') || touchState.drift;
-    }
+    input.gas   = k('w') || k('W') || k('ArrowUp') || autoGas();
+    input.brake = k('s') || k('S') || k('ArrowDown') || touchState.brake;
+    input.left  = k('a') || k('A') || k('ArrowLeft') || touchState.left;
+    input.right = k('d') || k('D') || k('ArrowRight') || touchState.right;
+    input.drift = k(' ') || k('Shift') || touchState.drift;
 }
 
 window.addEventListener('keydown', e => {
@@ -4382,9 +4479,6 @@ window.addEventListener('keydown', e => {
         e.preventDefault();
         if (state === 'race') useItemFor(player);
         else if (state === 'menu') startRace(selectedId);
-    }
-    if (twoPlayer && e.key === 'Shift' && state === 'race' && player2) {
-        e.preventDefault(); useItemFor(player2);
     }
     if (e.key === 'm' || e.key === 'M') fullMap = !fullMap;
     if (e.key === '+' || e.key === '=') zoomBy(1.18);
@@ -4549,22 +4643,8 @@ function drawPreview(cv, sys) {
     });
 }
 
-let multiSub = 'split';                       // 멀티 모드 안에서 무엇을 골랐나
-
 function refreshModeUI() {
-    const isMulti = document.querySelector('.modeBtn.sel').dataset.mode === '2';
-    el('multiPick').style.display = isMulti ? 'flex' : 'none';
-
-    const split  = isMulti && multiSub === 'split';
-    const online = isMulti && multiSub === 'online';
-    twoPlayer = split;
-
-    el('p2Keys').style.display = split ? 'block' : 'none';
-    el('p2Keys').innerHTML = split
-        ? '<b>1P</b> W A S D · SPACE 드리프트 · ENTER 아이템<br>' +
-          '<b>2P</b> 위 왼쪽 아래 → · CTRL 드리프트 · SHIFT 아이템'
-        : '';
-
+    const online = document.querySelector('.modeBtn.sel').dataset.mode === '2';
     el('onlineBox').style.display = online ? 'block' : 'none';
     el('startBtn').style.display = online ? 'none' : '';
     if (!online) { netCleanup(); netStatus(''); }
@@ -4577,18 +4657,15 @@ document.querySelectorAll('.modeBtn').forEach(b => {
         refreshModeUI();
     };
 });
-document.querySelectorAll('.subBtn').forEach(b => {
-    b.onclick = () => {
-        multiSub = b.dataset.sub;
-        document.querySelectorAll('.subBtn').forEach(x => x.classList.toggle('sel', x === b));
-        refreshModeUI();
-    };
-});
 el('createRoom').onclick = createRoom;
 el('joinRoom').onclick = joinRoom;
 el('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
-el('startBtn').onclick = () => startRace(selectedId);
+el('startBtn').onclick = () => {
+    // 달리는 동안 주소창이 보이면 화면이 좁아진다. 시작할 때 한 번 더 전체 화면을 청한다
+    if (IS_TOUCH && !isFullscreen()) goFullscreen().catch(() => {});
+    startRace(selectedId);
+};
 el('retryBtn').onclick = () => startRace(track.sys.id);
 el('menuBtn').onclick = () => {
     netCleanup();
@@ -4599,6 +4676,89 @@ el('menuBtn').onclick = () => {
 };
 
 buildMenu();
+
+/* ---- 음량 · 전체 화면 ----
+   폰마다 스피커가 달라 같은 값이어도 안 들리거나 시끄럽다. 직접 맞추게 한다.
+   소리를 끄면 0 으로 내리되, 껐을 때의 값을 기억해 다시 켜면 그대로 돌아온다. */
+let volBeforeMute = save.vol > 0 ? save.vol : .7;
+
+function refreshVolUI() {
+    el('volSlider').value = Math.round(save.vol * 100);
+    el('volNum').textContent = Math.round(save.vol * 100);
+    const off = save.vol <= 0;
+    el('muteBtn').textContent = off ? '소리 꺼짐' : '소리';
+    el('muteBtn').classList.toggle('off', off);
+}
+el('volSlider').oninput = e => {
+    setVolume(e.target.value / 100);
+    if (save.vol > 0) volBeforeMute = save.vol;
+    refreshVolUI();
+};
+el('muteBtn').onclick = () => {
+    if (save.vol > 0) { volBeforeMute = save.vol; setVolume(0); }
+    else setVolume(volBeforeMute || .7);
+    refreshVolUI();
+};
+refreshVolUI();
+
+/* 전체 화면 — 주소창이 사라져야 화면이 넓어진다.
+   브라우저가 사용자 동작 안에서만 허락하므로 버튼으로 받는다. */
+function goFullscreen() {
+    const d = document.documentElement;
+    const req = d.requestFullscreen || d.webkitRequestFullscreen || d.msRequestFullscreen;
+    if (req) { try { return req.call(d); } catch (e) {} }
+    return Promise.reject();
+}
+function exitFullscreen() {
+    const x = document.exitFullscreen || document.webkitExitFullscreen;
+    if (x) { try { x.call(document); } catch (e) {} }
+}
+function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+
+function refreshFsUI() {
+    el('fsBtn').textContent = isFullscreen() ? '창으로' : '전체 화면';
+}
+el('fsBtn').onclick = () => {
+    isFullscreen() ? exitFullscreen() : goFullscreen().then(() => {
+        screen.orientation && screen.orientation.lock &&
+            screen.orientation.lock('landscape').catch(() => {});
+    }).catch(() => {});
+};
+document.addEventListener('fullscreenchange', refreshFsUI);
+document.addEventListener('webkitfullscreenchange', refreshFsUI);
+refreshFsUI();
+
+/* ---- 터치 기기 : 첫 탭에 전체 화면 · 가로 고정 · 소리를 한꺼번에 연다 ----
+   브라우저는 사용자가 한 번 건드리기 전에는 이 셋 중 아무것도 허용하지 않는다.
+   그래서 메뉴보다 앞에 탭 화면을 하나 두고, 거기서 다 열고 들어간다.
+   (앱으로 감싸면 Capacitor 가 가로로 잠그므로 이 화면은 건너뛴다) */
+if (IS_TOUCH && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+    el('tapStart').classList.remove('hidden');
+    el('menu').classList.add('hidden');
+
+    const enter = async () => {
+        // 1) 전체 화면 — 주소창이 사라져야 화면이 넓어지고, 화면 잠금도 여기서만 된다
+        try { await (document.documentElement.requestFullscreen
+                     || document.documentElement.webkitRequestFullscreen).call(document.documentElement); }
+        catch (e) { /* 거부돼도 계속 진행 */ }
+
+        // 2) 가로로 잠근다. 안 되는 기기(iOS)에서는 눕히라는 안내가 대신 뜬다
+        try { await screen.orientation.lock('landscape'); } catch (e) {}
+
+        // 3) 소리 — 사용자 동작 안에서만 오디오를 켤 수 있다
+        if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = null; } catch (e) {}
+        }
+        if (audioCtx) audioCtx.resume().catch(() => {});
+
+        el('tapStart').classList.add('hidden');
+        el('menu').classList.remove('hidden');
+    };
+    el('tapStartBtn').onclick = enter;
+    el('tapStart').addEventListener('touchend', e => {
+        if (e.target.id !== 'tapStartBtn') enter();      // 화면 아무 곳이나 눌러도 된다
+    });
+}
 
 /* ============================================================================
    11. 앱(Capacitor)에서만 도는 부분
