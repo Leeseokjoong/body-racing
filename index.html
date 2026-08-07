@@ -737,7 +737,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1606</div>
+<div id="build">v260807.1656</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2058,6 +2058,7 @@ function updateKart(k, dt) {
     if (k.air > 0) {
         k.air -= dt;
         k.spin += dt * 6.5;
+        guideAir(k, dt);                        // 하늘길을 벗어나지 않게 붙잡아 준다
         if (k.air <= 0) {                       // 착지
             k.air = 0; k.spin = 0;
             k.boostTime = Math.max(k.boostTime, 1.2);
@@ -2110,6 +2111,36 @@ function addReabsorbSpark(k, nx, ny, t) {
     reabsorbSparks.push({ x: k.x - nx * s, y: k.y - ny * s, nx, ny, life: .45, max: .45, t });
 }
 
+/* 공중에서는 벽이 없다. 그대로 두면 조금만 방향이 틀어져도 엉뚱한 데 떨어진다.
+   그래서 하늘길 위를 따라가도록 부드럽게 끌어 준다 — 점프는 레일 위의 연출이지
+   실력을 시험하는 구간이 아니다. 착지 직전일수록 세게 잡아, 길 위에 내려놓는다. */
+function guideAir(k, dt) {
+    if (!track || k.airMax <= 0) return;
+    const t = 1 - k.air / k.airMax;                    // 0 = 막 떴다, 1 = 곧 착지
+    const ahead = track.pts[(k.si + 14) % track.N];
+    if (!ahead) return;
+
+    // 속도 방향을 하늘길 쪽으로 돌린다
+    const want = Math.atan2(ahead.y - k.y, ahead.x - k.x);
+    const sp = Math.hypot(k.vx, k.vy);
+    if (sp > 1) {
+        const cur = Math.atan2(k.vy, k.vx);
+        const turn = clamp(angDiff(want, cur), -1.2, 1.2) * (1.6 + t * 3.4) * dt;
+        const na = cur + turn;
+        k.vx = Math.cos(na) * sp; k.vy = Math.sin(na) * sp;
+    }
+    k.ang += clamp(angDiff(want, k.ang), -1.2, 1.2) * (2 + t * 3) * dt;
+
+    // 길 한가운데로 조금씩 당긴다 (착지 지점을 도로 위로)
+    const p = track.pts[k.si];
+    let nx = k.x - p.x, ny = k.y - p.y;
+    const d = Math.hypot(nx, ny);
+    if (d > 4) {
+        const pull = (.6 + t * 2.2) * Math.min(d, 400) * dt;
+        k.x -= nx / d * pull; k.y -= ny / d * pull;
+    }
+}
+
 // 붉은 혈관벽 — 관대한 반응. 스치면 벽을 따라 미끄러지고, 정면으로 박아야 크게 손해.
 function applyBarrier(k) {
     // 위아래로 갈라진 다리는 서로 간섭하지 않으므로, 두 도로 모두 벽을 그대로 유지한다
@@ -2148,8 +2179,10 @@ function aiControl(k, dt) {
     const N = track.N;
     const idx = d => track.closed ? (k.si + d) % N : Math.min(k.si + d, N - 1);
 
-    // 조향 : 속도가 빠를수록 멀리 본다
-    const p = track.pts[idx(5 + Math.floor(Math.abs(k.speed) / 70))];
+    // 조향 : 속도가 빠를수록 멀리 본다.
+    //   가까이만 보면 코너에 닿아서야 꺾기 시작해 바깥 벽으로 밀려난다.
+    //   샘플 하나가 14 units 이므로, 20 샘플이면 대략 280 units 앞을 보는 셈이다.
+    const p = track.pts[idx(11 + Math.floor(Math.abs(k.speed) / 45))];
     const tx = p.x - p.dy * k.aiOffset, ty = p.y + p.dx * k.aiOffset;
     k.aiSteer = clamp(angDiff(Math.atan2(ty - k.y, tx - k.x), k.ang) * 3.2, -1, 1);
 
@@ -2174,20 +2207,30 @@ function aiControl(k, dt) {
     if (k.slots.length && Math.random() < .008) useItemFor(k);
 }
 
+/* 내가 트랙의 어디쯤인지 찾는다.
+   여기서 창을 넓게 잡으면 접힌 코스(소장·폐포 그물)에서 사고가 난다.
+   나란히 접힌 두 길은 도로 폭보다 가까워서, 넓게 보면 옆 골목이 더 가깝게
+   잡히고 그 순간 위치가 훌쩍 건너뛴다. 벽 판정도 그쪽 기준이 되어 길을 벗어난다.
+
+   한 프레임에 갈 수 있는 거리는 아무리 빨라도 샘플 두 칸 남짓이므로,
+   창은 그만큼만 열어 두면 충분하다. */
 function updateProgress(k) {
     const N = track.N, closed = track.closed;
+    const idx = i => closed ? (i % N + N) % N : clamp(i, 0, N - 1);
     let best = k.si, bestD = 1e18;
-    for (let d = -26; d <= 80; d++) {
-        let i = k.si + d;
-        if (closed) i = (i % N + N) % N; else if (i < 0 || i >= N) continue;
+    for (let d = -5; d <= 10; d++) {
+        const i = idx(k.si + d);
+        if (!closed && (k.si + d < 0 || k.si + d >= N)) continue;
         const p = track.pts[i], dd = (p.x - k.x) ** 2 + (p.y - k.y) ** 2;
         if (dd < bestD) { bestD = dd; best = i; }
     }
-    if (Math.sqrt(bestD) > track.halfWidth * 4)
+    // 정말 길을 잃었을 때만 전체를 다시 훑는다 (벽 밖으로 튕겨 나간 경우 등)
+    if (Math.sqrt(bestD) > track.halfWidth * 5) {
         for (let i = 0; i < N; i += 2) {
             const p = track.pts[i], dd = (p.x - k.x) ** 2 + (p.y - k.y) ** 2;
             if (dd < bestD) { bestD = dd; best = i; }
         }
+    }
 
     k.prevSi = k.si; k.si = best;
     k.centerDist = Math.sqrt(bestD);
