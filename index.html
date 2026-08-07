@@ -463,6 +463,38 @@
         .lbCode b { font-size: 18px; }
     }
 
+    /* 퀴즈방 */
+    #quizRoom { gap: 4px; }
+    #goRow { display: flex; gap: 12px; align-items: center; justify-content: center; }
+    .qIntro { font-size: 13px; color: #9fd0ff; margin-bottom: 12px; }
+    .qIntro b { color: #ffe066; font-size: 15px; }
+    .qLvList { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap;
+               max-width: 900px; margin: 0 auto 12px; }
+    .qLv {
+        width: 200px; padding: 11px 12px; border-radius: 13px; cursor: pointer; text-align: left;
+        background: linear-gradient(180deg,#16304f,#0d1f36); border: 3px solid #2a4a70;
+        font-family: inherit; color: #cfe6ff; display: flex; flex-direction: column; gap: 3px;
+        transition: transform .1s;
+    }
+    .qLv:hover { transform: translateY(-3px); }
+    .qLvName { font-size: 15px; font-weight: 900; }
+    .qLvDesc { font-size: 11px; color: #9fd0ff; line-height: 1.4; }
+    .qLvMeta { font-size: 11px; color: #8fa4bd; margin-top: 2px; }
+    .qLvBest { font-size: 10px; color: #6d8199; }
+    .qPick { font-size: 13px; color: #9fd0ff; }
+    .qPick select {
+        font-family: inherit; font-size: 13px; padding: 5px 9px; border-radius: 8px;
+        background: #16304f; color: #fff; border: 2px solid #3f6c9c; margin: 0 8px;
+    }
+    .qPickHint { font-size: 11px; color: #6d8199; }
+    .qWhich { font-size: 12px; color: #ffd166; font-weight: bold; margin-bottom: 5px; }
+    @media (max-height: 560px) {
+        .qLv { width: 168px; padding: 8px 10px; }
+        .qLvName { font-size: 13px; } .qLvDesc { font-size: 10px; }
+        .qLvMeta, .qLvBest { font-size: 9px; }
+        .qIntro { font-size: 11px; margin-bottom: 7px; }
+    }
+
     /* 경로 퀴즈 */
     #quizDots { display: flex; gap: 7px; justify-content: center; margin: 6px 0 12px; }
     .qd { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,.16);
@@ -774,7 +806,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1739</div>
+<div id="build">v260807.1744</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -863,7 +895,21 @@
         </div>
         <div id="roomState"></div>
     </div>
-    <button class="btn" id="startBtn">레이스 시작</button>
+    <div id="goRow">
+        <button class="btn" id="startBtn">레이스 시작</button>
+        <button class="btn small" id="quizBtn">퀴즈방</button>
+    </div>
+</div>
+
+<!-- 퀴즈방 : 원할 때 들어와 코스 순서를 맞히고 포인트를 얻는다 -->
+<div class="overlay hidden" id="quizRoom">
+    <h2 id="quizTitle">퀴즈방</h2>
+    <div id="quizDots"></div>
+    <div id="quizStage"></div>
+    <div class="resNav" id="quizNav">
+        <button class="btn small" id="quizAgain">다른 계통 풀기</button>
+        <button class="btn small" id="quizExit">나가기</button>
+    </div>
 </div>
 
 <!-- 서킷이 끝나면 결과 전에 끼어드는 전면 광고 -->
@@ -871,7 +917,7 @@
     <div id="adBox">
         <div id="adTop"><span>광고</span><button id="adSkip" disabled>5초 후 건너뛰기</button></div>
         <div id="adSlot"></div>
-        <div id="adFoot">광고 수익으로 게임이 계속 만들어집니다</div>
+        <div id="adFoot">광고 수익으로 게임이 지속적으로 발전합니다</div>
     </div>
 </div>
 
@@ -905,16 +951,6 @@
             <div id="garage"></div>
             <div class="resNav">
                 <button class="btn small" id="backPage1">← 기록 다시 보기</button>
-                <button class="btn small" id="toPage3">경로 퀴즈 →</button>
-            </div>
-        </div>
-
-        <!-- ── 3장 : 방금 달린 길을 기억하는가 -->
-        <div id="resPage3" style="display:none">
-            <h2 id="quizTitle">경로 퀴즈</h2>
-            <div id="quizDots"></div>
-            <div id="quizStage"></div>
-            <div class="resNav" id="quizNav">
                 <button class="btn small" id="retryBtn">다시 도전</button>
                 <button class="btn small" id="menuBtn">맵 선택</button>
             </div>
@@ -5314,55 +5350,130 @@ el('startBtn').onclick = () => {
     if (IS_TOUCH && !isFullscreen()) { try { goFullscreen(); } catch (e) {} }
     startRace(selectedId);
 };
-/* 결과는 세 장이다. 언제나 1장(해낸 것)부터 보여 준다. */
+/* 결과는 두 장이다. 언제나 1장(해낸 것)부터 보여 준다.
+   퀴즈는 여기 붙이지 않는다 — 완주 직후의 '한 판 더' 흐름을 끊기 때문이다.
+   퀴즈는 메뉴의 '퀴즈방' 에서 원할 때 푼다. */
 function resPage(n) {
     el('resPage1').style.display = n === 1 ? '' : 'none';
     el('resPage2').style.display = n === 2 ? '' : 'none';
-    el('resPage3').style.display = n === 3 ? '' : 'none';
 }
 el('toPage2').onclick = () => { resPage(2); renderGarage(); playBeep(1100, .08); };
 el('backPage1').onclick = () => resPage(1);
-el('toPage3').onclick = () => { resPage(3); startRouteQuiz(); playBeep(1100, .08); };
 
 /* ---- 경로 퀴즈 ----
    아이들이 코스 순서를 눈으로만 흘려보낸다. 한 번 물어보면 남는다.
-   문제는 방금 달린 맵의 flow 에서 그때그때 뽑는다.
-   그래야 코스와 항상 일치하고, 맵을 새로 만들어도 저절로 따라온다. */
-const QUIZ_REWARD = 50;                 // 한 문제당 포인트
-let quizQs = [], quizAt = 0, quizGot = 0;
+   문제는 맵의 flow 에서 그때그때 뽑으므로 코스와 항상 일치하고,
+   맵을 새로 만들어도 문제를 따로 쓸 필요가 없다.
 
-function buildRouteQuiz(sys) {
+   단계가 올라갈수록 보기가 늘고, 묻는 방식이 어려워지고, 포인트가 커진다. */
+const QUIZ_LEVELS = [
+    { lv: 1, name: '기초',   color: '#7ee081', choices: 3, count: 3, reward: 30,
+      desc: '다음에 어디로 가는지 맞혀 보세요' },
+    { lv: 2, name: '보통',   color: '#7fd4ff', choices: 4, count: 4, reward: 60,
+      desc: '앞뒤를 모두 물어봅니다' },
+    { lv: 3, name: '어려움', color: '#ffd166', choices: 5, count: 5, reward: 110,
+      desc: '몇 번째로 지나는 곳인지도 물어봅니다' },
+    { lv: 4, name: '전문가', color: '#ff8a3c', choices: 5, count: 6, reward: 200,
+      desc: '다섯 계통이 섞여 나옵니다' }
+];
+let quizQs = [], quizAt = 0, quizGot = 0, quizLv = QUIZ_LEVELS[0], quizSys = null;
+
+const shuffle = a => {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+};
+
+/* 한 문제 만들기.
+   kind : next(다음은?) / prev(앞은?) / nth(몇 번째?) */
+function makeQ(sys, i, kind, nChoices, pool) {
     const names = sys.flow.map(f => f.name);
     const n = names.length;
-    const pick = [];
-    // 서로 다른 자리에서 세 문제를 고른다
-    const spots = [];
-    for (let i = 0; i < n; i++) spots.push(i);
-    for (let i = spots.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [spots[i], spots[j]] = [spots[j], spots[i]];
+    const chain = i2 => names.map((x, xi) => xi === i2 ? `<b>${x}</b>` : x).join(' → ');
+    let ask, answer, ansIdx;
+
+    if (kind === 'prev') {
+        ansIdx = (i - 1 + n) % n;
+        answer = names[ansIdx];
+        ask = `<b>${names[i]}</b> 바로 앞은 어디일까요?`;
+    } else if (kind === 'nth') {
+        ansIdx = i;
+        answer = names[i];
+        ask = `${sys.name}에서 <b>${i + 1}번째</b>로 지나는 곳은?`;
+    } else {
+        ansIdx = (i + 1) % n;
+        answer = names[ansIdx];
+        ask = `<b>${names[i]}</b> 다음은 어디일까요?`;
     }
-    for (const i of spots.slice(0, 3)) {
-        const answer = names[(i + 1) % n];
-        // 오답은 같은 계통의 다른 기관에서 (엉뚱한 보기는 문제를 쉽게 만든다)
-        const wrong = names.filter(x => x !== answer && x !== names[i]);
-        for (let k = wrong.length - 1; k > 0; k--) {
-            const j = Math.floor(Math.random() * (k + 1));
-            [wrong[k], wrong[j]] = [wrong[j], wrong[k]];
-        }
-        const choices = [answer, ...wrong.slice(0, 2)];
-        for (let k = choices.length - 1; k > 0; k--) {
-            const j = Math.floor(Math.random() * (k + 1));
-            [choices[k], choices[j]] = [choices[j], choices[k]];
-        }
-        pick.push({ from: names[i], answer, choices,
-                    order: names.map((x, xi) => xi === (i + 1) % n ? `<b>${x}</b>` : x).join(' → ') });
+
+    // 오답은 같은 계통에서. 부족하면 다른 계통에서 채운다 (전문가 단계)
+    let wrong = names.filter(x => x !== answer && x !== names[i]);
+    if (pool) wrong = wrong.concat(pool.filter(x => x !== answer && !names.includes(x)));
+    shuffle(wrong);
+    const choices = shuffle([answer, ...wrong.slice(0, nChoices - 1)]);
+    return { ask, answer, choices, order: chain(ansIdx), sysName: sys.name };
+}
+
+function buildRouteQuiz(lv, sys) {
+    const all = Object.values(SYSTEMS);
+    const pool = lv.lv >= 4 ? all.flatMap(x => x.flow.map(f => f.name)) : null;
+    const kinds = lv.lv === 1 ? ['next']
+                : lv.lv === 2 ? ['next', 'prev']
+                : ['next', 'prev', 'nth'];
+
+    const qs = [];
+    for (let q = 0; q < lv.count; q++) {
+        const target = lv.lv >= 4 ? all[Math.floor(Math.random() * all.length)] : sys;
+        const n = target.flow.length;
+        const i = Math.floor(Math.random() * n);
+        const kind = kinds[q % kinds.length];
+        qs.push(makeQ(target, i, kind, lv.choices, pool));
     }
-    return pick;
+    return qs;
+}
+
+/* 퀴즈방 첫 화면 : 단계와 계통을 고른다 */
+function openQuizRoom() {
+    el('menu').classList.add('hidden');
+    el('quizRoom').classList.remove('hidden');
+    el('quizNav').style.display = 'none';
+    el('quizTitle').textContent = '퀴즈방';
+    el('quizDots').innerHTML = '';
+    el('quizStage').innerHTML =
+        `<div class="qIntro">코스 순서를 맞히면 포인트를 받습니다 ·
+            보유 <b>${save.points} P</b></div>
+         <div class="qLvList">${QUIZ_LEVELS.map(L => {
+            const best = (save.quizBest || {})[L.lv] || 0;
+            return `<button class="qLv" data-lv="${L.lv}" style="border-color:${L.color}">
+                <span class="qLvName" style="color:${L.color}">${L.lv}단계 · ${L.name}</span>
+                <span class="qLvDesc">${L.desc}</span>
+                <span class="qLvMeta">${L.count}문제 · 보기 ${L.choices}개
+                    · <b style="color:${L.color}">문제당 ${L.reward} P</b></span>
+                <span class="qLvBest">${best ? '최고 ' + best + ' / ' + L.count : '아직 안 풀어봤어요'}</span>
+            </button>`;
+         }).join('')}</div>
+         <div class="qPick">계통 :
+            <select id="quizSysPick">
+                ${Object.values(SYSTEMS).map(x =>
+                    `<option value="${x.id}">${x.name}</option>`).join('')}
+            </select>
+            <span class="qPickHint">4단계는 다섯 계통이 섞여 나옵니다</span>
+         </div>`;
+
+    el('quizStage').querySelectorAll('.qLv').forEach(b => {
+        b.onclick = () => {
+            quizLv = QUIZ_LEVELS.find(L => L.lv === +b.dataset.lv);
+            quizSys = SYSTEMS[el('quizSysPick').value];
+            playBeep(1200, .1);
+            startRouteQuiz();
+        };
+    });
 }
 
 function startRouteQuiz() {
-    quizQs = buildRouteQuiz(track.sys);
+    quizQs = buildRouteQuiz(quizLv, quizSys || SYSTEMS.circulatory);
     quizAt = 0; quizGot = 0;
     el('quizNav').style.display = 'none';
     drawQuizQ();
@@ -5376,9 +5487,12 @@ function drawQuizQ() {
     if (quizAt >= quizQs.length) return finishRouteQuiz();
 
     const q = quizQs[quizAt];
-    el('quizTitle').textContent = `경로 퀴즈 ${quizAt + 1} / ${quizQs.length}`;
+    el('quizTitle').innerHTML =
+        `<span style="color:${quizLv.color}">${quizLv.lv}단계 ${quizLv.name}</span>
+         <span style="font-size:.6em;color:#9fd0ff"> ${quizAt + 1} / ${quizQs.length}</span>`;
     el('quizStage').innerHTML =
-        `<div class="qAsk"><b>${q.from}</b> 다음은 어디일까요?</div>
+        (quizLv.lv >= 4 ? `<div class="qWhich">${q.sysName}</div>` : '') +
+        `<div class="qAsk">${q.ask}</div>
          <div class="qChoices">${q.choices.map(c =>
             `<button class="qBtn" data-c="${c}">${c}</button>`).join('')}</div>
          <div class="qFeed"></div>`;
@@ -5393,7 +5507,7 @@ function drawQuizQ() {
                 else if (x === b) x.classList.add('wrong');
             });
             el('quizStage').querySelector('.qFeed').innerHTML =
-                (ok ? `<span class="qOk">맞았습니다! +${QUIZ_REWARD} P</span>`
+                (ok ? `<span class="qOk">맞았습니다! +${quizLv.reward} P</span>`
                     : `<span class="qNo">아니에요. 정답은 ${q.answer}</span>`) +
                 `<div class="qRoute">${q.order}</div>`;
             if (ok) { quizGot++; playBeep(1400, .12); } else playBeep(300, .18);
@@ -5403,17 +5517,30 @@ function drawQuizQ() {
 }
 
 function finishRouteQuiz() {
-    const got = quizGot * QUIZ_REWARD;
-    save.points += got; writeSave();
-    el('quizTitle').textContent = '경로 퀴즈 결과';
+    const perfect = quizGot === quizQs.length;
+    let got = quizGot * quizLv.reward;
+    if (perfect) got = Math.round(got * 1.5);      // 다 맞히면 보너스
+    save.points += got;
+    save.quizBest = save.quizBest || {};
+    save.quizBest[quizLv.lv] = Math.max(save.quizBest[quizLv.lv] || 0, quizGot);
+    writeSave();
+
+    el('quizTitle').innerHTML = `<span style="color:${quizLv.color}">${quizLv.lv}단계 결과</span>`;
     el('quizStage').innerHTML =
         `<div class="qDone">${quizQs.length}문제 중 <b>${quizGot}</b>문제 정답
-            <span class="qGain">+${got} P</span></div>
-         <div class="qFull">${track.sys.flow.map(f => f.name).join(' → ')}</div>` +
-        (quizGot === quizQs.length ? '<div class="qPerfect">코스를 완전히 외웠습니다!</div>' : '');
+            <span class="qGain">+${got} P</span></div>` +
+        (perfect ? '<div class="qPerfect">전부 정답! 보너스 50% 를 더 받았습니다</div>' : '') +
+        `<div class="qFull">${(quizSys || SYSTEMS.circulatory).flow.map(f => f.name).join(' → ')}</div>`;
     el('quizNav').style.display = '';
-    renderGarage();                     // 늘어난 포인트를 바로 쓸 수 있게
 }
+
+el('quizBtn').onclick = openQuizRoom;
+el('quizAgain').onclick = openQuizRoom;
+el('quizExit').onclick = () => {
+    el('quizRoom').classList.add('hidden');
+    el('menu').classList.remove('hidden');
+    renderCarPick();                    // 벌어온 포인트를 바로 쓸 수 있게
+};
 
 el('retryBtn').onclick = () => {
     const id = track.sys.id;
