@@ -180,6 +180,28 @@
     }
     #resultBox h2 { font-size: 34px; margin-bottom: 8px; }
     #resultBox .line { font-size: 16px; margin: 4px 0; }
+    #gradeBox { margin: 14px 0; }
+    #gradeBox .gwrap { display: flex; align-items: center; gap: 16px; justify-content: center; }
+    #gradeBox .gletter {
+        font-size: 76px; font-weight: 900; line-height: 1;
+        -webkit-text-stroke: 7px #14202e; paint-order: stroke fill;
+        animation: gpop .5s cubic-bezier(.2,1.6,.4,1);
+    }
+    @keyframes gpop { 0% { transform: scale(0) rotate(-25deg); } 100% { transform: scale(1) rotate(-6deg); } }
+    #gradeBox .gbars { flex: 1; max-width: 260px; text-align: left; }
+    #gradeBox .gbar { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 4px 0; }
+    #gradeBox .gbar .lb { width: 74px; color: #9fd0ff; }
+    #gradeBox .gbar .tr { flex: 1; height: 9px; border-radius: 5px; background: rgba(0,0,0,.4); overflow: hidden; }
+    #gradeBox .gbar .tr > i { display: block; height: 100%; background: linear-gradient(90deg,#4ad0ff,#7ee081,#ffe066); }
+    #gradeBox .gword { font-size: 15px; font-weight: bold; margin-top: 8px; }
+
+    #lapBox { margin: 10px 0; font-size: 13px; }
+    #lapBox table { width: 100%; max-width: 320px; margin: 0 auto; border-collapse: collapse; }
+    #lapBox td { padding: 3px 8px; }
+    #lapBox td.n { color: #9fd0ff; text-align: left; width: 60px; }
+    #lapBox td.t { text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; }
+    #lapBox tr.best td.t { color: #7ee081; }
+
     #garage { margin-top: 14px; background: rgba(0,0,0,.25); border-radius: 14px; padding: 14px; text-align: left; }
     #garage .gh { font-size: 14px; font-weight: bold; color: #ffe066; margin-bottom: 10px; display: flex; justify-content: space-between; }
     .upRow { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
@@ -310,7 +332,9 @@
         <div class="line">기록 : <b id="resTime">00:00.00</b></div>
         <div class="line">최고 속도 <b id="resTop">0</b> km/h · 드리프트 <b id="resDrift">0</b>회</div>
         <div class="line" id="resCollect"></div>
+        <div id="gradeBox"></div>
         <div class="line" id="resBest" style="color:#9fd0ff"></div>
+        <div id="lapBox"></div>
         <div class="line" id="resPoints" style="margin-top:8px"></div>
         <div id="garage"></div>
         <div class="quiz" id="quizBox">
@@ -986,6 +1010,7 @@ function makeKart(isPlayer, ci, name) {
         boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
         trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
         air: 0, airMax: 0, spin: 0,
+        wallHits: 0, hitCool: 0, fullThrottle: 0, driveFrames: 0, lapTimes: [], lastLapAt: 0,
         slots: [], collected: {}, offroad: false, centerDist: 0,
         aiOffset: 0, aiTimer: 0, aiThrottle: 1, aiSteer: 0, aiDrift: false, maxMul: 1, stuckT: 0
     };
@@ -1089,6 +1114,10 @@ function updateKart(k, dt) {
     k.speed = vF; k.slip = Math.abs(vR);
     k.topSpeed = Math.max(k.topSpeed, Math.abs(vF));
     k.wobble += dt * (2 + Math.abs(vF) / 120);
+    if (!k.finished && state === 'race') {          // 주행 평가용 집계
+        k.driveFrames++;
+        if (throttle > 0) k.fullThrottle++;
+    }
 
     k.boostTime = Math.max(0, k.boostTime - dt);
     k.shieldTime = Math.max(0, k.shieldTime - dt);
@@ -1097,6 +1126,7 @@ function updateKart(k, dt) {
     k.trapTime = Math.max(0, k.trapTime - dt);
     k.wbcHold = Math.max(0, k.wbcHold - dt);
     k.turboTime = Math.max(0, k.turboTime - dt);
+    k.hitCool = Math.max(0, k.hitCool - dt);
     k.stickyTime = Math.max(0, k.stickyTime - dt);
     k.blindTime = Math.max(0, k.blindTime - dt);
 
@@ -1151,6 +1181,7 @@ function applyBarrier(k) {
         const headOn = vn / (vn + along + 1);         // 0=스침, 1=정면
         const keep = lerp(.99, .5, clamp(headOn * 1.7, 0, 1));
         k.vx *= keep; k.vy *= keep;
+        if (headOn > .45 && k.hitCool <= 0) { k.wallHits++; k.hitCool = .8; }
         if (k.isPlayer && headOn > .3) { cam.shake = 4 + headOn * 10; addDust(k); sfxCrash(clamp(headOn * 1.4, .2, 1)); }
     }
     k.centerDist = limit;
@@ -1221,6 +1252,8 @@ function updateProgress(k) {
 
     if (track.closed) {
         if (k.prevSi > N * .75 && k.si < N * .25 && k.cpDone >= cps.length) {
+            k.lapTimes.push(raceTime - k.lastLapAt);
+            k.lastLapAt = raceTime;
             k.lap++; k.cpIndex = 1; k.cpDone = 1;   // 출발선 = 1번 체크포인트 통과
             if (k.lap > track.sys.laps) finishKart(k);
             else if (k.isPlayer) { playBeep(1250, .14); flashBig('LAP ' + k.lap); cam.flash = 1; k.earned += 25; }
@@ -2754,7 +2787,7 @@ function updateEngine() {
      sfx_boost.mp3   부스터
      sfx_engine.mp3  엔진 (반복 재생 — 일정한 rpm 으로 녹음)
    ========================================================================== */
-const SFX_NAMES = ['crash', 'skid', 'pickup', 'boost', 'engine', 'engine_low', 'engine_high', 'count', 'go'];
+const SFX_NAMES = ['crash', 'skid', 'pickup', 'boost', 'engine', 'engine_low', 'engine_high', 'count', 'go', 'win'];
 const SFX = {};
 
 // file:// 에서는 fetch 가 막히므로 <audio> 요소로 불러온다.
@@ -2907,6 +2940,24 @@ function sfxBoost() {
     src.start(); src.stop(t + .55);
 }
 
+// 완주 팡파레 — 1등이면 더 화려하게
+function sfxWin(first) {
+    if (!audioCtx) return;
+    if (playSfx('win', first ? .7 : .5)) return;
+    const t = audioCtx.currentTime;
+    const notes = first ? [523, 659, 784, 1047] : [523, 659, 784];
+    notes.forEach((fr, i) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'triangle'; o.frequency.value = fr;
+        const st = t + i * .13;
+        g.gain.setValueAtTime(0, st);
+        g.gain.linearRampToValueAtTime(.11, st + .02);
+        g.gain.exponentialRampToValueAtTime(.001, st + .45);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(st); o.stop(st + .5);
+    });
+}
+
 // 카운트다운 3·2·1 과 GO!
 function sfxCount() {
     if (!audioCtx) return;
@@ -2980,6 +3031,35 @@ function startRace(id) {
     showToast(track.sys.name, track.sys.flow.map(f => f.name).join(' → '));
 }
 
+/* ---- 주행 등급 : 드리프트 · 가속 유지 · 무사고 세 가지로 평가한다 ---- */
+function gradeRace(k) {
+    const laps = track.sys.laps;
+
+    // ① 드리프트 : 랩당 4회를 만점으로
+    const driftScore = clamp(k.driftCount / (laps * 4), 0, 1);
+    // ② 가속 유지 : 달리는 동안 얼마나 액셀을 밟고 있었나
+    const throttleScore = k.driveFrames ? clamp(k.fullThrottle / k.driveFrames, 0, 1) : 0;
+    // ③ 무사고 : 랩당 2번까지는 봐준다
+    const crashScore = clamp(1 - k.wallHits / (laps * 3), 0, 1);
+
+    const total = driftScore * 38 + throttleScore * 32 + crashScore * 30;
+    const table = [
+        { g: 'S', min: 88, color: '#ffd166', word: '완벽한 주행!' },
+        { g: 'A', min: 74, color: '#7ee081', word: '훌륭해요!' },
+        { g: 'B', min: 58, color: '#7fd4ff', word: '좋아요!' },
+        { g: 'C', min: 40, color: '#c9a2ff', word: '조금만 더!' },
+        { g: 'D', min: 0,  color: '#ff8a8a', word: '다시 도전!' }
+    ];
+    const r = table.find(t => total >= t.min);
+    return {
+        grade: r.g, color: r.color, word: r.word, total: Math.round(total),
+        drift: Math.round(driftScore * 100),
+        throttle: Math.round(throttleScore * 100),
+        crash: Math.round(crashScore * 100),
+        driftCount: k.driftCount, wallHits: k.wallHits
+    };
+}
+
 function renderGarage() {
     const g = el('garage');
     if (!g) return;
@@ -3018,6 +3098,7 @@ function renderGarage() {
 function endRace() {
     state = 'finish';
     updateRanks(); burstConfetti(player.x, player.y);
+    sfxWin(player.rank === 1);
     el('resTitle').textContent = player.rank === 1 ? '🏆 1위로 완주!' : '완주!';
     el('resRank').textContent = player.rank + '위';
     el('resTime').textContent = fmtTime(player.finishTime);
@@ -3034,18 +3115,48 @@ function endRace() {
     }).join('&nbsp;&nbsp;');
     el('resCollect').innerHTML = '수집 : ' + (items || '없음');
 
+    // ── 주행 등급
+    const G = gradeRace(player);
+    el('gradeBox').innerHTML = `
+        <div class="gwrap">
+            <div class="gletter" style="color:${G.color}">${G.grade}</div>
+            <div class="gbars">
+                <div class="gbar"><span class="lb">드리프트</span><span class="tr"><i style="width:${G.drift}%"></i></span><b>${G.driftCount}회</b></div>
+                <div class="gbar"><span class="lb">가속 유지</span><span class="tr"><i style="width:${G.throttle}%"></i></span><b>${G.throttle}%</b></div>
+                <div class="gbar"><span class="lb">무사고</span><span class="tr"><i style="width:${G.crash}%"></i></span><b>충돌 ${G.wallHits}</b></div>
+            </div>
+        </div>
+        <div class="gword" style="color:${G.color}">${G.word} · ${G.total}점</div>`;
+
+    // ── 랩 타임
+    const lt = player.lapTimes.slice();
+    if (lt.length) {
+        const fastest = Math.min(...lt);
+        const prevBestLap = save.bestLap && save.bestLap[track.sys.id];
+        const newLapRecord = !prevBestLap || fastest < prevBestLap;
+        save.bestLap = save.bestLap || {};
+        if (newLapRecord) save.bestLap[track.sys.id] = fastest;
+        el('lapBox').innerHTML = '<table>' + lt.map((v, i) =>
+            `<tr class="${v === fastest ? 'best' : ''}"><td class="n">LAP ${i + 1}</td>` +
+            `<td class="t">${fmtTime(v)}${v === fastest ? ' ⚡' : ''}</td></tr>`).join('') +
+            `<tr><td class="n" style="color:#ffe066">베스트랩</td><td class="t" style="color:#ffe066">` +
+            `${fmtTime(save.bestLap[track.sys.id])}${newLapRecord ? ' 🏅신기록' : ''}</td></tr></table>`;
+    } else el('lapBox').innerHTML = '';
+
     // ── 포인트 정산 : 순위 보너스 + 신기록 보너스
     const rankBonus = [120, 80, 50, 30][player.rank - 1] || 20;
     const id = track.sys.id;
     const isBest = !save.best[id] || player.finishTime < save.best[id];
     const bestBonus = isBest ? 100 : 0;
     if (isBest) save.best[id] = player.finishTime;
-    const total = player.earned + rankBonus + bestBonus;
+    const gradeBonus = { S: 150, A: 100, B: 60, C: 30, D: 10 }[G.grade];
+    const total = player.earned + rankBonus + bestBonus + gradeBonus;
     save.points += total;
     writeSave();
 
     el('resPoints').innerHTML =
         `주행 <b>${player.earned}</b> + 순위 <b>${rankBonus}</b>` +
+        ` + <b style="color:${G.color}">${G.grade}등급 ${gradeBonus}</b>` +
         (bestBonus ? ` + <b style="color:#7ee081">신기록 ${bestBonus}</b>` : '') +
         ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>`;
     if (isBest) el('resBest').textContent = '🏅 신기록! ' + fmtTime(player.finishTime);
