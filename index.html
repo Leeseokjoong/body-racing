@@ -162,6 +162,16 @@
     .card canvas { width: 100%; height: 112px; margin: 6px 0; background: rgba(0,0,0,.28); border-radius: 10px; }
     .card .meta { font-size: 11px; color: #ffd166; font-weight: bold; }
 
+    #modePick { display: flex; gap: 10px; }
+    .modeBtn {
+        padding: 10px 22px; font-size: 15px; font-weight: bold; cursor: pointer;
+        background: rgba(255,255,255,.07); color: #cfe6ff;
+        border: 2px solid #3f6c9c; border-radius: 12px; font-family: inherit;
+    }
+    .modeBtn.sel { background: #2f6ea8; color: #fff; border-color: #7fd4ff; }
+    #p2Keys { font-size: 12px; color: #9fd0ff; text-align: center; line-height: 1.7; }
+    #p2Keys b { color: #ffe066; }
+
     .btn {
         padding: 13px 42px; font-size: 21px; font-weight: 900; cursor: pointer;
         background: linear-gradient(180deg, #ffd166, #e8a020); color: #2a1a00;
@@ -322,6 +332,11 @@
         <span style="color:#ffe066">SPACE 드리프트 → 부스터</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
         <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
     </div>
+    <div id="modePick">
+        <button class="modeBtn sel" data-mode="1">👤 혼자 하기</button>
+        <button class="modeBtn" data-mode="2">👥 둘이 하기 (화면 분할)</button>
+    </div>
+    <div id="p2Keys" style="display:none"></div>
     <button class="btn" id="startBtn">레이스 시작</button>
 </div>
 
@@ -946,7 +961,8 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-const cam = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
+const cam  = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
+const cam2 = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
 const ZOOM_MIN = .12, ZOOM_MAX = 2.2;
 let bridgeAlpha = 1;                    // 다리 밑을 지날 때 위 도로가 비치는 정도
 let driftHint = 0;                      // 드리프트 안내를 다시 띄우기까지 남은 시간
@@ -1277,7 +1293,12 @@ function finishKart(k) {
     if (k.finished) return;
     k.finished = true; k.finishTime = raceTime;
     k.rank = karts.filter(o => o.finished).length;
-    if (k.isPlayer) endRace(); else if (state === 'race') popup(k.x, k.y, k.name + ' 완주!', k.color);
+    if (k.isPlayer) {
+        if (twoPlayer) {
+            popup(k.x, k.y, k.name + ' 완주!', k.color);
+            if (player.finished && player2 && player2.finished) endRace();
+        } else endRace();
+    } else if (state === 'race') popup(k.x, k.y, k.name + ' 완주!', k.color);
 }
 
 /* ---- 아이템 / 장애물 ---- */
@@ -1578,11 +1599,38 @@ function updateEffects(dt) {
 /* ============================================================================
    6. 렌더링 (의사 3D : 그림자 + 베벨 + 하이라이트)
    ========================================================================== */
+// 2인 분할 : 위/아래 두 화면으로 나눠 각자 시점을 그린다
 function render() {
     const g = ctx;
     g.setTransform(DPR, 0, 0, DPR, 0, 0);
     g.clearRect(0, 0, VW, VH);
     if (!track) return;
+
+    if (twoPlayer && player2) {
+        const h = VH / 2;
+        renderView(g, cam,  player,  0, 0, VW, h - 3);
+        renderView(g, cam2, player2, 0, h + 3, VW, h - 3);
+        // 가운데 구분선
+        g.setTransform(DPR, 0, 0, DPR, 0, 0);
+        g.fillStyle = '#0a1420'; g.fillRect(0, h - 4, VW, 8);
+        g.fillStyle = '#3f6c9c'; g.fillRect(0, h - 1, VW, 2);
+        // 각 화면 라벨
+        g.font = 'bold 15px sans-serif'; g.textAlign = 'left'; g.textBaseline = 'top';
+        [['1P', 8], ['2P', h + 11]].forEach(([t, y]) => {
+            g.fillStyle = 'rgba(10,20,32,.7)';
+            g.beginPath(); g.roundRect(8, y, 38, 22, 7); g.fill();
+            g.fillStyle = '#ffe066'; g.fillText(t, 17, y + 4);
+        });
+        return;
+    }
+    renderView(g, cam, player, 0, 0, VW, VH);
+}
+
+function renderView(g, cam, player, VX, VY, VW, VH) {
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.save();
+    g.beginPath(); g.rect(VX, VY, VW, VH); g.clip();
+    g.translate(VX, VY);
 
     cam.zoom = lerp(cam.zoom, cam.targetZoom, .14);
     // 빠를수록 살짝 뒤로 물러나 앞이 더 보이게 (코너 대비 시간 확보)
@@ -1686,6 +1734,7 @@ function render() {
         fg.addColorStop(1, `rgba(120,134,146,${a})`);
         g.fillStyle = fg; g.fillRect(0, 0, VW, VH);
     }
+    g.restore();
 }
 
 /* ---- 화면 밖 카트를 가장자리 화살표로 알려 준다 (스킬 효과가 보이도록) ---- */
@@ -2992,7 +3041,7 @@ function playBeep(freq, dur) {
 /* ============================================================================
    8. 게임 흐름
    ========================================================================== */
-let track = null, karts = [], player = null;
+let track = null, karts = [], player = null, player2 = null;
 let state = 'menu', raceTime = 0, countdown = 0, fullMap = false, selectedId = 'circulatory';
 
 function placeOnStart(k, lane) {
@@ -3010,9 +3059,13 @@ function startRace(id) {
     skids.length = dusts.length = popups.length = confetti.length = smokes.length = 0;
     smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = 0;
     karts = [];
-    player = makeKart(true, 0, '나'); karts.push(player);
-    for (let i = 0; i < 3; i++) {
-        const ai = makeKart(false, i + 1, AI_NAMES[i]);
+    player = makeKart(true, 0, '1P'); player.pad = input; karts.push(player);
+    player2 = null;
+    if (twoPlayer) {
+        player2 = makeKart(true, 1, '2P'); player2.pad = input2; karts.push(player2);
+    }
+    for (let i = 0; i < (twoPlayer ? 2 : 3); i++) {
+        const ai = makeKart(false, (twoPlayer ? i + 2 : i + 1), AI_NAMES[i]);
         ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
         karts.push(ai);
     }
@@ -3223,16 +3276,33 @@ requestAnimationFrame(loop);
    9. 입력 (키보드 + 터치)
    ========================================================================== */
 const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-const input = { gas: false, brake: false, left: false, right: false, drift: false };
+const input  = { gas: false, brake: false, left: false, right: false, drift: false };
+const input2 = { gas: false, brake: false, left: false, right: false, drift: false };
 const keys = {};
+let twoPlayer = false;                       // 2인 분할 화면 여부
 
 function syncKeys() {
-    input.gas = !!(keys['w'] || keys['W'] || keys['ArrowUp'] || touchState.gas);
-    input.brake = !!(keys['s'] || keys['S'] || keys['ArrowDown'] || touchState.brake);
-    input.left = !!(keys['a'] || keys['A'] || keys['ArrowLeft'] || touchState.left);
-    input.right = !!(keys['d'] || keys['D'] || keys['ArrowRight'] || touchState.right);
-    // 드리프트는 엄지로 누르는 Space가 기본. Shift도 그대로 받는다.
-    input.drift = !!(keys[' '] || keys['Shift'] || touchState.drift);
+    const k = key => !!keys[key];
+    if (twoPlayer) {
+        // 1P : WASD + Space
+        input.gas   = k('w') || k('W') || touchState.gas;
+        input.brake = k('s') || k('S') || touchState.brake;
+        input.left  = k('a') || k('A') || touchState.left;
+        input.right = k('d') || k('D') || touchState.right;
+        input.drift = k(' ') || touchState.drift;
+        // 2P : 방향키 + Ctrl
+        input2.gas   = k('ArrowUp');
+        input2.brake = k('ArrowDown');
+        input2.left  = k('ArrowLeft');
+        input2.right = k('ArrowRight');
+        input2.drift = k('Control');
+    } else {
+        input.gas   = k('w') || k('W') || k('ArrowUp') || touchState.gas;
+        input.brake = k('s') || k('S') || k('ArrowDown') || touchState.brake;
+        input.left  = k('a') || k('A') || k('ArrowLeft') || touchState.left;
+        input.right = k('d') || k('D') || k('ArrowRight') || touchState.right;
+        input.drift = k(' ') || k('Shift') || touchState.drift;
+    }
 }
 
 window.addEventListener('keydown', e => {
@@ -3242,6 +3312,9 @@ window.addEventListener('keydown', e => {
         e.preventDefault();
         if (state === 'race') useItemFor(player);
         else if (state === 'menu') startRace(selectedId);
+    }
+    if (twoPlayer && e.key === 'Shift' && state === 'race' && player2) {
+        e.preventDefault(); useItemFor(player2);
     }
     if (e.key === 'm' || e.key === 'M') fullMap = !fullMap;
     if (e.key === '+' || e.key === '=') zoomBy(1.18);
@@ -3332,6 +3405,19 @@ function drawPreview(cv, sys) {
         g.fillText(cp.num, p.x * s + ox, p.y * s + oy + .5);
     });
 }
+
+document.querySelectorAll('.modeBtn').forEach(b => {
+    b.onclick = () => {
+        twoPlayer = b.dataset.mode === '2';
+        document.querySelectorAll('.modeBtn').forEach(x => x.classList.toggle('sel', x === b));
+        el('p2Keys').style.display = twoPlayer ? 'block' : 'none';
+        el('p2Keys').innerHTML = twoPlayer
+            ? '<b>1P</b> W A S D · SPACE 드리프트 · ENTER 아이템<br>' +
+              '<b>2P</b> ↑ ← ↓ → · CTRL 드리프트 · SHIFT 아이템'
+            : '';
+        syncKeys();
+    };
+});
 
 el('startBtn').onclick = () => startRace(selectedId);
 el('retryBtn').onclick = () => startRace(track.sys.id);
