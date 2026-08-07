@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0852</div>
+<div id="build">v260808.0856</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -4038,10 +4038,10 @@ function drawLapFlags(g, inView) {
     g.restore();
 }
 
-/* ---- 아이템 상자 ----
-   납작한 사각형이 아니라, 위에서 비스듬히 내려다본 육면체로 그린다.
-   윗면과 옆면 두 개를 함께 보여 주면 그것만으로 입체가 된다.
-   천천히 돌면서 떠 있고, 가장자리에서 빛이 한 번씩 훑고 지나간다. */
+/* ---- 아이템 알약 ----
+   투명한 알약이 떠서 천천히 돈다. 안이 비쳐 보이고, 가장자리에서 빛이 훑고 지나간다.
+   가운데 이음선은 알약 두 쪽이 맞물린 자리다.
+   돌 때 폭만 변하고 높이는 그대로여서, 납작한 원기둥이 도는 것처럼 보인다. */
 
 /* ---- 아이템 그림 ----
    블렌더로 렌더한 사실적인 PNG 는 광택과 부드러운 그림자가 있어,
@@ -4178,40 +4178,43 @@ function drawItems(g, inView) {
         g.fillStyle = `rgba(0,0,0,${.18 - bob * .008})`;
         g.beginPath(); g.ellipse(3, S + 16 + bob, hw * .9, 7, 0, 0, TAU); g.fill();
 
-        const box = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
+        // 알약 껍데기 하나를 그리는 붓. 반지름은 짧은 쪽 절반이라 양끝이 완전히 둥글다.
+        const pill = (x, y, w, h) => { g.beginPath(); g.roundRect(x, y, w, h, Math.min(w, h) / 2); };
 
-        // ── 유리 상자 : 속이 비쳐 보이도록 옅게 채우고 테두리로 형태를 잡는다
-        // 앞 옆면 (그늘진 쪽)
+        // ── 투명 알약 : 속이 비쳐 보이도록 옅게 채우고 테두리로 형태를 잡는다
+        // 아래쪽 절반 (그늘진 쪽)
         g.fillStyle = 'rgba(150,210,255,.20)';
-        box(-hw, -S + H, hw * 2, S * 2 - H + 4, 6); g.fill();
-        // 윗면 (빛을 받는 쪽)
+        pill(-hw, -S + H, hw * 2, S * 2 - H + 4); g.fill();
+        // 위쪽 절반 (빛을 받는 쪽)
         const grd = g.createLinearGradient(-hw, -S, hw, -S + H * 1.7);
-        grd.addColorStop(0, 'rgba(255,255,255,.55)');
-        grd.addColorStop(.5, 'rgba(170,225,255,.28)');
+        grd.addColorStop(0, 'rgba(255,255,255,.58)');
+        grd.addColorStop(.5, 'rgba(170,225,255,.30)');
         grd.addColorStop(1, 'rgba(120,190,240,.22)');
         g.fillStyle = grd;
-        box(-hw, -S, hw * 2, H + 6, 6); g.fill();
+        pill(-hw, -S, hw * 2, H + 6); g.fill();
 
-        // 뒤쪽 모서리 : 유리라 반대편 선이 비친다
-        g.strokeStyle = 'rgba(210,240,255,.34)'; g.lineWidth = 2;
+        // 유리라 반대편 곡면이 비친다
+        g.save();
+        pill(-hw, -S, hw * 2, S * 2 + 4); g.clip();
+        g.strokeStyle = 'rgba(210,240,255,.30)'; g.lineWidth = 2;
         g.beginPath();
-        g.moveTo(-hw + 5, S + 2); g.lineTo(-hw + 5, -S + H - 2);
-        g.moveTo(hw - 5, S + 2);  g.lineTo(hw - 5, -S + H - 2);
+        g.ellipse(0, -S + H, hw * .72, S * .5, 0, 0, TAU);
         g.stroke();
+        g.restore();
 
         // 바깥 테두리 : 유리 두께
         g.strokeStyle = 'rgba(235,250,255,.85)'; g.lineWidth = 3.5;
-        box(-hw, -S, hw * 2, S * 2 + 4, 6); g.stroke();
-        g.strokeStyle = 'rgba(120,190,240,.6)'; g.lineWidth = 1.4;
-        box(-hw + 3, -S + 3, hw * 2 - 6, S * 2 - 2, 4); g.stroke();
-        // 윗면과 옆면의 경계선
-        g.strokeStyle = 'rgba(235,250,255,.55)'; g.lineWidth = 2;
-        g.beginPath(); g.moveTo(-hw, -S + H); g.lineTo(hw, -S + H); g.stroke();
+        pill(-hw, -S, hw * 2, S * 2 + 4); g.stroke();
+        g.strokeStyle = 'rgba(120,190,240,.55)'; g.lineWidth = 1.4;
+        pill(-hw + 3, -S + 3, hw * 2 - 6, S * 2 - 2); g.stroke();
+        // 알약 가운데 이음선 — 두 쪽이 맞물린 자리
+        g.strokeStyle = 'rgba(235,250,255,.6)'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(-hw + 2, -S + H); g.lineTo(hw - 2, -S + H); g.stroke();
 
         // 훑고 지나가는 빛
         const sweep = ((now / 900 + it.ph) % 1) * 2 - 1;
         g.save();
-        box(-hw, -S, hw * 2, S * 2 + 4, 6); g.clip();
+        pill(-hw, -S, hw * 2, S * 2 + 4); g.clip();
         g.globalAlpha = .55 - Math.abs(sweep) * .45;
         g.fillStyle = '#fff';
         g.beginPath();
@@ -4220,11 +4223,11 @@ function drawItems(g, inView) {
         g.closePath(); g.fill();
         g.restore();
 
-        // 모서리에 맺힌 하이라이트
-        g.fillStyle = 'rgba(255,255,255,.9)';
-        g.beginPath(); g.ellipse(-hw + 8, -S + 7, 4.5, 2.6, -.4, 0, TAU); g.fill();
-        g.globalAlpha = .5;
-        g.beginPath(); g.ellipse(hw - 9, S - 4, 3.2, 1.8, -.4, 0, TAU); g.fill();
+        // 둥근 어깨에 맺힌 하이라이트
+        g.fillStyle = 'rgba(255,255,255,.92)';
+        g.beginPath(); g.ellipse(-hw * .42, -S + hw * .38, hw * .3, S * .16, -.5, 0, TAU); g.fill();
+        g.globalAlpha = .45;
+        g.beginPath(); g.ellipse(hw * .46, S - hw * .3, hw * .18, S * .1, -.5, 0, TAU); g.fill();
         g.globalAlpha = 1;
 
         // 물음표 : 유리 속에 떠 있는 것처럼
