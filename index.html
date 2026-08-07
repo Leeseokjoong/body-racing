@@ -376,6 +376,17 @@
     .quiz button.no { background: #6b1f1f; border-color: #ff8a8a; }
     .quiz .ex { margin-top: 9px; font-size: 13px; color: #cfe6ff; line-height: 1.6; display: none; }
 
+    /* 역주행 경고 — 눈에 확 들어와야 하지만 길을 가리면 안 되므로 위쪽에 둔다 */
+    #wrongWay {
+        position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%);
+        font-size: clamp(22px, 3.4vw, 34px); font-weight: 900; color: #ff6b6b;
+        -webkit-text-stroke: 6px #2a0808; paint-order: stroke fill;
+        z-index: 7; pointer-events: none; opacity: 0; transition: opacity .15s;
+        white-space: nowrap;
+    }
+    #wrongWay.on { opacity: 1; animation: wwBlink .5s steps(1) infinite; }
+    @keyframes wwBlink { 50% { opacity: .35; } }
+
     /* ================= 음량 · 전체 화면 ================= */
     #opts {
         position: absolute; top: 10px; right: 12px; z-index: 2;
@@ -593,6 +604,7 @@
     <div id="zoomHint">W 가속 · A/D 좌우 · S 브레이크 · <b style="color:#ffe066">SPACE 드리프트</b> · 휠 줌 · M 전체 맵</div>
     <div id="subtitle"><div class="sname"></div><div class="sdesc"></div></div>
     <div id="toast"><div class="tt"></div><div class="td"></div></div>
+    <div id="wrongWay">반대 방향! 돌아가세요</div>
     <div id="bigMsg"></div>
 </div>
 
@@ -644,7 +656,7 @@
     </div>
 
     <div class="keys">
-        <span>W 가속</span><span>S 브레이크·후진</span><span>A / D 조향</span>
+        <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
         <span style="color:#ffe066">SPACE 드리프트 → 부스터</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
         <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
     </div>
@@ -3429,6 +3441,17 @@ function updateHud() {
     el('timeTxt').textContent = fmtTime(raceTime);
     el('rankBadge').textContent = player.rank + ' 위';
     el('kmh').textContent = Math.round(Math.abs(player.speed) * .22);
+
+    // 브레이크 버튼은 후진 페달이기도 하다.
+    //   달릴 때 누르면 감속, 멈춘 뒤에도 누르고 있으면 뒤로 간다.
+    //   지금 뭘 하고 있는지 버튼 이름으로 알려 준다.
+    const bBtn = el('tBrake');
+    if (bBtn) bBtn.textContent = player.speed < -8 ? '후진 중' : '브레이크';
+
+    // 역주행 : 벽에 박혀 방향이 돌아갔을 때 스스로 알아채기 어렵다
+    const road = track.pts[player.si].ang;
+    const wrong = Math.abs(angDiff(road, player.ang)) > 2.0 && player.speed > 90;
+    el('wrongWay').classList.toggle('on', wrong);
 
     const rows = el('cpRows').children;
     for (let i = 0; i < rows.length; i++)
