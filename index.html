@@ -105,8 +105,11 @@
        (좁은 화면 대응 미디어쿼리와 겹치므로 top/bottom 을 항상 짝으로 지정한다) */
     body.touchUI #miniPanel  { transform: scale(.72); transform-origin: top right; }
     body.touchUI #resPanel   { top: 112px; bottom: auto; left: 14px; right: auto; width: 152px; }
-    body.touchUI #slotPanel  { top: 14px; bottom: auto; left: 50%; right: auto;
-                               transform: translateX(-50%); width: auto; padding: 6px 10px; }
+    /* 아이템 슬롯은 아래 가운데.
+       위쪽은 자막과 안내가 쓰고, 좌우 아래 구석은 조작 버튼이 쓴다.
+       가운데 아래가 유일하게 비어 있고, 엄지로 눈을 옮기기에도 가깝다. */
+    body.touchUI #slotPanel  { top: auto; bottom: 10px; left: 50%; right: auto;
+                               transform: translateX(-50%); width: auto; padding: 5px 9px; }
     body.touchUI #slotPanel .t,
     body.touchUI #slotPanel .hint,
     body.touchUI #speedPanel,
@@ -647,7 +650,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1453</div>
+<div id="build">v260807.1458</div>
 
 <div id="touch">
     <!-- 왼손 : 달리는 일 -->
