@@ -206,7 +206,8 @@
         background: radial-gradient(circle at 50% 26%, #1d3d63, #08111d 72%);
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     }
-    .overlay.hidden { display: none; }
+    /* 어떤 규칙보다 숨김이 우선이다 — ID 선택자로 display 를 바꾸는 곳이 있어서다 */
+    .overlay.hidden { display: none !important; }
     /* 서킷 입구에 걸린 노란 간판 — 기둥 두 개에 매달려 살짝 흔들린다 */
     .titleSign {
         position: relative; margin: 6px 0 4px; transform: rotate(-1.6deg);
@@ -505,7 +506,9 @@
 
         /* 메뉴만 2단으로 : 왼쪽에 맵, 오른쪽에 자동차.
            세로로 쌓으면 시작 버튼이 화면 밖으로 밀려난다. */
-        #menu {
+        /* :not(.hidden) 이 없으면 이 규칙이 .hidden 의 display:none 을 이겨
+           메뉴가 영영 안 숨겨진다 (ID 선택자가 우선순위가 높다) */
+        #menu:not(.hidden) {
             display: grid; align-content: start; justify-items: stretch;
             grid-template-columns: 1fr 288px;
             grid-template-areas: "title title" "maps cars" "mode cars" "start cars" "online cars";
@@ -644,7 +647,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1448</div>
+<div id="build">v260807.1453</div>
 
 <div id="touch">
     <!-- 왼손 : 달리는 일 -->
