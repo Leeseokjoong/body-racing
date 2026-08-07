@@ -84,6 +84,12 @@
     #driftCap { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; opacity: .85;
                 box-shadow: 0 0 6px #fff; pointer-events: none; }
     #driftBar > i.full { animation: capPulse .5s infinite alternate; }
+    /* 쌓인 터보 개수 */
+    #turboLamps { display: flex; gap: 5px; }
+    #turboLamps span { flex: 1; height: 12px; border-radius: 6px;
+                       background: rgba(0,0,0,.45); border: 2px solid #3f6c9c; }
+    #turboLamps span.on { background: linear-gradient(90deg,#ffd166,#ff7a3c); border-color: #ff8a3c;
+                          box-shadow: 0 0 8px rgba(255,138,60,.7); }
     @keyframes capPulse { from { filter: brightness(1); } to { filter: brightness(1.6); } }
     #progBar > i { background: linear-gradient(90deg, #3aa0ff, #7fd4ff); }
 
@@ -108,21 +114,22 @@
     /* 아이템 슬롯은 아래 가운데.
        위쪽은 자막과 안내가 쓰고, 좌우 아래 구석은 조작 버튼이 쓴다.
        가운데 아래가 유일하게 비어 있고, 엄지로 눈을 옮기기에도 가깝다. */
-    body.touchUI #slotPanel  { top: auto; bottom: 10px; left: 50%; right: auto;
-                               transform: translateX(-50%); width: auto; padding: 5px 9px; }
+    body.touchUI #slotPanel  { top: auto; bottom: 112px; left: 50%; right: auto;
+                               transform: translateX(-50%); width: auto; padding: 4px 8px; }
+    body.touchUI .slot       { width: 38px; height: 38px; font-size: 12px; }
     body.touchUI #slotPanel .t,
     body.touchUI #slotPanel .hint,
     body.touchUI #speedPanel,
     body.touchUI #zoomHint,
     body.touchUI #cpList,
     body.touchUI #legend     { display: none; }
-    body.touchUI .slot       { width: 44px; height: 44px; font-size: 23px; }
     /* 드리프트 게이지는 이 게임의 심장이므로 작은 화면에서도 반드시 남긴다 */
     body.touchUI #gaugeWrap  { display: block; top: 112px; bottom: auto; right: 14px; left: auto;
                                width: 176px; padding: 7px 9px; }
     body.touchUI #gaugeWrap .t { font-size: 11px; margin-bottom: 3px; }
-    /* 진행도 막대는 미니맵이 대신하므로 접는다 (아래 버튼과 겹치지 않게) */
-    body.touchUI #gaugeWrap > *:nth-child(n+3) { display: none; }
+    /* 진행도 막대만 접는다 (미니맵이 대신한다). 터보 램프는 남겨야 한다 —
+       드리프트 게이지 · 터보 램프 · 진행도 순서라 다섯째부터가 진행도다. */
+    body.touchUI #gaugeWrap > *:nth-child(n+5) { display: none; }
     /* 안내는 화면 맨 위 한 줄로. 달리는 길을 가리면 안 된다 */
     body.touchUI #toast {
         top: 6px; bottom: auto; max-width: min(460px, 56vw); padding: 5px 14px;
@@ -209,7 +216,13 @@
     /* 오른쪽 : 드리프트(가장 크게)와 아이템. 가속은 자동이라 버튼이 없다. */
     #tDrift { width: 130px; height: 130px; font-size: 18px; right: 18px; bottom: 16px;
               border-color: rgba(255,209,102,.85); background: rgba(70,52,16,.66); }
-    #tItem  { width: 84px; height: 84px; font-size: 14px; right: 156px; bottom: 26px; }
+    #tItem  { width: 78px; height: 78px; font-size: 13px; right: 250px; bottom: 22px; }
+    /* 터보 : 쌓였을 때만 불이 들어온다 */
+    #tTurbo { width: 92px; height: 92px; font-size: 15px; right: 152px; bottom: 34px;
+              flex-direction: column; gap: 3px; opacity: .45; }
+    #tTurbo.ready { opacity: 1; border-color: #ff8a3c; background: rgba(90,34,10,.72);
+                    box-shadow: 0 0 16px rgba(255,138,60,.55); }
+    #tTurbo i { font-style: normal; font-size: 12px; color: #ffd166; font-weight: 900; }
     /* 브레이크·후진은 가끔만 쓰므로 작게, 조향 패드 위에 */
     #tBrake { width: 74px; height: 74px; font-size: 13px; left: 24px; bottom: 142px; }
     #tGas   { display: none; }               /* 가속 자동 */
@@ -219,7 +232,8 @@
         #tPad { width: 210px; height: 98px; border-radius: 49px; padding: 0 18px; bottom: 10px; }
         #padKnob { width: 62px; height: 62px; margin: -31px 0 0 -31px; }
         #tDrift { width: 106px; height: 106px; font-size: 15px; bottom: 12px; }
-        #tItem  { width: 72px; height: 72px; font-size: 12px; right: 130px; bottom: 20px; }
+        #tItem  { width: 64px; height: 64px; font-size: 11px; right: 210px; bottom: 18px; }
+        #tTurbo { width: 78px; height: 78px; font-size: 13px; right: 126px; bottom: 26px; }
         #tBrake { width: 62px; height: 62px; font-size: 11px; left: 18px; bottom: 116px; }
         .arw { border-top-width: 14px; border-bottom-width: 14px; }
         .arw.l { border-right-width: 20px; } .arw.r { border-left-width: 20px; }
@@ -671,6 +685,8 @@
     <div class="panel" id="gaugeWrap">
         <div class="t" id="driftLabel">드리프트 게이지 (SPACE)</div>
         <div class="bar" id="driftBar"><i></i><span id="driftCap"></span></div>
+        <div class="t" style="margin-top:7px">터보 <span id="turboKey">(E)</span></div>
+        <div id="turboLamps"><span></span><span></span><span></span></div>
         <div class="t" style="margin-top:8px">진행도 <span id="progTxt">0%</span></div>
         <div class="bar" id="progBar"><i></i></div>
     </div>
@@ -699,7 +715,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1523</div>
+<div id="build">v260807.1537</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -710,6 +726,7 @@
         <div id="padKnob"></div>
     </div>
     <div class="tbtn" id="tDrift">드리프트</div>
+    <div class="tbtn" id="tTurbo">터보<i id="tTurboN"></i></div>
     <div class="tbtn" id="tItem">아이템</div>
     <div class="tbtn" id="tBrake">브레이크</div>
 </div>
@@ -771,7 +788,7 @@
 
     <div class="keys">
         <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
-        <span style="color:#ffe066">SPACE 드리프트 → 부스터</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
+        <span style="color:#ffe066">SPACE 드리프트 → 터보 충전</span><span style="color:#ff8a3c">E 터보 발사</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
         <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
     </div>
     <div id="modePick">
@@ -1747,6 +1764,25 @@ const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움
 //   '드리프트 지속'을 올려야 오래 물 수 있고, 그래야 슈퍼 부스터가 열린다.
 const DRIFT_HOLD = 1.05, DRIFT_FILL = 45;
 const DRIFT_COOLDOWN = .3;   // 한계 뒤 타이어가 다시 물기까지 쉬는 시간(초)
+const TURBO_MAX = 3;         // 쌓아둘 수 있는 터보 개수
+
+/* 쌓아둔 터보를 하나 꺼내 터뜨린다. 잘 문 드리프트일수록 세게 나간다. */
+function fireTurbo(k) {
+    if (k.turboCool > 0 || !k.turbo.length) return;
+    const q = k.turbo.shift();
+    k.turboCool = .35;                                   // 연타로 한꺼번에 쏟지 못하게
+    k.boostTime = Math.max(k.boostTime, (.55 + q * 1.15) * (k.isPlayer ? upMul.boost() : 1));
+    // 최고 속도가 나는 구간은 짧게. 터지는 순간만 시원하고, 곧 다룰 수 있는 속도로 내려온다
+    //   (계속 최고 속도면 그대로 벽으로 날아간다)
+    k.turboTime = Math.max(k.turboTime, .26 + q * .34);
+    if (k.isPlayer) {
+        sfxBoost(); buzz(22 + q * 42);
+        cam.shake = 6 + q * 10; cam.kick = .7 + q * .9;
+        cam.flash = Math.max(cam.flash || 0, q * .5);
+        popup(k.x, k.y, q > .78 ? '슈퍼 터보!!' : '터보!', q > .78 ? '#ff5a2c' : '#ff8a3c');
+        for (let i = 0; i < 6 + q * 10; i++) addDriftSmoke(k);
+    }
+}
 const STEER_SMOOTH = .035;   // 조향 입력이 반영되는 속도. 클수록 부드럽고 덜 예민하다
 const STABLE_MIN = .88;      // 고속에서 남는 선회력 비율 (낮출수록 고속 안정, 대신 코너를 못 돈다)
 const ASSIST = 4.2;          // 도로 방향으로 스스로 정렬되는 세기 (초보 보조)
@@ -1797,6 +1833,7 @@ function makeKart(isPlayer, ci, name) {
         wasDrifting: false, driftStage: 0, driftLocked: 0,
         boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
         trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
+        turbo: [], turboCool: 0, aiTurbo: false,
         air: 0, airMax: 0, spin: 0,
         wallHits: 0, hitCool: 0, fullThrottle: 0, driveFrames: 0, lapTimes: [], lastLapAt: 0,
         slots: [], collected: {}, offroad: false, centerDist: 0,
@@ -1935,23 +1972,27 @@ function updateKart(k, dt) {
             if (holdMax - k.driftHold < .28) cam.shake = Math.max(cam.shake, 4);
         }
     } else if (k.driftCharge > 0) {
-        if (k.driftCharge > 12) {                                  // 문턱을 낮춰 거의 항상 터지게
+        // ── 드리프트를 놓으면 그 자리에서 터지지 않고 '터보'로 쌓인다.
+        //    코너에서 모아 두었다가 직선에서 터뜨리는 것이 이 게임의 리듬이다.
+        if (k.driftCharge > 12) {
             const q = k.driftCharge / 100;                         // 얼마나 잘 물었나
-            k.boostTime = Math.max(k.boostTime, (.35 + q * 1.05) * (k.isPlayer ? upMul.boost() : 1));
             k.driftCount++;
+            if (k.turbo.length < TURBO_MAX) k.turbo.push(q);
+            else k.turbo[TURBO_MAX - 1] = Math.max(k.turbo[TURBO_MAX - 1], q);   // 꽉 차면 가장 좋은 것만 남긴다
             if (k.isPlayer) {
-                // 잘 물수록 터지는 반응도 커진다 — 참은 만큼 돌려받는 감각
-                sfxBoost(); buzz(20 + q * 40);
-                cam.shake = 5 + q * 9; cam.kick = .6 + q * .8;
-                cam.flash = Math.max(cam.flash || 0, q * .45);
+                sfxSkid(.4); buzz(14 + q * 16);
+                cam.shake = 3 + q * 4;
                 k.earned += 8 + Math.round(q * 10);
-                popup(k.x, k.y, q > .78 ? '슈퍼 부스터!!' : q > .45 ? '부스터!' : '부스터',
-                      q > .78 ? '#ff5a2c' : q > .45 ? '#ff8a3c' : '#ffe066');
-                for (let i = 0; i < 4 + q * 10; i++) addDriftSmoke(k);
+                popup(k.x, k.y, k.turbo.length >= TURBO_MAX ? '터보 가득!' : '터보 충전 ' + k.turbo.length,
+                      q > .78 ? '#ff5a2c' : '#ffe066');
+                playBeep(880 + q * 420, .07);
             }
         }
         k.driftCharge = 0; k.driftStage = 0;
     }
+
+    // ── 터보 발사 : 쌓아둔 것을 하나 꺼내 쓴다
+    if (k.isPlayer ? input.turbo : k.aiTurbo) fireTurbo(k);
 
     const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
     k.vx = ca * vF - sa * vR; k.vy = sa * vF + ca * vR;
@@ -1972,6 +2013,9 @@ function updateKart(k, dt) {
     k.trapTime = Math.max(0, k.trapTime - dt);
     k.wbcHold = Math.max(0, k.wbcHold - dt);
     k.turboTime = Math.max(0, k.turboTime - dt);
+    k.turboCool = Math.max(0, k.turboCool - dt);
+    // AI 는 쌓이면 곧바로 쓴다 (사람만 아껴 쓰는 재미를 갖는다)
+    if (!k.isPlayer) k.aiTurbo = k.turbo.length > 0;
     k.hitCool = Math.max(0, k.hitCool - dt);
     k.stickyTime = Math.max(0, k.stickyTime - dt);
     k.blindTime = Math.max(0, k.blindTime - dt);
@@ -3762,6 +3806,14 @@ function updateHud() {
     bar.style.width = player.driftCharge + '%';
     bar.classList.toggle('full', player.driftCharge >= cap - 1);
     el('driftCap').style.left = cap + '%';
+    const lamps = el('turboLamps').children;
+    for (let i = 0; i < lamps.length; i++) lamps[i].classList.toggle('on', i < player.turbo.length);
+    const tb = el('tTurbo');
+    if (tb) {
+        tb.classList.toggle('ready', player.turbo.length > 0);
+        el('tTurboN').textContent = player.turbo.length ? player.turbo.length : '';
+    }
+
     const stuck = player.trapTime > 0 || player.stickyTime > 0 || player.hitTime > 0;
     const gLabel = el('gaugeWrap').querySelector('.t');
     if (gLabel) {
@@ -4786,7 +4838,7 @@ requestAnimationFrame(loop);
 /* ============================================================================
    9. 입력 (키보드 + 터치)
    ========================================================================== */
-const input  = { gas: false, brake: false, left: false, right: false, drift: false, axis: 0 };
+const input  = { gas: false, brake: false, left: false, right: false, drift: false, axis: 0, turbo: false };
 const keys = {};
 
 /* 모바일 가속은 자동이다.
@@ -4810,6 +4862,7 @@ function syncKeys() {
     input.right = k('d') || k('D') || k('ArrowRight') || touchState.right;
     input.drift = k(' ') || k('Shift') || touchState.drift;
     input.axis  = touchState.axis;          // 조향 패드에서 온 아날로그 값 (-1 ~ 1)
+    input.turbo = k('e') || k('E') || touchState.turbo;
 }
 
 window.addEventListener('keydown', e => {
@@ -4829,7 +4882,7 @@ window.addEventListener('keyup', e => { keys[e.key] = false; syncKeys(); });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; syncKeys(); });
 
 /* ---- 터치 버튼 ---- */
-const touchState = { gas: false, brake: false, left: false, right: false, drift: false, axis: 0 };
+const touchState = { gas: false, brake: false, left: false, right: false, drift: false, axis: 0, turbo: false };
 function bindTouch(id, key, onPress) {
     const node = el(id);
     const down = e => { e.preventDefault(); node.classList.add('act'); if (key) { touchState[key] = true; syncKeys(); } if (onPress) onPress(); };
@@ -4841,7 +4894,7 @@ function bindTouch(id, key, onPress) {
     node.addEventListener('mouseup', up);
     node.addEventListener('mouseleave', up);
 }
-bindTouch('tDrift', 'drift'); bindTouch('tBrake', 'brake');
+bindTouch('tDrift', 'drift'); bindTouch('tBrake', 'brake'); bindTouch('tTurbo', 'turbo');
 bindTouch('tItem', null, () => { if (state === 'race') useItemFor(player); });
 
 /* ---- 조향 패드 (왼손) ----
