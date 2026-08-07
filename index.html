@@ -405,6 +405,33 @@
     #inAppHow em { font-style: normal; color: #ffe066; font-weight: bold; }
     .inAppRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
+    /* 결과 화면 : 두 장으로 나누고, 각 장은 스크롤 없이 한 화면에 담는다 */
+    .resCols { display: flex; gap: 16px; justify-content: center; align-items: flex-start;
+               margin-top: 10px; flex-wrap: wrap; }
+    .resCol { min-width: 190px; text-align: left; }
+    .resNav { margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    #resPage2 h2 { margin-bottom: 4px; }
+
+    @media (max-height: 560px) {
+        #resultBox { padding: 12px 16px; max-width: 96vw; }
+        #resultBox h2 { font-size: 24px; margin-bottom: 4px; }
+        #resultBox .line { font-size: 12px; margin: 3px 0; }
+        .resCols { gap: 12px; margin-top: 6px; }
+        .resCol { min-width: 160px; }
+        .resNav { margin-top: 10px; }
+        .gletter { font-size: 54px !important; }
+        .gbar { font-size: 11px; }
+        #lapBox table { font-size: 11px; }
+        /* 강화 목록이 길어 스크롤이 생기지 않게 눌러 담는다 */
+        #garage { padding: 8px 10px; margin-top: 8px; }
+        #garage .gh { font-size: 12px; margin-bottom: 5px; }
+        .upRow { margin: 3px 0; gap: 7px; }
+        .upRow .nm { font-size: 11px; }
+        .upRow .nm small { display: none; }
+        .upRow .pip { width: 10px; height: 10px; }
+        .upRow button { padding: 4px 9px; font-size: 11px; min-width: 60px; }
+    }
+
     /* 진단 창 — 폰에서 무슨 일이 났는지 보려면 화면에 띄우는 수밖에 없다 */
     #diag { position: fixed; left: 8px; right: 8px; top: 8px; z-index: 1000;
             background: rgba(20,6,8,.94); border: 3px solid #ff6b6b; border-radius: 12px;
@@ -650,7 +677,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1458</div>
+<div id="build">v260807.1501</div>
 
 <div id="touch">
     <!-- 왼손 : 달리는 일 -->
@@ -748,26 +775,45 @@
     </div>
 </div>
 
+<!-- 완주 결과. 한 화면에 다 담기 위해 두 장으로 나눈다.
+     1장 = 해낸 것(등급·기록), 2장 = 번 것(포인트·강화). 스크롤은 쓰지 않는다. -->
 <div class="overlay hidden" id="result">
     <div id="resultBox">
-        <h2 id="resTitle">완주!</h2>
-        <div class="line">순위 : <b id="resRank">1위</b></div>
-        <div class="line">기록 : <b id="resTime">00:00.00</b></div>
-        <div class="line">최고 속도 <b id="resTop">0</b> km/h · 드리프트 <b id="resDrift">0</b>회</div>
-        <div class="line" id="resCollect"></div>
-        <div id="gradeBox"></div>
-        <div class="line" id="resBest" style="color:#9fd0ff"></div>
-        <div id="lapBox"></div>
-        <div class="line" id="resPoints" style="margin-top:8px"></div>
-        <div id="garage"></div>
+        <!-- ── 1장 : 얼마나 잘 달렸나 -->
+        <div id="resPage1">
+            <h2 id="resTitle">완주!</h2>
+            <div id="gradeBox"></div>
+            <div class="resCols">
+                <div class="resCol">
+                    <div class="line">순위 <b id="resRank">1위</b></div>
+                    <div class="line">기록 <b id="resTime">00:00.00</b></div>
+                    <div class="line">최고 속도 <b id="resTop">0</b> km/h</div>
+                    <div class="line" id="resBest" style="color:#9fd0ff"></div>
+                </div>
+                <div class="resCol" id="lapBox"></div>
+            </div>
+            <div class="resNav">
+                <button class="btn small" id="toPage2">포인트 받기 →</button>
+            </div>
+        </div>
+
+        <!-- ── 2장 : 얼마나 벌었나 -->
+        <div id="resPage2" style="display:none">
+            <h2>보상</h2>
+            <div class="line" id="resPoints"></div>
+            <div class="line" id="resCollect"></div>
+            <div id="garage"></div>
+            <div class="resNav">
+                <button class="btn small" id="backPage1">← 기록 다시 보기</button>
+                <button class="btn small" id="retryBtn">다시 도전</button>
+                <button class="btn small" id="menuBtn">맵 선택</button>
+            </div>
+        </div>
+
         <!-- 퀴즈는 잠시 꺼둔다. 나중에 '맞히면 포인트' 방식으로 되살릴 예정.
              데이터(SYSTEMS[*].quiz)와 표시 코드는 그대로 두었다. -->
         <div class="quiz" id="quizBox" style="display:none">
             <div class="q" id="quizQ"></div><div id="quizA"></div><div class="ex" id="quizEx"></div>
-        </div>
-        <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
-            <button class="btn small" id="retryBtn">다시 도전</button>
-            <button class="btn small" id="menuBtn">맵 선택</button>
         </div>
     </div>
 </div>
@@ -4571,7 +4617,6 @@ function endRace() {
     el('resRank').textContent = player.rank + '위';
     el('resTime').textContent = fmtTime(player.finishTime);
     el('resTop').textContent = Math.round(player.topSpeed * .22);
-    el('resDrift').textContent = player.driftCount;
     const byIcon = {};
     track.sys.pickups.forEach(p => { byIcon[p.icon] = p.img || EFFECT_ICON[p.effect]; });
     const items = Object.entries(player.collected).map(([ic, v]) => {
@@ -4661,6 +4706,7 @@ function endRace() {
 }
 
 function showResult() {
+    resPage(1);                                  // 언제나 기록부터 보여 준다
     el('result').classList.remove('hidden');
     el('hud').classList.add('hidden');
     el('touch').classList.remove('on'); document.body.classList.remove('touchUI');
@@ -4931,6 +4977,14 @@ el('startBtn').onclick = () => {
     if (IS_TOUCH && !isFullscreen()) { try { goFullscreen(); } catch (e) {} }
     startRace(selectedId);
 };
+/* 결과는 두 장이다. 언제나 1장(해낸 것)부터 보여 준다. */
+function resPage(n) {
+    el('resPage1').style.display = n === 1 ? '' : 'none';
+    el('resPage2').style.display = n === 2 ? '' : 'none';
+}
+el('toPage2').onclick = () => { resPage(2); renderGarage(); playBeep(1100, .08); };
+el('backPage1').onclick = () => resPage(1);
+
 el('retryBtn').onclick = () => {
     const id = track.sys.id;
     el('result').classList.add('hidden');
