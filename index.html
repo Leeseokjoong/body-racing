@@ -169,6 +169,29 @@
         border: 2px solid #3f6c9c; border-radius: 12px; font-family: inherit;
     }
     .modeBtn.sel { background: #2f6ea8; color: #fff; border-color: #7fd4ff; }
+    #multiPick { display: flex; gap: 8px; }
+    .subBtn {
+        padding: 8px 18px; font-size: 13px; font-weight: bold; cursor: pointer;
+        background: rgba(255,255,255,.05); color: #9fd0ff;
+        border: 2px solid #2f5a85; border-radius: 10px; font-family: inherit;
+    }
+    .subBtn.sel { background: #1d4d78; color: #fff; border-color: #7fd4ff; }
+    #onlineBox { text-align: center; }
+    #onlineBox .obRow { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    #onlineBox .obOr { color: #9fd0ff; font-size: 12px; }
+    #roomInput {
+        width: 130px; padding: 10px 12px; font-size: 20px; font-weight: bold; text-align: center;
+        letter-spacing: 4px; text-transform: uppercase; font-family: inherit;
+        background: rgba(0,0,0,.35); color: #ffe066; border: 2px solid #3f6c9c; border-radius: 10px;
+    }
+    #roomState { margin-top: 12px; font-size: 14px; color: #cfe6ff; min-height: 24px; line-height: 1.8; }
+    #roomState .code {
+        display: inline-block; font-size: 30px; font-weight: 900; color: #ffe066;
+        letter-spacing: 8px; background: rgba(0,0,0,.35); padding: 6px 18px;
+        border-radius: 12px; border: 2px solid #ffd166; margin: 6px 0;
+    }
+    #roomState .who { color: #7ee081; font-weight: bold; }
+
     #p2Keys { font-size: 12px; color: #9fd0ff; text-align: center; line-height: 1.7; }
     #p2Keys b { color: #ffe066; }
 
@@ -334,9 +357,22 @@
     </div>
     <div id="modePick">
         <button class="modeBtn sel" data-mode="1">👤 혼자 하기</button>
-        <button class="modeBtn" data-mode="2">👥 둘이 하기 (화면 분할)</button>
+        <button class="modeBtn" data-mode="2">🎮 멀티 모드</button>
+    </div>
+    <div id="multiPick" style="display:none">
+        <button class="subBtn sel" data-sub="split">👥 한 화면에서 둘이</button>
+        <button class="subBtn" data-sub="online">🌐 온라인으로 친구와</button>
     </div>
     <div id="p2Keys" style="display:none"></div>
+    <div id="onlineBox" style="display:none">
+        <div class="obRow">
+            <button class="btn small" id="createRoom">방 만들기</button>
+            <span class="obOr">또는</span>
+            <input id="roomInput" maxlength="6" placeholder="코드 6자리">
+            <button class="btn small" id="joinRoom">참가</button>
+        </div>
+        <div id="roomState"></div>
+    </div>
     <button class="btn" id="startBtn">레이스 시작</button>
 </div>
 
@@ -363,6 +399,27 @@
         </div>
     </div>
 </div>
+
+<script type="module">
+// Firebase : 온라인 멀티플레이용. 실패해도 게임은 그대로 돌아간다.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB1wLITGu0wxG8QNGI-oxyELvoWCLolfJI",
+    authDomain: "body-racing.firebaseapp.com",
+    databaseURL: "https://body-racing-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "body-racing",
+    storageBucket: "body-racing.firebasestorage.app",
+    messagingSenderId: "121480306691",
+    appId: "1:121480306691:web:b3fe41a44a04a85c316e36"
+};
+try {
+    const fbApp = initializeApp(firebaseConfig);
+    window.FB = { db: getDatabase(fbApp), ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp };
+} catch (e) { window.FB = null; }
+</script>
 
 <script>
 /* ============================================================================
@@ -1048,6 +1105,8 @@ function updateKart(k, dt) {
         if (input.left) steerIn -= 1;
         if (input.right) steerIn += 1;
         wantDrift = input.drift;
+    } else if (k.aiOff) {
+        return;                                  // 온라인 상대 : 위치만 받아서 움직인다
     } else {
         aiControl(k, dt);
         throttle = k.aiThrottle; steerIn = k.aiSteer; wantDrift = k.aiDrift;
@@ -3044,6 +3103,162 @@ function playBeep(freq, dur) {
     } catch (e) {}
 }
 
+
+/* ============================================================================
+   온라인 멀티 — Firebase Realtime Database
+   방 코드 6자리로 친구끼리만 만난다. 채팅·닉네임 입력 없음(아동 안전).
+   ========================================================================== */
+const net = {
+    on: false,            // 온라인 모드로 달리는 중인가
+    roomId: null,
+    myId: null,
+    isHost: false,
+    mapId: 'circulatory',
+    peers: {},            // 상대 카트들 { id: {kart, target} }
+    lastSend: 0,
+    unsub: []
+};
+
+function randomCode() {
+    const AB = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // 헷갈리는 글자 제외
+    let c = '';
+    for (let i = 0; i < 6; i++) c += AB[Math.floor(Math.random() * AB.length)];
+    return c;
+}
+
+function netStatus(html) { el('roomState').innerHTML = html; }
+
+function netCleanup() {
+    net.unsub.forEach(f => { try { f(); } catch (e) {} });
+    net.unsub = [];
+    if (window.FB && net.roomId && net.myId) {
+        try { FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}`)); } catch (e) {}
+    }
+    net.on = false; net.roomId = null; net.myId = null; net.isHost = false; net.peers = {};
+}
+
+async function createRoom() {
+    if (!window.FB) { netStatus('⚠ 온라인 기능을 사용할 수 없습니다. 인터넷 연결을 확인해 주세요.'); return; }
+    netCleanup();
+    const code = randomCode();
+    net.roomId = code;
+    net.myId = 'p' + Math.random().toString(36).slice(2, 9);
+    net.isHost = true;
+    net.mapId = selectedId;
+
+    const roomRef = FB.ref(FB.db, `rooms/${code}`);
+    await FB.set(roomRef, {
+        createdAt: FB.serverTimestamp(),
+        mapId: selectedId,
+        state: 'lobby',
+        players: { [net.myId]: { name: '1P', color: 0, ready: true, joinedAt: FB.serverTimestamp() } }
+    });
+    FB.onDisconnect(FB.ref(FB.db, `rooms/${code}`)).remove();
+    watchRoom(code);
+    netStatus(`친구에게 이 코드를 알려주세요<br><span class="code">${code}</span><br>친구가 들어오면 자동으로 시작됩니다`);
+}
+
+async function joinRoom() {
+    if (!window.FB) { netStatus('⚠ 온라인 기능을 사용할 수 없습니다.'); return; }
+    const code = (el('roomInput').value || '').trim().toUpperCase();
+    if (code.length !== 6) { netStatus('⚠ 코드 6자리를 정확히 입력해 주세요.'); return; }
+    netCleanup();
+
+    const snap = await FB.get(FB.ref(FB.db, `rooms/${code}`));
+    if (!snap.exists()) { netStatus('⚠ 그런 방이 없습니다. 코드를 다시 확인해 주세요.'); return; }
+    const room = snap.val();
+    const count = Object.keys(room.players || {}).length;
+    if (count >= 4) { netStatus('⚠ 방이 가득 찼습니다 (최대 4명).'); return; }
+
+    net.roomId = code;
+    net.myId = 'p' + Math.random().toString(36).slice(2, 9);
+    net.isHost = false;
+    net.mapId = room.mapId || 'circulatory';
+    selectedId = net.mapId;
+
+    await FB.set(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`),
+        { name: (count + 1) + 'P', color: count, ready: true, joinedAt: FB.serverTimestamp() });
+    FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`)).remove();
+    watchRoom(code);
+    netStatus(`방 <b>${code}</b> 에 들어왔습니다<br>곧 시작합니다...`);
+}
+
+function watchRoom(code) {
+    // 방 인원 변화
+    const pRef = FB.ref(FB.db, `rooms/${code}/players`);
+    net.unsub.push(FB.onValue(pRef, snap => {
+        const players = snap.val() || {};
+        const names = Object.entries(players).map(([id, p]) =>
+            id === net.myId ? `<span class="who">${p.name}(나)</span>` : p.name);
+        if (state === 'menu') {
+            const codeHtml = net.isHost ? `<span class="code">${code}</span><br>` : '';
+            netStatus(`${codeHtml}참가자 ${names.length}명 : ${names.join(', ')}` +
+                (names.length >= 2 ? '<br>🚦 곧 출발합니다!' : '<br>친구를 기다리는 중...'));
+        }
+        // 방장이 2명 이상 모이면 시작 신호를 보낸다
+        if (net.isHost && Object.keys(players).length >= 2 && state === 'menu') {
+            setTimeout(() => {
+                FB.update(FB.ref(FB.db, `rooms/${code}`), { state: 'racing', startAt: Date.now() + 1500 });
+            }, 1200);
+        }
+    }));
+
+    // 시작 신호
+    net.unsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}/state`), snap => {
+        if (snap.val() === 'racing' && state === 'menu') startOnlineRace();
+    }));
+}
+
+function startOnlineRace() {
+    net.on = true;
+    twoPlayer = false;
+    startRace(net.mapId);
+    // 상대 위치 구독
+    const gRef = FB.ref(FB.db, `rooms/${net.roomId}/ghosts`);
+    net.unsub.push(FB.onValue(gRef, snap => {
+        const all = snap.val() || {};
+        Object.entries(all).forEach(([id, g]) => {
+            if (id === net.myId) return;
+            let peer = net.peers[id];
+            if (!peer) {
+                const k = makeKart(false, (Object.keys(net.peers).length + 1) % 4, g.name || '친구');
+                k.isGhost = true; k.aiOff = true;
+                k.x = g.x; k.y = g.y; k.ang = g.a;
+                karts.push(k);
+                peer = net.peers[id] = { kart: k };
+            }
+            peer.tx = g.x; peer.ty = g.y; peer.ta = g.a;    // 목표 위치 (부드럽게 따라간다)
+            peer.kart.lap = g.lap || 1;
+            peer.kart.progress = g.prog || 0;
+        });
+    }));
+}
+
+// 내 위치를 초당 12회 정도만 올린다 (트래픽 절약)
+function netSend() {
+    if (!net.on || !window.FB || !player) return;
+    const now = performance.now();
+    if (now - net.lastSend < 80) return;
+    net.lastSend = now;
+    FB.set(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`), {
+        x: Math.round(player.x), y: Math.round(player.y),
+        a: +player.ang.toFixed(2), lap: player.lap,
+        prog: Math.round(player.progress), name: '나'
+    }).catch(() => {});
+}
+
+// 받은 위치로 상대 카트를 부드럽게 이동시킨다 (네트워크 지연 보정)
+function netInterp(dt) {
+    if (!net.on) return;
+    Object.values(net.peers).forEach(p => {
+        if (p.tx === undefined) return;
+        const k = p.kart, t = 1 - Math.pow(.002, dt);
+        k.x = lerp(k.x, p.tx, t);
+        k.y = lerp(k.y, p.ty, t);
+        k.ang += angDiff(p.ta, k.ang) * t;
+    });
+}
+
 /* ============================================================================
    8. 게임 흐름
    ========================================================================== */
@@ -3267,6 +3482,7 @@ function loop(now) {
     } else if (state === 'race') {
         raceTime += dt;
         karts.forEach(k => updateKart(k, dt));
+        netInterp(dt); netSend();
         kartCollisions(); updateRanks();
         karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.sys.laps) finishKart(k); });
     } else if (state === 'finish') {
@@ -3420,22 +3636,49 @@ function drawPreview(cv, sys) {
     });
 }
 
+let multiSub = 'split';                       // 멀티 모드 안에서 무엇을 골랐나
+
+function refreshModeUI() {
+    const isMulti = document.querySelector('.modeBtn.sel').dataset.mode === '2';
+    el('multiPick').style.display = isMulti ? 'flex' : 'none';
+
+    const split  = isMulti && multiSub === 'split';
+    const online = isMulti && multiSub === 'online';
+    twoPlayer = split;
+
+    el('p2Keys').style.display = split ? 'block' : 'none';
+    el('p2Keys').innerHTML = split
+        ? '<b>1P</b> W A S D · SPACE 드리프트 · ENTER 아이템<br>' +
+          '<b>2P</b> ↑ ← ↓ → · CTRL 드리프트 · SHIFT 아이템'
+        : '';
+
+    el('onlineBox').style.display = online ? 'block' : 'none';
+    el('startBtn').style.display = online ? 'none' : '';
+    if (!online) { netCleanup(); netStatus(''); }
+    syncKeys();
+}
+
 document.querySelectorAll('.modeBtn').forEach(b => {
     b.onclick = () => {
-        twoPlayer = b.dataset.mode === '2';
         document.querySelectorAll('.modeBtn').forEach(x => x.classList.toggle('sel', x === b));
-        el('p2Keys').style.display = twoPlayer ? 'block' : 'none';
-        el('p2Keys').innerHTML = twoPlayer
-            ? '<b>1P</b> W A S D · SPACE 드리프트 · ENTER 아이템<br>' +
-              '<b>2P</b> ↑ ← ↓ → · CTRL 드리프트 · SHIFT 아이템'
-            : '';
-        syncKeys();
+        refreshModeUI();
     };
 });
+document.querySelectorAll('.subBtn').forEach(b => {
+    b.onclick = () => {
+        multiSub = b.dataset.sub;
+        document.querySelectorAll('.subBtn').forEach(x => x.classList.toggle('sel', x === b));
+        refreshModeUI();
+    };
+});
+el('createRoom').onclick = createRoom;
+el('joinRoom').onclick = joinRoom;
+el('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
 el('startBtn').onclick = () => startRace(selectedId);
 el('retryBtn').onclick = () => startRace(track.sys.id);
 el('menuBtn').onclick = () => {
+    netCleanup();
     state = 'menu';
     el('result').classList.add('hidden'); el('hud').classList.add('hidden');
     el('touch').classList.remove('on'); el('menu').classList.remove('hidden');
