@@ -715,7 +715,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1537</div>
+<div id="build">v260807.1541</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -4282,6 +4282,7 @@ const net = {
     waitTimer: null,      // 카운트다운 인터벌
     roomId: null,
     myId: null,
+    myName: '1P',         // 상대 화면에 뜰 내 이름
     isHost: false,
     mapId: 'circulatory',
     peers: {},            // 상대 카트들 { id: {kart, target} }
@@ -4317,6 +4318,7 @@ async function createRoom() {
     net.myId = 'p' + Math.random().toString(36).slice(2, 9);
     net.isHost = true;
     net.mapId = selectedId;
+    net.myName = '1P';
 
     const roomRef = FB.ref(FB.db, `rooms/${code}`);
     await FB.set(roomRef, {
@@ -4348,6 +4350,7 @@ async function joinRoom() {
     net.isHost = false;
     net.mapId = room.mapId || 'circulatory';
     selectedId = net.mapId;
+    net.myName = (count + 1) + 'P';
 
     await FB.set(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`),
         { name: (count + 1) + 'P', color: count, ready: true, joinedAt: FB.serverTimestamp() });
@@ -4422,16 +4425,19 @@ function watchRoom(code) {
         }
     }));
 
-    // 시작 신호
-    net.unsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}/state`), snap => {
-        if (snap.val() === 'racing' && state === 'menu') startOnlineRace();
+    // 시작 신호 : 방장이 정한 출발 시각(startAt)을 함께 받아 같은 순간에 달린다
+    net.unsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}`), snap => {
+        const r = snap.val();
+        if (r && r.state === 'racing' && state === 'menu') startOnlineRace(r.startAt);
     }));
 }
 
-function startOnlineRace() {
+function startOnlineRace(startAt) {
     if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
     net.on = true;
     startRace(net.mapId);
+    // 늦게 신호를 받은 쪽은 카운트다운을 그만큼 줄여, 모두 같은 순간에 출발한다
+    if (startAt) countdown = clamp((startAt - Date.now()) / 1000 + 3.99, 1.2, 6);
     // 상대 위치 구독
     const gRef = FB.ref(FB.db, `rooms/${net.roomId}/ghosts`);
     net.unsub.push(FB.onValue(gRef, snap => {
@@ -4441,6 +4447,7 @@ function startOnlineRace() {
             let peer = net.peers[id];
             if (!peer) {
                 const k = makeKart(false, (Object.keys(net.peers).length + 1) % 4, g.name || '친구');
+                k.maxMul = 1;
                 k.isGhost = true; k.aiOff = true;
                 k.x = g.x; k.y = g.y; k.ang = g.a;
                 karts.push(k);
@@ -4462,8 +4469,8 @@ function netSend() {
     FB.set(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`), {
         x: Math.round(player.x), y: Math.round(player.y),
         a: +player.ang.toFixed(2), lap: player.lap,
-        prog: Math.round(player.progress), name: '나'
-    }).catch(() => {});
+        prog: Math.round(player.progress), name: net.myName || '친구'
+    }).catch(e => { if (!netSend.warned) { netSend.warned = true; showDiag('위치 전송 실패\n' + (e && e.message)); } });
 }
 
 // 받은 위치로 상대 카트를 부드럽게 이동시킨다 (네트워크 지연 보정)
@@ -4501,10 +4508,14 @@ function startRace(id) {
     reabsorbHint = 0;
     karts = [];
     player = makeKart(true, 0, '1P'); player.pad = input; karts.push(player);
-    for (let i = 0; i < 3; i++) {
-        const ai = makeKart(false, i + 1, AI_NAMES[i]);
-        ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
-        karts.push(ai);
+    // 온라인에서는 사람만 달린다. AI 는 각자 컴퓨터에서 따로 돌아
+    //   서로 다른 자리에 있게 되므로, 같이 달리는 느낌을 오히려 망친다.
+    if (!net.on) {
+        for (let i = 0; i < 3; i++) {
+            const ai = makeKart(false, i + 1, AI_NAMES[i]);
+            ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
+            karts.push(ai);
+        }
     }
     karts.forEach((k, i) => placeOnStart(k, i));
 
