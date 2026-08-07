@@ -1,0 +1,3085 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1420">
+<title>인체 탐험 레이싱 - 2D 코믹 카트</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+        width: 100%; height: 100%; overflow: hidden;
+        background: #0a1420; color: #fff;
+        font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        user-select: none; -webkit-user-select: none;
+        overscroll-behavior: none; touch-action: none;
+    }
+    canvas#game { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* ================= 공통 패널 ================= */
+    .panel {
+        position: absolute;
+        background: linear-gradient(180deg, #16304f 0%, #0d1f36 100%);
+        border: 3px solid #3f6c9c; border-radius: 16px;
+        box-shadow: 0 6px 18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12);
+        padding: 10px 14px; z-index: 5;
+    }
+    .panel .t { font-size: 12px; letter-spacing: 2px; color: #8fc7f5; text-align: center; font-weight: bold; margin-bottom: 6px; }
+    #hud.hidden { display: none; }
+
+    #lapCard { top: 14px; left: 14px; min-width: 168px; }
+    #lapCard .lbl { font-size: 13px; letter-spacing: 3px; color: #9fd0ff; font-weight: bold; }
+    #lapCard .lap { font-size: 40px; font-weight: 900; line-height: 1.05; }
+    #lapCard .time { font-size: 19px; font-weight: bold; color: #ffe9a8; }
+    #rankBadge {
+        position: absolute; top: -16px; right: -16px;
+        background: linear-gradient(180deg, #ff9a52, #d63a3a);
+        border: 4px solid #fff; border-radius: 14px; padding: 3px 11px;
+        font-size: 19px; font-weight: 900; transform: rotate(-6deg);
+        box-shadow: 0 4px 12px rgba(0,0,0,.55);
+    }
+
+    #cpList { top: 148px; left: 14px; width: 214px; padding-bottom: 8px; }
+    #cpList .t { text-align: left; color: #7fd4ff; }
+    .cpRow { display: flex; align-items: center; gap: 8px; padding: 3px 2px; font-size: 13px; font-weight: bold; opacity: .4; transition: opacity .2s; }
+    .cpRow.done { opacity: .95; }
+    .cpRow.now { opacity: 1; color: #ffe066; text-shadow: 0 0 10px rgba(255,224,102,.7); }
+    .cpNum { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex: 0 0 auto; border: 2px solid rgba(255,255,255,.65); }
+
+    #legend { bottom: 14px; left: 14px; width: 322px; }
+    #legend .cols { display: flex; gap: 12px; }
+    #legend .col { flex: 1; }
+    #legend .ch { font-size: 11px; color: #ffd166; font-weight: bold; margin-bottom: 4px; letter-spacing: 1px; }
+    #legend .row { display: flex; align-items: center; gap: 6px; font-size: 11px; margin: 2px 0; }
+    #legend .ic { font-size: 14px; width: 18px; text-align: center; }
+
+    #miniPanel { top: 14px; right: 14px; }
+    #minimap { display: block; border-radius: 8px; background: rgba(0,0,0,.35); }
+
+    #resPanel { top: 14px; right: 304px; display: flex; gap: 13px; align-items: center; padding: 12px 15px; }
+    .resItem { display: flex; align-items: center; gap: 5px; font-size: 16px; font-weight: 900; }
+    .resItem .ic { font-size: 19px; }
+
+    #gaugeWrap { position: absolute; top: 90px; right: 304px; width: 214px; }
+    #gaugeWrap .t { text-align: left; margin-bottom: 4px; }
+    .bar { height: 14px; border-radius: 7px; background: rgba(0,0,0,.45); overflow: hidden; border: 2px solid #3f6c9c; }
+    .bar > i { display: block; height: 100%; width: 0%; transition: width .12s; }
+    #driftBar > i { background: linear-gradient(90deg, #4ad0ff, #7ee081, #ffe066, #ff7a3c); }
+    #progBar > i { background: linear-gradient(90deg, #3aa0ff, #7fd4ff); }
+
+    #speedPanel { bottom: 186px; right: 14px; width: 206px; text-align: center; }
+    #speedo { display: block; margin: 0 auto; }
+    #speedPanel .kmh { font-size: 33px; font-weight: 900; line-height: .95; margin-top: -26px; }
+    #speedPanel .kmh small { display: block; font-size: 11px; letter-spacing: 3px; color: #9fd0ff; font-weight: bold; }
+
+    #slotPanel { bottom: 14px; right: 14px; width: 206px; text-align: center; }
+    #slots { display: flex; gap: 8px; justify-content: center; }
+    .slot { width: 52px; height: 52px; border-radius: 12px; background: rgba(0,0,0,.4); border: 3px solid #3f6c9c; display: flex; align-items: center; justify-content: center; font-size: 27px; }
+    .slot.filled { border-color: #ffe066; box-shadow: inset 0 0 14px rgba(255,224,102,.55); }
+    #slotPanel .hint { margin-top: 7px; font-size: 12px; color: #9fd0ff; font-weight: bold; }
+    #slotPanel .key { display: inline-block; background: #2f6ea8; border-radius: 6px; padding: 2px 8px; margin-right: 5px; }
+
+    #zoomHint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; color: rgba(255,255,255,.5); z-index: 5; white-space: nowrap; }
+
+    #toast {
+        position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%);
+        background: linear-gradient(180deg, #fffdf2, #ffeec9); color: #3a2a10;
+        border: 4px solid #2a1a08; border-radius: 18px; padding: 11px 22px;
+        max-width: min(560px, 88vw); text-align: center; box-shadow: 6px 8px 0 rgba(0,0,0,.35);
+        opacity: 0; transition: opacity .25s, transform .25s; z-index: 6; pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+    #toast .tt { font-size: 19px; font-weight: 900; color: #b8451f; margin-bottom: 2px; }
+    #toast .td { font-size: 13px; line-height: 1.5; }
+
+    /* 기관·혈관을 지날 때 뜨는 자막 */
+    #subtitle {
+        position: absolute; left: 50%; top: 16px; transform: translateX(-50%) translateY(-12px);
+        text-align: center; z-index: 6; pointer-events: none; white-space: nowrap;
+        opacity: 0; transition: opacity .28s, transform .28s;
+    }
+    #subtitle.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #subtitle .sname {
+        font-size: 42px; font-weight: 900; color: #fff; line-height: 1.1;
+        -webkit-text-stroke: 7px #14202e; paint-order: stroke fill;
+        text-shadow: 0 5px 0 rgba(0,0,0,.35);
+    }
+    #subtitle .sdesc {
+        margin-top: 3px; font-size: 16px; font-weight: bold; color: #ffe9a8;
+        -webkit-text-stroke: 5px #14202e; paint-order: stroke fill;
+    }
+
+    #bigMsg {
+        position: absolute; left: 50%; top: 38%; transform: translate(-50%,-50%) rotate(-4deg);
+        font-size: 110px; font-weight: 900; z-index: 7; pointer-events: none; color: #fff;
+        -webkit-text-stroke: 8px #1a0f00; paint-order: stroke fill; text-shadow: 0 10px 0 rgba(0,0,0,.3);
+    }
+
+    /* ================= 터치 컨트롤 (모바일/앱) ================= */
+    #touch { position: absolute; inset: 0; z-index: 8; pointer-events: none; display: none; }
+    #touch.on { display: block; }
+    .tbtn {
+        position: absolute; pointer-events: auto;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(20,40,66,.62); border: 3px solid rgba(160,210,255,.55);
+        color: #fff; font-weight: 900; border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0,0,0,.4); backdrop-filter: blur(3px);
+    }
+    .tbtn.act { background: rgba(255,209,102,.85); color: #2a1a00; border-color: #fff; transform: scale(.94); }
+    #tLeft, #tRight { width: 92px; height: 92px; font-size: 34px; bottom: 26px; }
+    #tLeft { left: 22px; } #tRight { left: 128px; }
+    #tGas { width: 108px; height: 108px; font-size: 20px; right: 22px; bottom: 26px; }
+    #tBrake { width: 78px; height: 78px; font-size: 17px; right: 142px; bottom: 26px; }
+    #tDrift { width: 82px; height: 82px; font-size: 15px; right: 30px; bottom: 148px; }
+    #tItem { width: 82px; height: 82px; font-size: 15px; right: 130px; bottom: 156px; }
+
+    /* ================= 오버레이 ================= */
+    .overlay {
+        position: absolute; inset: 0; z-index: 20; padding: 18px; overflow: auto;
+        background: radial-gradient(circle at 50% 26%, #1d3d63, #08111d 72%);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    .overlay.hidden { display: none; }
+    .title {
+        font-size: clamp(30px, 6vw, 54px); font-weight: 900; letter-spacing: -2px; color: #ffd76a;
+        -webkit-text-stroke: 6px #1a0f00; paint-order: stroke fill;
+        text-shadow: 0 8px 0 rgba(0,0,0,.35); transform: rotate(-2deg); text-align: center;
+    }
+    .subtitle { font-size: 14px; color: #9fd0ff; text-align: center; max-width: 760px; }
+    .cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1180px; }
+    .card {
+        width: 214px; border-radius: 18px; padding: 11px;
+        background: linear-gradient(180deg, #16304f, #0d1f36);
+        border: 3px solid #3f6c9c; cursor: pointer; transition: transform .14s, border-color .14s;
+    }
+    .card:hover { transform: translateY(-6px) rotate(-1deg); border-color: #ffd166; }
+    .card.sel { border-color: #ffd166; box-shadow: 0 0 24px rgba(255,209,102,.4); }
+    .card h3 { font-size: 18px; margin-bottom: 3px; }
+    .card .route { font-size: 11px; color: #9fd0ff; line-height: 1.5; min-height: 44px; }
+    .card canvas { width: 100%; height: 112px; margin: 6px 0; background: rgba(0,0,0,.28); border-radius: 10px; }
+    .card .meta { font-size: 11px; color: #ffd166; font-weight: bold; }
+
+    .btn {
+        padding: 13px 42px; font-size: 21px; font-weight: 900; cursor: pointer;
+        background: linear-gradient(180deg, #ffd166, #e8a020); color: #2a1a00;
+        border: 4px solid #1a0f00; border-radius: 16px;
+        box-shadow: 0 7px 0 #7a4b00, 0 12px 22px rgba(0,0,0,.45);
+    }
+    .btn:active { transform: translateY(4px); box-shadow: 0 3px 0 #7a4b00; }
+    .btn.small { padding: 10px 24px; font-size: 15px; }
+
+    .keys { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; font-size: 12px; color: #cfe6ff; max-width: 900px; }
+    .keys span { background: rgba(255,255,255,.08); border: 1px solid #3f6c9c; border-radius: 8px; padding: 5px 11px; }
+
+    #resultBox {
+        background: linear-gradient(180deg, #16304f, #0d1f36); border: 5px solid #ffd166;
+        border-radius: 24px; padding: 24px 30px; text-align: center; max-width: 620px; width: 100%;
+    }
+    #resultBox h2 { font-size: 34px; margin-bottom: 8px; }
+    #resultBox .line { font-size: 16px; margin: 4px 0; }
+    #garage { margin-top: 14px; background: rgba(0,0,0,.25); border-radius: 14px; padding: 14px; text-align: left; }
+    #garage .gh { font-size: 14px; font-weight: bold; color: #ffe066; margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .upRow { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
+    .upRow .ic { font-size: 20px; width: 26px; text-align: center; }
+    .upRow .nm { flex: 1; font-size: 13px; }
+    .upRow .nm small { display: block; color: #9fd0ff; font-size: 11px; }
+    .upRow .pips { display: flex; gap: 3px; }
+    .upRow .pip { width: 13px; height: 13px; border-radius: 3px; background: rgba(255,255,255,.14); border: 1px solid #3f6c9c; }
+    .upRow .pip.on { background: #ffd166; border-color: #ffd166; }
+    .upRow button {
+        padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;
+        background: #2f6ea8; color: #fff; border: 2px solid #4d8ac9; font-family: inherit; min-width: 74px;
+    }
+    .upRow button:disabled { opacity: .35; cursor: default; }
+    .upRow button.can { background: #e8a020; border-color: #ffd166; color: #2a1a00; }
+
+    .quiz { margin-top: 14px; text-align: left; background: rgba(0,0,0,.25); border-radius: 14px; padding: 14px; }
+    .quiz .q { font-size: 15px; font-weight: bold; margin-bottom: 9px; color: #ffe066; }
+    .quiz button {
+        display: block; width: 100%; text-align: left; margin: 5px 0; padding: 9px 13px;
+        background: #1d3d63; color: #fff; border: 2px solid #3f6c9c; border-radius: 10px;
+        font-size: 14px; cursor: pointer; font-family: inherit;
+    }
+    .quiz button.ok { background: #1f6b3a; border-color: #7ee081; }
+    .quiz button.no { background: #6b1f1f; border-color: #ff8a8a; }
+    .quiz .ex { margin-top: 9px; font-size: 13px; color: #cfe6ff; line-height: 1.6; display: none; }
+
+    /* ================= 좁은 화면 대응 ================= */
+    @media (max-width: 1100px) {
+        #resPanel, #gaugeWrap { right: 14px; top: auto; }
+        #resPanel { top: 200px; }
+        #gaugeWrap { top: 276px; width: 200px; }
+        #cpList, #legend { display: none; }
+        #speedPanel { bottom: auto; top: 340px; }
+    }
+    @media (max-width: 760px), (max-height: 520px) {
+        #cpList, #legend, #speedPanel, #gaugeWrap, #zoomHint { display: none; }
+        #lapCard { min-width: 128px; padding: 7px 10px; }
+        #lapCard .lap { font-size: 28px; } #lapCard .time { font-size: 15px; }
+        #rankBadge { font-size: 15px; padding: 2px 8px; top: -12px; right: -12px; }
+        #miniPanel { padding: 6px; }
+        #minimap { width: 148px; height: 96px; }
+        #resPanel { top: auto; bottom: 160px; right: 14px; gap: 9px; padding: 7px 10px; }
+        .resItem { font-size: 13px; } .resItem .ic { font-size: 15px; }
+        #slotPanel { width: auto; left: 50%; transform: translateX(-50%); right: auto; bottom: 8px; padding: 6px 10px; }
+        #slotPanel .t, #slotPanel .hint { display: none; }
+        .slot { width: 42px; height: 42px; font-size: 22px; }
+        #bigMsg { font-size: 74px; -webkit-text-stroke: 6px #1a0f00; }
+        #toast { bottom: auto; top: 12px; padding: 8px 14px; }
+        #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
+    }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+    <div class="panel" id="lapCard">
+        <div id="rankBadge">1 위</div>
+        <div class="lbl">LAP</div>
+        <div class="lap"><span id="lapNow">1</span>/<span id="lapTot">3</span></div>
+        <div class="time">🕐 <span id="timeTxt">00:00.00</span></div>
+    </div>
+
+    <div class="panel" id="cpList"><div class="t">CHECKPOINTS</div><div id="cpRows"></div></div>
+
+    <div class="panel" id="legend">
+        <div class="cols">
+            <div class="col"><div class="ch">아이템</div><div id="legItems"></div></div>
+            <div class="col"><div class="ch">장애물</div><div id="legObs"></div></div>
+        </div>
+    </div>
+
+    <div class="panel" id="miniPanel"><div class="t">MINI MAP</div><canvas id="minimap" width="260" height="168"></canvas></div>
+
+    <div class="panel" id="resPanel"></div>
+
+    <div class="panel" id="gaugeWrap">
+        <div class="t">드리프트 게이지 (SPACE)</div>
+        <div class="bar" id="driftBar"><i></i></div>
+        <div class="t" style="margin-top:8px">진행도 <span id="progTxt">0%</span></div>
+        <div class="bar" id="progBar"><i></i></div>
+    </div>
+
+    <div class="panel" id="speedPanel">
+        <canvas id="speedo" width="180" height="120"></canvas>
+        <div class="kmh"><span id="kmh">0</span><small>KM/H</small></div>
+    </div>
+
+    <div class="panel" id="slotPanel">
+        <div class="t">아이템 슬롯</div>
+        <div id="slots"><div class="slot"></div><div class="slot"></div><div class="slot"></div></div>
+        <div class="hint"><span class="key">ENTER</span>사용</div>
+    </div>
+
+    <div id="zoomHint">W 가속 · A/D 좌우 · S 브레이크 · <b style="color:#ffe066">SPACE 드리프트</b> · 휠 줌 · M 전체 맵</div>
+    <div id="subtitle"><div class="sname"></div><div class="sdesc"></div></div>
+    <div id="toast"><div class="tt"></div><div class="td"></div></div>
+    <div id="bigMsg"></div>
+</div>
+
+<div id="touch">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tGas">가속</div>
+    <div class="tbtn" id="tBrake">브레이크</div>
+    <div class="tbtn" id="tDrift">드리프트</div>
+    <div class="tbtn" id="tItem">아이템</div>
+</div>
+
+<div class="overlay" id="menu">
+    <div class="title">인체 탐험 레이싱</div>
+    <div class="subtitle">꼬마 카트를 몰고 몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성되고, 아이템과 장애물은 그 기관에 실제로 있는 물질입니다.</div>
+    <div class="cards" id="mapCards"></div>
+    <div class="keys">
+        <span>W 가속</span><span>S 브레이크·후진</span><span>A / D 조향</span>
+        <span style="color:#ffe066">SPACE 드리프트 → 부스터</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
+        <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
+    </div>
+    <button class="btn" id="startBtn">레이스 시작</button>
+</div>
+
+<div class="overlay hidden" id="result">
+    <div id="resultBox">
+        <h2 id="resTitle">완주!</h2>
+        <div class="line">순위 : <b id="resRank">1위</b></div>
+        <div class="line">기록 : <b id="resTime">00:00.00</b></div>
+        <div class="line">최고 속도 <b id="resTop">0</b> km/h · 드리프트 <b id="resDrift">0</b>회</div>
+        <div class="line" id="resCollect"></div>
+        <div class="line" id="resBest" style="color:#9fd0ff"></div>
+        <div class="line" id="resPoints" style="margin-top:8px"></div>
+        <div id="garage"></div>
+        <div class="quiz" id="quizBox">
+            <div class="q" id="quizQ"></div><div id="quizA"></div><div class="ex" id="quizEx"></div>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+            <button class="btn small" id="retryBtn">다시 도전</button>
+            <button class="btn small" id="menuBtn">맵 선택</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ============================================================================
+   인체 탐험 레이싱 — 아기자기한 코믹 인체 탐험 카트 레이서 (2D 탑다운)
+   · 코스는 각 계통의 flow(기관 → 기관) 정의에서 자동 생성
+   · 아이템/장애물은 그 기관에 실제로 존재하는 물질 (적혈구·효소·이산화탄소 …)
+   · Circuit Superstars 풍의 드리프트 주행 + 의사 3D(그림자/베벨) 연출
+   · 데스크톱 키보드 + 모바일 터치 동시 지원 (앱 패키징 대비)
+   ========================================================================== */
+
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const TAU = Math.PI * 2;
+const rngOf = s0 => { let s = s0 >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; };
+function angDiff(a, b) { let d = (a - b) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; }
+function shade(hex, amt) {
+    const c = hex.replace('#', '');
+    const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+    const f = v => Math.round(clamp(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt, 0, 255));
+    return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+/* ============================================================================
+   1. 계통(flow) 정의
+   node = 기관(체크포인트) / via = 다음 기관까지의 경유점 / seg = 통로 이름·색
+   pickups.effect : boost(가속) | shield(방어) | star(무적·분해) | energy(수집)
+   hazards.slow   : 충돌 시 남는 속도 비율,  spin : 차가 돌아가는지
+   ========================================================================== */
+const SYSTEMS = {
+    circulatory: {
+        id: 'circulatory', name: '순환계 서킷', laps: 5, closed: true, halfWidth: 178,
+        grass: ['#3a8a46', '#2c7038'], accent: '#e04a4a',
+        // 도로 아래에 깔리는 큰 기관 그림 (심장·폐는 제대로 된 모양으로)
+        landmarks: [
+            { type: 'lungs', at: [1900, 1560], r: 900 },
+            { type: 'heart', at: [1900, 2740], r: 1150 }
+        ],
+        // 교과서의 이중 순환(8자) 구조. 중심축 x=1900 을 기준으로 좌우 대칭.
+        //   seg.wMul = 도로 폭 배율 (판막은 좁은 문, 모세혈관은 가늘다)
+        //   seg.tunnel = 판막처럼 좁고 어두운 통로로 그린다
+        flow: [
+            { name: '우심방', at: [1620, 2500], color: '#6fa8dc', role: '혈액 받기', blob: 0,
+              chamber: { w: 340, h: 300, wall: 26, tint: '#8fc4ea' },
+              info: '온몸을 돌고 온, 산소가 적은 혈액이 대정맥을 타고 들어오는 방입니다.',
+              seg: { name: '삼첨판', color: '#4b7fb0', wMul: .56, tunnel: true,
+                     desc: '우심방과 우심실 사이의 좁은 문. 피가 거꾸로 흐르지 않게 막아요' },
+              via: [[1650, 2730]] },
+
+            { name: '우심실', at: [1620, 2950], color: '#3f74c4', role: '폐로 밀기', blob: 0,
+              chamber: { w: 360, h: 340, wall: 46, tint: '#5b93d6' },
+              pump: { power: .58, label: '우심실 수축!', desc: '폐까지만 보내면 되니 힘이 약합니다. 좌심실과 비교해 보세요.' },
+              info: '받은 혈액을 힘차게 짜내 폐동맥을 통해 폐로 보냅니다. 여기서부터 폐순환이 시작됩니다.',
+              seg: { name: '폐동맥', color: '#4a86d8', over: true, wMul: 1,
+                     desc: '산소가 적은 혈액이 폐로 가는 길. 동맥인데 산소가 적어요' },
+              via: [[1420, 3070], [1150, 2960], [960, 2700], [890, 2350], [900, 1980],
+                    [1020, 1620], [1230, 1290], [1500, 1030]] },
+
+            { name: '폐', at: [1900, 850], color: '#f2a0c0', role: '기체 교환', blob: 0,
+              info: '폐포에서 이산화탄소를 내보내고 산소를 받아 혈액이 붉게 바뀝니다. 폐순환의 꼭짓점!',
+              seg: { name: '폐정맥', color: '#e2707a', wMul: 1,
+                     desc: '산소를 가득 실은 혈액이 심장으로 돌아오는 길' },
+              via: [[2300, 1030], [2570, 1290], [2780, 1620], [2900, 1980], [2910, 2350],
+                    [2820, 2640], [2480, 2600]] },
+
+            { name: '좌심방', at: [2180, 2500], color: '#f08a95', role: '혈액 받기', blob: 0,
+              chamber: { w: 320, h: 290, wall: 30, tint: '#f6a6ae' },
+              info: '폐에서 산소를 가득 채워 돌아온 혈액을 받아들이는 방입니다. 압력은 낮습니다.',
+              seg: { name: '이첨판', color: '#b8565f', wMul: .56, tunnel: true,
+                     desc: '좌심방과 좌심실 사이의 좁은 문' },
+              via: [[2160, 2730]] },
+
+            { name: '좌심실', at: [2180, 2950], color: '#e04a4a', role: '온몸으로', blob: 0,
+              chamber: { w: 360, h: 360, wall: 92, tint: '#ef6a6a' },
+              pump: { power: 1, label: '좌심실 수축!', desc: '온몸까지 보내야 해서 심장에서 가장 센 힘이 나옵니다. 벽도 가장 두껍습니다.' },
+              info: '심장에서 벽이 가장 두꺼운 곳. 여기서부터 온몸순환이 시작됩니다.',
+              seg: { name: '대동맥', color: '#d63a3a', wMul: 1.12,
+                     desc: '몸에서 가장 굵고 빠른 혈관. 온몸으로 뻗어 나갑니다' },
+              via: [[2450, 3100], [2740, 3270], [2930, 3560], [3010, 3880], [2980, 4200],
+                    [2870, 4470], [2650, 4630], [2400, 4470], [2160, 4640]] },
+
+            { name: '온몸 모세혈관', at: [1900, 4490], color: '#9b6fd4', role: '산소 전달', blob: 360,
+              info: '머리카락보다 가는 혈관이 온몸 세포에 산소와 영양소를 전달합니다. 좁고 구불구불!',
+              seg: { name: '대정맥', color: '#4a86d8', wMul: .58,
+                     desc: '온몸을 돌고 이산화탄소를 싣고 심장으로 돌아오는 길' },
+              via: [[1760, 4600], [1640, 4470], [1500, 4610], [1360, 4470], [1220, 4600],
+                    [1090, 4470], [980, 4560], [880, 4400], [820, 4180], [812, 3950],
+                    [828, 3720], [862, 3500], [900, 3300], [960, 3120], [1050, 2950],
+                    [1160, 2790], [1290, 2660], [1430, 2560], [1560, 2500]] }
+        ],
+        pickups: [
+            { icon: '🔴', name: '적혈구 터보', color: '#e04a4a', effect: 'turbo',
+              desc: '헤모글로빈이 산소를 가득 싣고 힘차게 가속합니다!' },
+            { icon: '⚪', name: '백혈구 포획', color: '#f2f2f2', effect: 'wbc',
+              desc: '세균을 잡아먹듯 가까운 카트 한 대를 붙잡아 느리게 만듭니다.' },
+            { icon: '💨', name: '이산화탄소 연막', color: '#8a9aa8', effect: 'smoke',
+              desc: '세포가 내놓은 노폐 기체. 뒤따라오는 카트의 시야를 가립니다.' },
+            { icon: '🟡', name: '콜레스테롤', color: '#e6c85a', effect: 'sticky',
+              desc: '혈관 벽에 눌어붙는 기름. 지나온 길을 끈적하게 만듭니다.' },
+            { icon: '🟠', name: '혈전 발사', color: '#c96a3a', effect: 'clot',
+              desc: '굳은 피 덩어리를 앞으로 날려 앞서가는 카트를 막습니다!' }
+        ],
+        hazards: [
+            { icon: '💨', name: '이산화탄소', color: '#8a9aa8', r: 40, slow: .55, spin: false, desc: '세포가 내놓은 노폐 기체. 지나가면 답답하게 느려집니다.' },
+            { icon: '🟠', name: '혈전',       color: '#c96a3a', r: 40, slow: .32, spin: true,  desc: '굳어진 피 덩어리. 혈관을 막아 급정거하게 만듭니다.' },
+            { icon: '🟡', name: '콜레스테롤', color: '#e6c85a', r: 42, slow: .5,  spin: true,  desc: '혈관 벽에 쌓인 기름. 밟으면 주르륵 미끄러집니다.' },
+            { icon: '🦠', name: '병원균',     color: '#a884d6', r: 34, slow: .45, spin: false, desc: '몸에 침입한 세균. 백혈구 실드로 막을 수 있어요.' }
+        ],
+        quiz: [
+            { q: '심장에서 벽이 가장 두꺼운 곳은?', a: ['우심방', '좌심실', '좌심방'], correct: 1, ex: '좌심실은 온몸으로 혈액을 밀어내야 해서 근육 벽이 가장 두껍습니다.' },
+            { q: '산소가 적은 혈액이 흐르는 동맥은?', a: ['대동맥', '폐동맥', '폐정맥'], correct: 1, ex: '폐동맥은 심장에서 폐로 가는 혈관이라 산소가 적은 혈액이 흐릅니다.' },
+            { q: '상처가 났을 때 피를 멎게 하는 것은?', a: ['적혈구', '혈소판', '백혈구'], correct: 1, ex: '혈소판이 모여 상처를 막고 피를 멎게 합니다.' }
+        ]
+    },
+
+    digestive: {
+        id: 'digestive', name: '소화계 어드벤처', laps: 5, closed: true, halfWidth: 176,
+        grass: ['#3a8a46', '#2c7038'], accent: '#e2687e',
+        // 소화는 일방통행이지만, 영양소는 순환한다 :
+        //   소장에서 흡수 → 간문맥 → 간 → 쓸개즙 → 다시 소장.
+        //   위쪽 큰 고리 = 음식의 길(입·식도·위), 아래쪽 큰 고리 = 영양소의 길(간·쓸개·대장)
+        landmarks: [
+            { type: 'stomach', at: [1900, 1420], r: 820 },
+            { type: 'liver',   at: [1900, 3560], r: 900 }
+        ],
+        flow: [
+            { name: '입', at: [1620, 2420], color: '#ef8f8f', role: '씹기 · 아밀레이스', blob: 0,
+              chamber: { w: 330, h: 300, wall: 28, tint: '#f4a6a6' },
+              info: '이로 음식을 부수고, 침 속 아밀레이스가 녹말을 엿당으로 분해합니다.',
+              seg: { name: '식도', color: '#a86fce', wMul: .56, tunnel: true,
+                     desc: '꿈틀 운동으로 음식을 위까지 밀어 내리는 좁은 관' },
+              via: [[1650, 2650]] },
+
+            { name: '식도', at: [1620, 2870], color: '#b07fd6', role: '연동 운동', blob: 0,
+              chamber: { w: 300, h: 290, wall: 34, tint: '#c08fe0' },
+              pump: { power: .55, label: '연동 운동!', desc: '근육이 물결처럼 조여 음식을 밀어 내립니다.' },
+              info: '근육이 물결처럼 움직이는 꿈틀 운동으로 음식물을 위까지 보냅니다.',
+              seg: { name: '위로 가는 길', color: '#e2687e', over: true, wMul: 1,
+                     desc: '위 입구(분문)를 지나 음식이 위로 들어갑니다' },
+              via: [[1420, 2990], [1150, 2880], [960, 2620], [890, 2280], [900, 1910],
+                    [1020, 1560], [1230, 1230], [1500, 980]] },
+
+            { name: '위', at: [1900, 800], color: '#e2687e', role: '펩신 · 위산', blob: 0,
+              info: '위산이 세균을 없애고, 펩신이 단백질을 펩톤으로 1차 분해합니다.',
+              seg: { name: '십이지장', color: '#e79cd2', wMul: 1,
+                     desc: '위에서 내려온 죽에 쓸개즙과 이자액이 섞이는 곳' },
+              via: [[2300, 980], [2570, 1240], [2780, 1570], [2900, 1930], [2910, 2280],
+                    [2820, 2570], [2480, 2530]] },
+
+            { name: '소장', at: [2180, 2420], color: '#e79cd2', role: '융모 흡수', blob: 0,
+              chamber: { w: 320, h: 290, wall: 30, tint: '#eeb0dc' },
+              info: '융모가 영양소를 빨아들여 혈관으로 보냅니다. 흡수한 영양소는 간으로 갑니다.',
+              seg: { name: '간문맥', color: '#a0566a', wMul: .56, tunnel: true,
+                     desc: '소장이 흡수한 영양소를 간으로 실어 나르는 혈관' },
+              via: [[2160, 2650]] },
+
+            { name: '간', at: [2180, 2870], color: '#8b4a55', role: '영양소 처리', blob: 0,
+              chamber: { w: 360, h: 350, wall: 88, tint: '#a35a66' },
+              pump: { power: 1, label: '간 처리 완료!', desc: '몸에서 가장 큰 장기. 영양소를 저장하고 해로운 것을 없앱니다.' },
+              info: '영양소를 저장·가공하고 해독합니다. 쓸개즙도 여기서 만들어집니다.',
+              seg: { name: '쓸개관', color: '#7fae4a', wMul: 1.1,
+                     desc: '간이 만든 쓸개즙이 쓸개에 모였다가 소장으로 내려가는 길' },
+              via: [[2450, 3020], [2740, 3190], [2930, 3480], [3010, 3800], [2980, 4120],
+                    [2870, 4390], [2650, 4550], [2400, 4390], [2160, 4560]] },
+
+            { name: '대장', at: [1900, 4410], color: '#c08b52', role: '수분 흡수', blob: 360,
+              info: '남은 찌꺼기에서 물과 무기염류를 흡수하고, 장내 세균이 도와 대변을 만듭니다.',
+              seg: { name: '되돌아오는 길', color: '#c08b52', wMul: .58,
+                     desc: '몸에 흡수된 영양소는 온몸을 돌고, 우리는 다음 끼니를 위해 입으로 돌아갑니다' },
+              via: [[1760, 4520], [1640, 4390], [1500, 4530], [1360, 4390], [1220, 4520],
+                    [1090, 4390], [980, 4480], [880, 4320], [820, 4100], [812, 3870],
+                    [828, 3640], [862, 3420], [900, 3220], [960, 3040], [1050, 2870],
+                    [1160, 2710], [1290, 2580], [1430, 2480], [1560, 2420]] }
+        ],
+        pickups: [
+            { icon: '💧', name: '아밀레이스', color: '#8fd0e8', effect: 'turbo',
+              desc: '침과 이자액 속 효소. 녹말을 엿당으로 분해하며 힘차게 가속!' },
+            { icon: '🧪', name: '펩신 포획', color: '#e2687e', effect: 'wbc',
+              desc: '위에서 단백질을 쪼개는 효소. 가까운 카트 한 대를 붙잡습니다.' },
+            { icon: '💨', name: '가스 연막', color: '#8a9aa8', effect: 'smoke',
+              desc: '장에서 생긴 가스. 뒤따라오는 카트의 시야를 가립니다.' },
+            { icon: '🧈', name: '지방 덩어리', color: '#f3d98a', effect: 'sticky',
+              desc: '쓸개즙이 잘게 만들기 전의 기름. 지나온 길을 미끄럽고 끈적하게!' },
+            { icon: '🥔', name: '음식 덩어리', color: '#c79a5a', effect: 'clot',
+              desc: '덜 씹힌 덩어리를 앞으로 날려 앞서가는 카트를 막습니다!' }
+        ],
+        hazards: [
+            { icon: '🟢', name: '위산 웅덩이', color: '#7fbf4a', r: 44, slow: .38, spin: false, desc: '강한 산성(pH 2). 잘못 밟으면 크게 느려집니다.' },
+            { icon: '🦠', name: '나쁜 세균', color: '#a884d6', r: 34, slow: .42, spin: false, desc: '식중독을 일으키는 세균.' }
+        ],
+        quiz: [
+            { q: '녹말을 엿당으로 분해하는 효소는?', a: ['아밀레이스', '펩신', '라이페이스'], correct: 0, ex: '침과 이자액 속 아밀레이스가 녹말을 분해합니다.' },
+            { q: '위에서 단백질을 분해하는 효소는?', a: ['아밀레이스', '펩신', '쓸개즙'], correct: 1, ex: '위에서 나오는 펩신이 단백질을 펩톤으로 분해합니다.' },
+            { q: '소장이 흡수한 영양소가 가장 먼저 가는 곳은?', a: ['간', '심장', '대장'], correct: 0, ex: '소장에서 흡수한 영양소는 간문맥을 타고 간으로 먼저 갑니다.' },
+            { q: '쓸개즙을 만드는 기관은?', a: ['쓸개', '간', '위'], correct: 1, ex: '쓸개즙은 간에서 만들어 쓸개에 저장했다가 소장으로 보냅니다.' }
+        ]
+    },
+
+    respiratory: {
+        id: 'respiratory', name: '호흡계 서킷', laps: 3, closed: true, halfWidth: 168,
+        grass: ['#3a8090', '#2b6674'], accent: '#8fd0e8',
+        flow: [
+            { name: '코 · 입', at: [500, 400], color: '#f0b8a0', role: '공기 흡입',
+              info: '코털과 점액이 먼지를 거르고, 공기를 따뜻하고 촉촉하게 만들어 줍니다.',
+              seg: { name: '인두 · 후두', color: '#e0a68e' }, via: [[560, 660]] },
+            { name: '기관', at: [620, 950], color: '#c9d6e8', role: '공기 길',
+              info: '고리 모양 연골이 있어 눌려도 찌그러지지 않는 튼튼한 공기 통로입니다.',
+              seg: { name: '기관', color: '#c9d6e8' }, via: [[700, 1250]] },
+            { name: '기관지', at: [850, 1500], color: '#a8c0da', role: '좌우 분기',
+              info: '기관이 좌우 폐로 갈라지는 지점. 점점 가늘어져 세기관지가 됩니다.',
+              seg: { name: '세기관지', color: '#a8c0da' }, via: [[1050, 1850], [1350, 2060]] },
+            { name: '폐포', at: [1750, 2250], color: '#f2a0c0', role: '기체 교환',
+              info: '포도송이 모양의 작은 공기주머니. 표면적이 넓어 산소를 빠르게 넘겨줍니다.',
+              seg: { name: '폐포 모세혈관', color: '#e2707a' }, via: [[2150, 2400], [2550, 2350]] },
+            { name: '산소 교환', at: [2900, 2150], color: '#e04a4a', role: '혈액에 전달',
+              info: '산소는 혈액으로, 이산화탄소는 폐포로. 농도 차이 때문에 저절로 이동합니다.',
+              seg: { name: '날숨 통로', color: '#8fd0e8' }, via: [[3250, 1900], [3450, 1550]] },
+            { name: '날숨', at: [3450, 1150], color: '#8fd0e8', role: '이산화탄소 배출',
+              info: '가로막과 갈비뼈가 올라가며 가슴 속 공간이 좁아져 공기가 밀려 나갑니다.',
+              seg: { name: '기도 복귀', color: '#8fd0e8' },
+              via: [[3350, 750], [3050, 450], [2600, 300], [2100, 270], [1500, 280], [1000, 320]] }
+        ],
+        pickups: [
+            { icon: '🫧', name: '산소',     color: '#6ec6f2', effect: 'boost',  desc: '폐포에서 혈액으로 넘어가는 기체. 힘차게 가속!' },
+            { icon: '💨', name: '깨끗한 공기', color: '#cfe8f5', effect: 'boost', desc: '코털과 점액이 걸러 준 맑은 공기.' },
+            { icon: '🛡️', name: '점액',     color: '#a8d8c0', effect: 'shield', desc: '기도를 덮어 먼지와 세균을 붙잡는 끈끈한 액체.' },
+            { icon: '🌬️', name: '섬모',     color: '#e8f0f5', effect: 'star',   desc: '먼지를 밖으로 쓸어 내는 작은 털. 장애물을 밀어냅니다!' },
+            { icon: '💧', name: '수분',     color: '#8fd0e8', effect: 'energy', desc: '들이마신 공기를 촉촉하게 만들어 주는 물기.' }
+        ],
+        hazards: [
+            { icon: '🌫️', name: '미세먼지',   color: '#9a9a9a', r: 42, slow: .45, spin: false, desc: '아주 작아 폐포까지 들어오는 먼지. 숨이 막혀 느려집니다.' },
+            { icon: '💨', name: '이산화탄소', color: '#8a9aa8', r: 42, slow: .5,  spin: false, desc: '내보내야 할 노폐 기체. 쌓이면 답답합니다.' },
+            { icon: '🦠', name: '바이러스',   color: '#a884d6', r: 34, slow: .4,  spin: true,  desc: '감기를 일으키는 침입자. 점액 실드로 막으세요.' },
+            { icon: '🟤', name: '가래',       color: '#8a7b55', r: 40, slow: .42, spin: true,  desc: '먼지와 세균이 점액에 엉긴 덩어리. 길이 좁아집니다.' }
+        ],
+        quiz: [
+            { q: '산소와 이산화탄소가 실제로 교환되는 곳은?', a: ['기관', '폐포', '코'], correct: 1, ex: '폐포는 표면적이 매우 넓어 기체 교환에 유리합니다.' },
+            { q: '들숨을 쉴 때 가로막(횡격막)은?', a: ['내려간다', '올라간다', '가만히 있다'], correct: 0, ex: '가로막이 내려가면 가슴 속 공간이 넓어져 공기가 들어옵니다.' },
+            { q: '기관에 연골 고리가 있는 이유는?', a: ['소리를 내려고', '길이 막히지 않게', '산소를 만들려고'], correct: 1, ex: '연골이 기관을 지지해 공기 통로가 눌리지 않게 합니다.' }
+        ]
+    },
+
+    nervous: {
+        id: 'nervous', name: '신경계 서킷', laps: 2, closed: true, halfWidth: 162,
+        grass: ['#4a4478', '#37326a'], accent: '#ffd166',
+        flow: [
+            { name: '감각 기관', at: [600, 2200], color: '#ffd166', role: '자극 받기',
+              info: '눈·귀·코·혀·피부가 빛, 소리, 냄새, 맛, 온도 같은 자극을 받아들입니다.',
+              seg: { name: '감각 신경', color: '#ffb703' }, via: [[560, 1900]] },
+            { name: '감각 신경', at: [700, 1500], color: '#ffb703', role: '신호 전달',
+              info: '자극을 전기 신호(활동 전위)로 바꿔 척수와 뇌로 빠르게 올려 보냅니다.',
+              seg: { name: '척수 상행로', color: '#fb8500' }, via: [[850, 1200]] },
+            { name: '척수', at: [1200, 900], color: '#fb8500', role: '반사 중추',
+              info: '뜨거운 것을 만졌을 때처럼 급할 땐 뇌를 거치지 않고 바로 명령합니다(반사).',
+              seg: { name: '뇌줄기', color: '#f77f00' }, via: [[1500, 600]] },
+            { name: '대뇌', at: [2000, 380], color: '#ff85a1', role: '판단 · 기억',
+              info: '생각하고 판단하고 기억하는 곳. 몸의 움직임을 최종적으로 명령합니다.',
+              seg: { name: '소뇌 연결로', color: '#e56b9f' }, via: [[2450, 420]] },
+            { name: '소뇌 · 뇌줄기', at: [2800, 700], color: '#c77dff', role: '균형 조절',
+              info: '소뇌는 몸의 균형과 정교한 운동을, 뇌줄기는 호흡·심장 박동을 조절합니다.',
+              seg: { name: '운동 신경', color: '#9d4edd' }, via: [[3100, 1050]] },
+            { name: '운동 신경', at: [3250, 1550], color: '#9d4edd', role: '명령 전달',
+              info: '뇌와 척수의 명령을 근육까지 전달하는 내리막 고속 구간입니다.',
+              seg: { name: '신경 근육 이음부', color: '#7b2cbf' }, via: [[3200, 1950]] },
+            { name: '근육(반응)', at: [2750, 2350], color: '#ff6b6b', role: '반응',
+              info: '명령을 받은 근육이 수축하면서 실제 움직임(반응)이 나타납니다.',
+              seg: { name: '감각 되먹임', color: '#ffd166' }, via: [[2100, 2550], [1400, 2520], [900, 2450]] }
+        ],
+        pickups: [
+            { icon: '⚡', name: '활동 전위', color: '#ffe066', effect: 'boost',  desc: '신경을 타고 흐르는 전기 신호. 순간적으로 빨라집니다!' },
+            { icon: '🧠', name: '뉴런',     color: '#ff85a1', effect: 'energy', desc: '신호를 주고받는 신경 세포.' },
+            { icon: '✨', name: '도파민',   color: '#c77dff', effect: 'boost',  desc: '기분을 좋게 하는 신경 전달 물질.' },
+            { icon: '🛡️', name: '말이집',   color: '#cfe8f5', effect: 'shield', desc: '신경을 감싼 절연 껍질. 신호를 지키고 빠르게 합니다.' },
+            { icon: '🫧', name: '산소',     color: '#6ec6f2', effect: 'star',   desc: '뇌가 가장 많이 쓰는 연료. 잠시 무적이 됩니다!' }
+        ],
+        hazards: [
+            { icon: '😵', name: '피로 물질', color: '#7a7a9a', r: 40, slow: .45, spin: false, desc: '쌓이면 반응이 느려집니다. 잠이 보약!' },
+            { icon: '🌀', name: '신호 간섭', color: '#6a5acd', r: 42, slow: .5,  spin: true,  desc: '신호가 뒤엉켜 차가 빙글 돌아갑니다.' },
+            { icon: '🦠', name: '염증',     color: '#a884d6', r: 34, slow: .4,  spin: false, desc: '신경이 부어 신호 전달이 느려집니다.' },
+            { icon: '🔻', name: '신경 압박', color: '#5a4a7a', r: 38, slow: .38, spin: true,  desc: '눌린 신경 구간. 저릿하게 속도가 떨어집니다.' }
+        ],
+        quiz: [
+            { q: '뜨거운 것을 만졌을 때 바로 손을 떼는 반응의 중추는?', a: ['대뇌', '척수', '소뇌'], correct: 1, ex: '급한 상황에서는 척수가 바로 명령하는 반사가 일어납니다.' },
+            { q: '몸의 균형을 잡아 주는 곳은?', a: ['소뇌', '대뇌', '척수'], correct: 0, ex: '소뇌는 균형과 정교한 운동을 조절합니다.' },
+            { q: '자극 → 반응의 올바른 순서는?', a: ['감각기관→감각신경→중추→운동신경→근육', '근육→뇌→감각기관', '중추→감각기관→근육'], correct: 0, ex: '자극은 감각기관에서 시작해 중추를 거쳐 근육으로 전달됩니다.' }
+        ]
+    },
+
+    urinary: {
+        id: 'urinary', name: '배설계 코스', laps: 1, closed: false, halfWidth: 164,
+        grass: ['#35876a', '#296e56'], accent: '#5ec2f5',
+        flow: [
+            { name: '콩팥 동맥', at: [400, 350], color: '#e04a4a', role: '혈액 공급',
+              info: '노폐물이 섞인 혈액이 콩팥으로 들어오는 입구입니다.',
+              seg: { name: '콩팥 동맥', color: '#e04a4a' }, via: [[750, 320], [1100, 380]] },
+            { name: '사구체', at: [1450, 480], color: '#ff8fab', role: '여과',
+              info: '실타래처럼 얽힌 모세혈관 뭉치. 높은 압력으로 물과 노폐물을 걸러 냅니다.',
+              seg: { name: '보먼주머니', color: '#f4a3c0' }, via: [[1800, 600], [2100, 850]] },
+            { name: '세뇨관', at: [2250, 1200], color: '#7fd4ff', role: '재흡수',
+              info: '몸에 필요한 포도당·물·무기염류를 다시 혈액으로 되돌려 받습니다.',
+              seg: { name: '집합관', color: '#5ec2f5' }, via: [[2400, 1550], [2200, 1800], [1800, 1850]] },
+            { name: '콩팥 깔때기', at: [1450, 1650], color: '#5ec2f5', role: '오줌 모으기',
+              info: '만들어진 오줌이 모이는 깔때기 모양의 공간입니다.',
+              seg: { name: '오줌관', color: '#48c9b0' }, via: [[1350, 1950]] },
+            { name: '오줌관', at: [1400, 2250], color: '#48c9b0', role: '이동',
+              info: '꿈틀 운동으로 오줌을 방광까지 내려 보냅니다.',
+              seg: { name: '오줌관', color: '#48c9b0' }, via: [[1600, 2500], [1950, 2600]] },
+            { name: '방광', at: [2350, 2600], color: '#f4d35e', role: '저장',
+              info: '오줌을 모아 두었다가 일정량이 차면 배출 신호를 보냅니다.',
+              seg: { name: '요도', color: '#ee964b' }, via: [[2750, 2550]] },
+            { name: '요도', at: [3050, 2500], color: '#ee964b', role: '배출',
+              info: '몸 밖으로 오줌을 내보내는 마지막 통로입니다.',
+              seg: { name: '배출', color: '#ee964b' }, via: [[3350, 2560], [3620, 2620]] }
+        ],
+        pickups: [
+            { icon: '💧', name: '물',       color: '#6ec6f2', effect: 'boost',  desc: '세뇨관에서 대부분 다시 흡수되는 소중한 물.' },
+            { icon: '🍬', name: '포도당',   color: '#f4d35e', effect: 'boost',  desc: '여과됐다가 100% 재흡수되는 영양소. 오줌에 나오면 안 돼요!' },
+            { icon: '🧂', name: '무기염류', color: '#cfe8f5', effect: 'energy', desc: '몸의 농도를 맞추는 나트륨·칼륨 같은 이온.' },
+            { icon: '🛡️', name: '보먼주머니', color: '#f4a3c0', effect: 'shield', desc: '사구체를 감싸 여과액을 받아 내는 컵. 충격을 막아 줍니다.' }
+        ],
+        hazards: [
+            { icon: '🪨', name: '콩팥 결석', color: '#9a8a7a', r: 42, slow: .3,  spin: true,  desc: '무기염류가 굳어 생긴 돌. 부딪히면 크게 튕깁니다.' },
+            { icon: '🟡', name: '요소',     color: '#d8c05a', r: 38, slow: .5,  spin: false, desc: '단백질이 분해되며 생긴 노폐물. 내보내야 합니다.' },
+            { icon: '🦠', name: '세균',     color: '#a884d6', r: 34, slow: .42, spin: false, desc: '요로에 들어온 세균. 염증을 일으킵니다.' },
+            { icon: '🔻', name: '막힌 오줌관', color: '#4a7a6a', r: 38, slow: .35, spin: true, desc: '좁아진 구간. 통과 속도가 뚝 떨어집니다.' }
+        ],
+        quiz: [
+            { q: '혈액 속 노폐물을 처음 걸러 내는 곳은?', a: ['사구체', '방광', '요도'], correct: 0, ex: '사구체에서 높은 압력으로 여과가 일어납니다.' },
+            { q: '몸에 필요한 포도당을 다시 흡수하는 곳은?', a: ['세뇨관', '방광', '오줌관'], correct: 0, ex: '세뇨관에서 재흡수가 일어나 포도당은 오줌으로 나가지 않습니다.' },
+            { q: '오줌이 만들어져 나가는 순서는?', a: ['콩팥→오줌관→방광→요도', '방광→콩팥→요도', '요도→방광→콩팥'], correct: 0, ex: '콩팥에서 만들어진 오줌은 오줌관을 지나 방광에 저장됩니다.' }
+        ]
+    }
+};
+
+/* ============================================================================
+   성장 : 레이스에서 얻은 포인트로 카트 성능을 올린다.
+   기기에 저장되므로 계정 없이도 이어서 키울 수 있다.
+   ========================================================================== */
+const UPGRADES = [
+    { key: 'speed',  icon: '🏁', name: '최고 속도', desc: '더 빨리 달립니다',       max: 5, cost: [60, 140, 260, 420, 640] },
+    { key: 'accel',  icon: '⚡', name: '가속력',   desc: '더 빨리 속도가 붙습니다', max: 5, cost: [50, 120, 230, 380, 580] },
+    { key: 'grip',   icon: '🛞', name: '접지력',   desc: '코너에서 덜 미끄러집니다', max: 5, cost: [50, 120, 230, 380, 580] },
+    { key: 'boost',  icon: '🔥', name: '부스터',   desc: '부스터가 더 오래갑니다',   max: 5, cost: [70, 160, 300, 480, 720] }
+];
+
+const SAVE_KEY = 'bodyRacing.save.v1';
+let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0 }, best: {} };
+
+function loadSave() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) {
+            const d = JSON.parse(raw);
+            save.points = d.points || 0;
+            save.lv = Object.assign({ speed: 0, accel: 0, grip: 0, boost: 0 }, d.lv || {});
+            save.best = d.best || {};
+        }
+    } catch (e) { /* 저장이 막힌 환경이면 그냥 진행 */ }
+}
+function writeSave() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+}
+// 레벨당 성능 배율
+const upMul = {
+    speed: () => 1 + save.lv.speed * .045,      // 최대 +22%
+    accel: () => 1 + save.lv.accel * .07,       // 최대 +35%
+    grip:  () => 1 + save.lv.grip  * .06,       // 최대 +30%
+    boost: () => 1 + save.lv.boost * .10        // 최대 +50%
+};
+loadSave();
+
+const EFFECT_DUR = {
+    turbo: 3.4,      // 적혈구 터보 — 확실히 앞지를 만큼
+    wbc: 4.0,        // 백혈구에 붙잡힌 시간
+    smoke: 7.0,      // 연막이 남아 있는 시간
+    sticky: 10.0,    // 끈적한 길이 남는 시간
+    boost: 1.9, shield: 5.5, star: 4.5
+};
+
+/* 프로토타입 단계에서는 주행에만 집중한다.
+   아이템·장애물 데이터는 그대로 두고 배치만 끈다 (true 로 바꾸면 즉시 되살아남). */
+const SPAWN_ITEMS = true;
+const SPAWN_HAZARDS = false;
+
+/* ============================================================================
+   2. flow → 트랙 생성
+   ========================================================================== */
+const SEG_SAMPLES = 20;
+function catmull(p0, p1, p2, p3, t) {
+    const t2 = t * t, t3 = t2 * t;
+    return [
+        .5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+        .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
+    ];
+}
+
+function buildTrack(sys) {
+    const ctrl = [], nodeIdx = [];
+    sys.flow.forEach(node => { nodeIdx.push(ctrl.length); ctrl.push(node.at); (node.via || []).forEach(v => ctrl.push(v)); });
+
+    const n = ctrl.length, closed = sys.closed;
+    const at = i => closed ? ctrl[(i % n + n) % n] : ctrl[clamp(i, 0, n - 1)];
+
+    const pts = [];
+    const segCount = closed ? n : n - 1;
+    for (let i = 0; i < segCount; i++)
+        for (let j = 0; j < SEG_SAMPLES; j++) {
+            const p = catmull(at(i - 1), at(i), at(i + 1), at(i + 2), j / SEG_SAMPLES);
+            pts.push({ x: p[0], y: p[1] });
+        }
+    if (!closed) pts.push({ x: ctrl[n - 1][0], y: ctrl[n - 1][1] });
+
+    const N = pts.length;
+    let total = 0;
+    for (let i = 0; i < N; i++) {
+        const a = pts[i], b = pts[closed ? (i + 1) % N : Math.min(i + 1, N - 1)];
+        const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+        a.dx = dx / len; a.dy = dy / len; a.ang = Math.atan2(dy, dx); a.dist = total;
+        total += (i === N - 1 && !closed) ? 0 : len;
+    }
+    pts.forEach(p => p.t = p.dist / total);
+
+    // 곡률 → 그 지점을 통과할 수 있는 최대 속도(vmax). AI 감속과 장애물 배치에 사용
+    const spacing = total / N, WIN = 12, arcLen = spacing * WIN;
+    for (let i = 0; i < N; i++) {
+        const j = closed ? (i + WIN) % N : Math.min(i + WIN, N - 1);
+        const c = Math.abs(angDiff(pts[j].ang, pts[i].ang));
+        pts[i].curve = c;
+        const radius = arcLen / Math.max(c, .02);          // 코너 반지름 근사
+        // 고속에서 선회력이 줄어드는 것(STABLE_MIN)까지 감안해 잡는다
+        pts[i].vmax = clamp(TURN_RATE * STABLE_MIN * .78 * radius, 180, MAXSPEED);
+        pts[i].vmaxRaw = pts[i].vmax;
+    }
+    // 코너 진입 전에 미리 감속할 수 있도록 vmax를 뒤로 전파 (브레이크 거리 고려)
+    for (let pass = 0; pass < 3; pass++)
+        for (let i = N - 1; i >= 0; i--) {
+            const j = closed ? (i + 1) % N : Math.min(i + 1, N - 1);
+            const reach = Math.sqrt(pts[j].vmax * pts[j].vmax + 2 * 900 * spacing);
+            if (reach < pts[i].vmax) pts[i].vmax = reach;
+        }
+
+    const hw = sys.halfWidth;
+    const secs = sys.flow.map((node, i) => {
+        const from = Math.min(nodeIdx[i] * SEG_SAMPLES, N - 1);
+        const to = Math.min((i + 1 < sys.flow.length) ? nodeIdx[i + 1] * SEG_SAMPLES : (closed ? N : N - 1), N - 1);
+        const col = node.seg ? node.seg.color : node.color;
+        return { idx: i, num: i + 1, node, from, to, name: node.seg ? node.seg.name : node.name,
+                 color: col, dark: shade(col, -.34), elevated: !!(node.seg && node.seg.over) };
+    });
+    // 각 샘플이 어느 구간(층)에 속하는지 표시 — 다리 위/아래 판정에 사용
+    secs.forEach(s => { for (let i = s.from; i <= s.to; i++) pts[i].sec = s.idx; });
+    for (let i = 0; i < N; i++) if (pts[i].sec === undefined) pts[i].sec = secs.length - 1;
+
+    // 구간별 도로 폭 (판막은 좁은 문, 모세혈관은 가늘다) → 경계에서 부드럽게 이어지도록 평활화
+    for (let i = 0; i < N; i++) {
+        const sd = sys.flow[pts[i].sec].seg;
+        pts[i].hw = hw * ((sd && sd.wMul) || 1);
+    }
+    for (let pass = 0; pass < 26; pass++) {
+        const cp = pts.map(p => p.hw);
+        for (let i = 0; i < N; i++) {
+            const a = cp[(i - 1 + N) % N], b = cp[(i + 1) % N];
+            pts[i].hw = cp[i] * .5 + (a + b) * .25;
+        }
+    }
+    // 양쪽 가장자리 좌표 (가변 폭 도로를 면으로 그리기 위해)
+    for (let i = 0; i < N; i++) {
+        const p = pts[i];
+        p.lx = p.x - p.dy * p.hw; p.ly = p.y + p.dx * p.hw;
+        p.rx = p.x + p.dy * p.hw; p.ry = p.y - p.dx * p.hw;
+    }
+
+    // 다리 구간 검출 : 위층(elevated)과 아래층 도로가 실제로 겹치는 곳만 표시한다.
+    // 심장처럼 같은 층 도로가 나란히 붙어 있는 곳은 다리가 아니므로 제외.
+    for (let i = 0; i < N; i++) pts[i].open = false;
+    for (let i = 0; i < N; i += 2)
+        for (let j = i + 40; j < N; j += 2) {
+            if (closed && (N - (j - i)) < 40) continue;
+            if (secs[pts[i].sec].elevated === secs[pts[j].sec].elevated) continue;
+            if ((pts[i].x - pts[j].x) ** 2 + (pts[i].y - pts[j].y) ** 2 < (hw * 1.5) ** 2) {
+                for (let k = -4; k <= 4; k++) {
+                    const a = closed ? (i + k + N) % N : clamp(i + k, 0, N - 1);
+                    const b = closed ? (j + k + N) % N : clamp(j + k, 0, N - 1);
+                    pts[a].open = pts[b].open = true;
+                }
+            }
+        }
+
+    // 구간별 : 노면 채우기 면 + 좌우 가장자리 선 (가변 폭 대응)
+    const paths = secs.map(s => {
+        const p = new Path2D(), a = Math.max(0, s.from - 1), b = Math.min(N - 1, s.to + 1);
+        p.moveTo(pts[a].x, pts[a].y);
+        for (let i = a + 1; i <= b; i++) p.lineTo(pts[i].x, pts[i].y);
+        return p;
+    });
+    secs.forEach(s => {
+        const a = Math.max(0, s.from - 1), b = Math.min(N - 1, s.to + 1);
+        const fill = new Path2D(), le = new Path2D(), re = new Path2D();
+        fill.moveTo(pts[a].lx, pts[a].ly);
+        le.moveTo(pts[a].lx, pts[a].ly);
+        re.moveTo(pts[a].rx, pts[a].ry);
+        for (let i = a + 1; i <= b; i++) { fill.lineTo(pts[i].lx, pts[i].ly); le.lineTo(pts[i].lx, pts[i].ly); re.lineTo(pts[i].rx, pts[i].ry); }
+        for (let i = b; i >= a; i--) fill.lineTo(pts[i].rx, pts[i].ry);
+        fill.closePath();
+        s.fillPath = fill; s.leftPath = le; s.rightPath = re;
+        s.tunnel = !!(s.node.seg && s.node.seg.tunnel);
+    });
+    const fullPath = new Path2D();
+    fullPath.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < N; i++) fullPath.lineTo(pts[i].x, pts[i].y);
+    if (closed) fullPath.closePath();
+
+    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    for (const p of pts) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
+    // 심장·폐 같은 큰 기관 그림이 화면 밖으로 잘리지 않게 경계에 포함
+    (sys.landmarks || []).forEach(lm => {
+        const r = lm.r * 1.25;
+        minX = Math.min(minX, lm.at[0] - r); maxX = Math.max(maxX, lm.at[0] + r);
+        minY = Math.min(minY, lm.at[1] - r); maxY = Math.max(maxY, lm.at[1] + r);
+    });
+    const pad = hw + 320;
+    const bounds = { x: minX - pad, y: minY - pad, w: (maxX - minX) + pad * 2, h: (maxY - minY) + pad * 2 };
+
+    const rng = rngOf(sys.id.length * 7919 + N * 31);
+    const items = [], hazards = [], pads = [];
+    const on = (p, off, ex) => Object.assign({ x: p.x - p.dy * off, y: p.y + p.dx * off }, ex);
+
+    // 아이템 라인은 한 바퀴에 몇 군데만. 직선 구간(코너가 아닌 곳)에 고르게 배치한다.
+    if (SPAWN_ITEMS) {
+        const LINES = 5;
+        for (let n = 0; n < LINES; n++) {
+            let i = Math.floor(N * (n + .5) / LINES);
+            for (let tryN = 0; tryN < 30 && pts[i].curve > .35; tryN++) i = (i + 4) % N;   // 코너는 피한다
+            [-.44, 0, .44].forEach(f => items.push(on(pts[i], f * pts[i].hw,
+                { box: true, alive: true, respawn: 0, ph: rng() * TAU })));
+        }
+    }
+    // 장애물은 직선 구간 위주 (코너에 두면 너무 가혹함)
+    if (SPAWN_HAZARDS)
+        for (let i = 44; i < N - 24; i += 12)
+            if (rng() < .55 && pts[i].curve < .55) {
+                const kind = sys.hazards[Math.floor(rng() * sys.hazards.length)];
+                hazards.push(on(pts[i], (rng() * 2 - 1) * pts[i].hw * .48, { kind, alive: true, respawn: 0, ph: rng() * TAU }));
+            }
+    // 부스터는 오직 심실 수축으로만 나온다 (심장의 압력을 표현 — 무작위 배치 없음).
+    // 심실을 빠져나가는 구간에 여러 장을 연달아 깔아 '밀어내는 힘'이 이어지게 한다.
+    sys.flow.forEach((node, i) => {
+        if (!node.pump) return;
+        const base = nodeIdx[i] * SEG_SAMPLES;
+        const count = node.pump.power > .8 ? 5 : 3;      // 좌심실이 더 길게 민다
+        for (let j = 0; j < count; j++) {
+            const si = Math.min(base + 4 + j * 7, N - 1);
+            pads.push(on(pts[si], 0, {
+                ang: pts[si].ang, power: node.pump.power,
+                pump: j === 0 ? node.pump : null, node, seq: j
+            }));
+        }
+    });
+
+    const decor = [];
+    for (let k = 0; k < 760; k++) {
+        const x = bounds.x + rng() * bounds.w, y = bounds.y + rng() * bounds.h;
+        let near = 1e9;
+        for (let i = 0; i < N; i += 3) {
+            const d = (pts[i].x - x) ** 2 + (pts[i].y - y) ** 2;
+            if (d < near) near = d;
+        }
+        if (Math.sqrt(near) > hw + 120) decor.push({ x, y, r: 15 + rng() * 32, tree: rng() < .5, hue: rng() });
+    }
+
+    const checkpoints = sys.flow.map((node, i) => ({ si: Math.min(nodeIdx[i] * SEG_SAMPLES, N - 1), node, num: i + 1 }));
+
+    return { sys, pts, N, total, closed, halfWidth: hw, secs, paths, fullPath, bounds, items, hazards, pads, decor, checkpoints };
+}
+
+/* ============================================================================
+   3. 캔버스 / 카메라
+   ========================================================================== */
+const cvs = document.getElementById('game'), ctx = cvs.getContext('2d');
+let VW = 0, VH = 0, DPR = 1;
+function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    VW = window.innerWidth; VH = window.innerHeight;
+    cvs.width = Math.floor(VW * DPR); cvs.height = Math.floor(VH * DPR);
+    cvs.style.width = VW + 'px'; cvs.style.height = VH + 'px';
+}
+window.addEventListener('resize', resize); resize();
+
+const cam = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
+const ZOOM_MIN = .12, ZOOM_MAX = 2.2;
+let bridgeAlpha = 1;                    // 다리 밑을 지날 때 위 도로가 비치는 정도
+let driftHint = 0;                      // 드리프트 안내를 다시 띄우기까지 남은 시간
+let countShown = -1;                    // 카운트다운에서 방금 울린 숫자
+let stickyHint = 0;                     // 끈적임 파훼 안내를 다시 띄우기까지
+let subTimer = 0, lastSubKey = '';      // 기관·혈관 자막
+function zoomBy(f) { cam.targetZoom = clamp(cam.targetZoom * f, ZOOM_MIN, ZOOM_MAX); if (fullMap) fullMap = false; }
+
+cvs.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY > 0 ? .88 : 1.14); }, { passive: false });
+
+/* ============================================================================
+   4. 카트 물리 (드리프트 탑뷰)
+   ========================================================================== */
+const ACCEL = 820, BRAKE = 1250, MAXSPEED = 545, REV_MAX = 180;
+const TURN_RATE = 3.95, GRIP_NORMAL = 11.5, GRIP_DRIFT = 1.9, ROLL_DRAG = .55, OFFROAD_MAX = 240;
+const DRIFT_TURN = 1.05;     // 드리프트 중 선회 배율 (1보다 크게 하면 차가 홱 돈다)
+const DRIFT_SLIDE = 290;     // 뒤가 흐르는 정도
+const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움 (작을수록 즉각적)
+const STEER_SMOOTH = .035;   // 조향 입력이 반영되는 속도. 클수록 부드럽고 덜 예민하다
+const STABLE_MIN = .88;      // 고속에서 남는 선회력 비율 (낮출수록 고속 안정, 대신 코너를 못 돈다)
+const ASSIST = 4.2;          // 도로 방향으로 스스로 정렬되는 세기 (초보 보조)
+const ASSIST_TURNING = .5;   // 조향 중에도 유지되는 보조 비율
+const CAR_COLORS = ['#d4353f', '#3f74c4', '#2f9e4f', '#e8628e'];
+const AI_NAMES = ['적혈이', '백구', '효소맨'];
+
+/* ---- 블렌더에서 렌더한 기관 이미지 (없으면 코드 그림으로 자동 대체) ---- */
+const ORGAN_IMAGES = {};
+['heart', 'lungs', 'stomach', 'liver'].forEach(key => {
+    const im = new Image();
+    im.onload = () => { im.ready = true; };
+    im.src = 'assets/organ_' + key + '.png';
+    ORGAN_IMAGES[key] = im;
+});
+
+/* ---- 블렌더에서 렌더한 카트 스프라이트 (없으면 코드 그림으로 자동 대체) ---- */
+const KART_KEYS = ['red', 'blue', 'green', 'pink'];
+const KART_SPRITES = {};
+KART_KEYS.forEach(key => {
+    const im = new Image();
+    im.onload = () => { im.ready = true; };
+    im.src = 'assets/kart_' + key + '.png';
+    KART_SPRITES[key] = im;
+});
+
+function makeKart(isPlayer, ci, name) {
+    return {
+        isPlayer, name, color: CAR_COLORS[ci], sprite: KART_KEYS[ci],
+        x: 0, y: 0, ang: 0, vx: 0, vy: 0, speed: 0, slip: 0, steer: 0, wobble: Math.random() * TAU,
+        si: 0, prevSi: 0, lap: 1, cpIndex: 0, cpDone: 0, progress: 0,
+        finished: false, finishTime: 0, rank: 1,
+        drifting: false, driftAmt: 0, driftCharge: 0, driftCount: 0,
+        boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
+        trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
+        slots: [], collected: {}, offroad: false, centerDist: 0,
+        aiOffset: 0, aiTimer: 0, aiThrottle: 1, aiSteer: 0, aiDrift: false, maxMul: 1, stuckT: 0
+    };
+}
+
+function updateKart(k, dt) {
+    let throttle = 0, steerIn = 0, wantDrift = false;
+
+    if (k.finished) throttle = 0;
+    else if (k.isPlayer) {
+        if (input.gas) throttle = 1;
+        if (input.brake) throttle = -1;
+        if (input.left) steerIn -= 1;
+        if (input.right) steerIn += 1;
+        wantDrift = input.drift;
+    } else {
+        aiControl(k, dt);
+        throttle = k.aiThrottle; steerIn = k.aiSteer; wantDrift = k.aiDrift;
+    }
+
+    const ca0 = Math.cos(k.ang), sa0 = Math.sin(k.ang);
+    let vF = k.vx * ca0 + k.vy * sa0;
+    let vR = -k.vx * sa0 + k.vy * ca0;
+
+    const boosting = k.boostTime > 0 || k.starTime > 0;
+    const up = k.isPlayer ? upMul : null;
+    let maxSp = MAXSPEED * (k.maxMul + (k.rubber || 0)) * (boosting ? (k.turboTime > 0 ? 1.58 : 1.42) : 1);
+    if (up) maxSp *= up.speed();
+    if (k.offroad && k.starTime <= 0) maxSp = Math.min(maxSp, OFFROAD_MAX);
+    // ── 드리프트로 파훼 : 미끄러뜨리면 붙잡힘·끈적임을 떨쳐낸다
+    //    driftAmt 가 클수록 감속 효과가 약해지고, 게이지가 차면 완전히 벗어난다
+    const escape = k.driftAmt * (.55 + k.driftCharge / 100 * .45);
+    const soften = v => lerp(v, 1, clamp(escape, 0, 1));
+
+    if (k.hitTime > 0) maxSp *= soften(.55);
+    if (k.trapTime > 0) maxSp *= soften(.3);           // 백혈구에 붙잡힘
+    if (k.stickyTime > 0) maxSp *= soften(.58);        // 콜레스테롤 끈적임
+
+    // 드리프트를 충분히 물면 상태 이상 자체가 빨리 풀린다
+    if (k.driftAmt > .5) {
+        const shed = dt * (1.6 + k.driftCharge / 100 * 2.4);
+        if (k.trapTime > 0)   k.trapTime = Math.max(0, k.trapTime - shed);
+        if (k.stickyTime > 0) k.stickyTime = Math.max(0, k.stickyTime - shed);
+        if (k.hitTime > 0)    k.hitTime = Math.max(0, k.hitTime - shed);
+        if (k.isPlayer && (k.trapTime > 0 || k.stickyTime > 0) && Math.random() < .25) {
+            popup(k.x, k.y, '떨쳐낸다!', '#7ee081');
+        }
+    }
+
+    if (throttle > 0) vF += ACCEL * (boosting ? 2 : 1) * (up ? up.accel() : 1) * dt;
+    else if (throttle < 0) vF -= BRAKE * dt;
+    else vF -= vF * ROLL_DRAG * dt;
+    if (k.offroad && k.starTime <= 0) vF -= vF * 2.1 * dt;
+    vF = clamp(vF, -REV_MAX, maxSp);
+
+    // 드리프트 조건을 느슨하게 : 느려도, 방향키를 살짝만 꺾어도 걸린다.
+    // 상태 이상으로 느려졌을 땐 문턱을 크게 낮춘다 — 그래야 드리프트로 탈출할 수 있다.
+    const afflicted = k.trapTime > 0 || k.stickyTime > 0 || k.hitTime > 0;
+    k.drifting = wantDrift && Math.abs(vF) > (afflicted ? 35 : 120) && Math.abs(steerIn) > .02;
+    // 접지력을 한 번에 풀지 않고 서서히 — 차가 튕기듯 도는 것을 막는다
+    k.driftAmt = lerp(k.driftAmt, k.drifting ? 1 : 0, 1 - Math.pow(DRIFT_EASE, dt));
+    vR *= Math.max(0, 1 - lerp(GRIP_NORMAL * (up ? up.grip() : 1), GRIP_DRIFT, k.driftAmt) * dt);
+
+    // 저속에선 잘 돌고, 고속에선 안정적으로 — 예민함을 줄이는 핵심
+    const spd = clamp(Math.abs(vF) / 170, 0, 1);
+    let stable = lerp(1, STABLE_MIN, clamp((Math.abs(vF) - 230) / 320, 0, 1));
+    if (boosting) stable = Math.min(1, stable * 1.12);   // 부스터 중 조향 회복
+    k.steer = lerp(k.steer, steerIn, 1 - Math.pow(STEER_SMOOTH, dt));
+    k.ang += k.steer * TURN_RATE * lerp(1, DRIFT_TURN, k.driftAmt) * spd * stable * dt * (vF < 0 ? -1 : 1);
+
+    // 도로 방향으로 스스로 정렬 (초보 보조). 조향 중에도 약하게 유지된다.
+    if (Math.abs(vF) > 55) {
+        const road = track.pts[k.si].ang;
+        let w = Math.abs(steerIn) < .05 ? 1 : ASSIST_TURNING;
+        w = lerp(w, .22, k.driftAmt);          // 드리프트 중에도 약하게 유지 → 스핀 방지
+        // 빠를수록 보조를 키운다 — 부스터로 폭주할 때 제어를 잃지 않게
+        const fastAid = 1 + clamp((Math.abs(vF) - MAXSPEED) / (MAXSPEED * .6), 0, 1) * 1.1;
+        k.ang += clamp(angDiff(road, k.ang), -.9, .9) * ASSIST * w * fastAid * dt;
+    }
+
+    if (k.drifting) {
+        vR += k.steer * DRIFT_SLIDE * k.driftAmt * dt;             // 미끄러짐도 서서히
+        k.driftCharge = Math.min(100, k.driftCharge + 95 * dt);    // 빨리 찬다 (약 1초면 발동)
+    } else if (k.driftCharge > 0) {
+        if (k.driftCharge > 12) {                                  // 문턱을 낮춰 거의 항상 터지게
+            k.boostTime = Math.max(k.boostTime, (.35 + k.driftCharge / 100 * 1.05) * (k.isPlayer ? upMul.boost() : 1));
+            k.driftCount++;
+            if (k.isPlayer) {
+                sfxBoost(); cam.shake = 7; cam.kick = 1; k.earned += 8;
+                popup(k.x, k.y, k.driftCharge > 70 ? '슈퍼 부스터!' : '부스터!',
+                      k.driftCharge > 70 ? '#ff8a3c' : '#ffe066');
+            }
+        }
+        k.driftCharge = 0;
+    }
+
+    const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
+    k.vx = ca * vF - sa * vR; k.vy = sa * vF + ca * vR;
+    k.x += k.vx * dt; k.y += k.vy * dt;
+
+    k.speed = vF; k.slip = Math.abs(vR);
+    k.topSpeed = Math.max(k.topSpeed, Math.abs(vF));
+    k.wobble += dt * (2 + Math.abs(vF) / 120);
+
+    k.boostTime = Math.max(0, k.boostTime - dt);
+    k.shieldTime = Math.max(0, k.shieldTime - dt);
+    k.starTime = Math.max(0, k.starTime - dt);
+    k.hitTime = Math.max(0, k.hitTime - dt);
+    k.trapTime = Math.max(0, k.trapTime - dt);
+    k.wbcHold = Math.max(0, k.wbcHold - dt);
+    k.turboTime = Math.max(0, k.turboTime - dt);
+    k.stickyTime = Math.max(0, k.stickyTime - dt);
+    k.blindTime = Math.max(0, k.blindTime - dt);
+
+    // 드리프트를 걸 만한 코너인데 안 쓰고 있으면 알려 준다 (첫 랩 한정)
+    if (k.isPlayer && !k.drifting && k.lap === 1 && driftHint <= 0 &&
+        Math.abs(vF) > 300 && Math.abs(steerIn) > .5) {
+        driftHint = 9;
+        showToast('SPACE 를 누른 채 코너를 돌아보세요', '미끄러지며 게이지가 차고, 손을 떼면 부스터가 터집니다!');
+    }
+    driftHint -= dt;
+
+    if (k.driftAmt > .25 || k.slip > 90 || (k.offroad && Math.abs(vF) > 150)) addSkid(k);
+    if (k.driftAmt > .3 && Math.abs(vF) > 150) addDriftSmoke(k);
+    if (k.offroad && Math.abs(vF) > 120 && Math.random() < .4) addDust(k);
+
+    updateProgress(k);
+    applyBarrier(k);
+    checkSkillZones(k);
+    if (!k.finished) { checkPickups(k); checkHazards(k); checkPads(k); }
+}
+
+// 붉은 혈관벽 — 관대한 반응. 스치면 벽을 따라 미끄러지고, 정면으로 박아야 크게 손해.
+function applyBarrier(k) {
+    // 위아래로 갈라진 다리는 서로 간섭하지 않으므로, 두 도로 모두 벽을 그대로 유지한다
+    const p = track.pts[k.si];
+    const limit = (p.hw || track.halfWidth) - 4;
+    if (k.centerDist <= limit) return;
+
+    let dx = k.x - p.x, dy = k.y - p.y;
+    const d = Math.hypot(dx, dy) || 1;
+    dx /= d; dy /= d;
+    k.x = p.x + dx * limit; k.y = p.y + dy * limit;
+
+    const vn = k.vx * dx + k.vy * dy;                 // 벽을 뚫고 나가려는 속도
+    if (vn > 0) {
+        k.vx -= dx * vn; k.vy -= dy * vn;             // 바깥 성분만 제거 → 벽을 따라 미끄러짐
+        const along = Math.hypot(k.vx, k.vy);
+        const headOn = vn / (vn + along + 1);         // 0=스침, 1=정면
+        const keep = lerp(.99, .5, clamp(headOn * 1.7, 0, 1));
+        k.vx *= keep; k.vy *= keep;
+        if (k.isPlayer && headOn > .3) { cam.shake = 4 + headOn * 10; addDust(k); sfxCrash(clamp(headOn * 1.4, .2, 1)); }
+    }
+    k.centerDist = limit;
+}
+
+function aiControl(k, dt) {
+    // 고무줄 밸런스 : 플레이어와의 거리로 속도 보정 (붙어서 달리게)
+    if (player && !player.finished) {
+        const gap = (player.progress - k.progress) / 900;   // +면 AI가 뒤
+        k.rubber = clamp(gap * .12, -.06, .24);
+    } else k.rubber = 0;
+    k.aiTimer -= dt;
+    if (k.aiTimer <= 0) { k.aiTimer = 1.2 + Math.random() * 1.5; k.aiOffset = (Math.random() * 2 - 1) * track.halfWidth * .3; }
+
+    const N = track.N;
+    const idx = d => track.closed ? (k.si + d) % N : Math.min(k.si + d, N - 1);
+
+    // 조향 : 속도가 빠를수록 멀리 본다
+    const p = track.pts[idx(5 + Math.floor(Math.abs(k.speed) / 70))];
+    const tx = p.x - p.dy * k.aiOffset, ty = p.y + p.dx * k.aiOffset;
+    k.aiSteer = clamp(angDiff(Math.atan2(ty - k.y, tx - k.x), k.ang) * 3.2, -1, 1);
+
+    // 감속 : 앞쪽 코너의 통과 가능 속도를 보고 지금 낼 수 있는 속도를 계산
+    const target = track.pts[idx(2)].vmax * (k.maxMul + (k.rubber || 0) * .8);
+    const worst = track.pts[idx(8)].curve;
+    // 낙오 복구 : 2초 넘게 거의 멈춰 있으면 도로 중앙에 되돌린다
+    if (Math.abs(k.speed) < 55 && !k.finished) {
+        k.stuckT += dt;
+        if (k.stuckT > 2) {
+            const rp = track.pts[k.si];
+            k.x = rp.x; k.y = rp.y; k.ang = rp.ang;
+            k.vx = k.vy = 0; k.stuckT = 0;
+        }
+    } else k.stuckT = 0;
+
+    k.aiThrottle = k.speed > target * 1.04 ? -1 : (k.speed > target * .96 ? 0 : 1);
+    // AI는 드리프트를 쓰지 않는다 — 미끄러짐 제어가 안 돼 벽에 박힌다.
+    // 속도 격차는 고무줄(rubber)이 채워 준다.
+    k.aiDrift = false;
+    if (k.offroad) { k.aiThrottle = 1; k.aiDrift = false; }
+    if (k.slots.length && Math.random() < .008) useItemFor(k);
+}
+
+function updateProgress(k) {
+    const N = track.N, closed = track.closed;
+    let best = k.si, bestD = 1e18;
+    for (let d = -26; d <= 80; d++) {
+        let i = k.si + d;
+        if (closed) i = (i % N + N) % N; else if (i < 0 || i >= N) continue;
+        const p = track.pts[i], dd = (p.x - k.x) ** 2 + (p.y - k.y) ** 2;
+        if (dd < bestD) { bestD = dd; best = i; }
+    }
+    if (Math.sqrt(bestD) > track.halfWidth * 4)
+        for (let i = 0; i < N; i += 2) {
+            const p = track.pts[i], dd = (p.x - k.x) ** 2 + (p.y - k.y) ** 2;
+            if (dd < bestD) { bestD = dd; best = i; }
+        }
+
+    k.prevSi = k.si; k.si = best;
+    k.centerDist = Math.sqrt(bestD);
+    k.offroad = k.centerDist > (track.pts[best].hw || track.halfWidth);
+
+    const cps = track.checkpoints, next = cps[k.cpIndex % cps.length];
+    if (next && passedIndex(k.prevSi, k.si, next.si)) {
+        k.cpIndex++; k.cpDone++;
+        if (k.isPlayer) playBeep(880, .07);   // 안내는 화면 아래 자막이 담당한다
+    }
+
+    if (track.closed) {
+        if (k.prevSi > N * .75 && k.si < N * .25 && k.cpDone >= cps.length) {
+            k.lap++; k.cpIndex = 1; k.cpDone = 1;   // 출발선 = 1번 체크포인트 통과
+            if (k.lap > track.sys.laps) finishKart(k);
+            else if (k.isPlayer) { playBeep(1250, .14); flashBig('LAP ' + k.lap); cam.flash = 1; k.earned += 25; }
+        }
+    } else if (k.si >= N - 3) finishKart(k);
+
+    k.progress = (k.lap - 1) * track.total + track.pts[k.si].dist;
+}
+
+function passedIndex(prev, cur, target) {
+    if (prev === cur) return false;
+    if (track.closed) {
+        const N = track.N;
+        const b = cur < prev ? cur + N : cur, t = target < prev ? target + N : target;
+        return prev < t && t <= b && (b - prev) < N * .5;
+    }
+    return prev < target && target <= cur;
+}
+
+function finishKart(k) {
+    if (k.finished) return;
+    k.finished = true; k.finishTime = raceTime;
+    k.rank = karts.filter(o => o.finished).length;
+    if (k.isPlayer) endRace(); else if (state === 'race') popup(k.x, k.y, k.name + ' 완주!', k.color);
+}
+
+/* ---- 아이템 / 장애물 ---- */
+function checkPickups(k) {
+    for (const it of track.items) {
+        if (!it.alive) { it.respawn -= 1 / 60; if (it.respawn <= 0) it.alive = true; continue; }
+        if ((it.x - k.x) ** 2 + (it.y - k.y) ** 2 < 48 * 48) {
+            it.alive = false; it.respawn = 8;
+            const pool = track.sys.pickups;
+            const kind = it.box ? pool[Math.floor(Math.random() * pool.length)] : it.kind;
+            k.collected[kind.icon] = (k.collected[kind.icon] || 0) + 1;
+            if (k.slots.length < 3) k.slots.push(kind);
+            if (k.isPlayer) { sfxPickup(); popup(it.x, it.y, kind.icon + ' ' + kind.name, kind.color); k.earned += 5; }
+        }
+    }
+}
+
+function checkHazards(k) {
+    for (const h of track.hazards) {
+        if (!h.alive) { h.respawn -= 1 / 60; if (h.respawn <= 0) h.alive = true; continue; }
+        if ((h.x - k.x) ** 2 + (h.y - k.y) ** 2 < (h.kind.r + 22) ** 2) {
+            if (k.starTime > 0) {
+                h.alive = false; h.respawn = 6;
+                if (k.isPlayer) { popup(h.x, h.y, '분해!', '#ffd166'); cam.shake = 8; }
+                continue;
+            }
+            if (k.shieldTime > 0) {
+                h.alive = false; h.respawn = 6;
+                if (k.isPlayer) popup(h.x, h.y, '막았다!', '#8fd0e8');
+                continue;
+            }
+            if (k.hitTime > 0) continue;
+            k.vx *= h.kind.slow; k.vy *= h.kind.slow;
+            k.hitTime = .8;
+            if (h.kind.spin) k.ang += (Math.random() - .5) * 1.1;
+            if (k.isPlayer) {
+                playBeep(170, .16); cam.shake = 12;
+                popup(k.x, k.y, h.kind.spin ? '빙글!' : '쿵!', '#ff6b6b');
+                showToast('⚠ ' + h.kind.name, h.kind.desc);
+            }
+        }
+    }
+}
+
+/* ---- 스킬로 생긴 구역(연막·끈적임)과 날아오는 혈전 판정 ---- */
+function checkSkillZones(k) {
+    for (const c of smokeClouds)
+        if (c.owner !== k && (c.x - k.x) ** 2 + (c.y - k.y) ** 2 < c.r * c.r)
+            k.blindTime = Math.max(k.blindTime, .55);
+
+    for (const sp of stickyPatches)
+        if (sp.owner !== k && (sp.x - k.x) ** 2 + (sp.y - k.y) ** 2 < sp.r * sp.r) {
+            if (k.isPlayer && k.stickyTime <= 0 && stickyHint <= 0) {
+                stickyHint = 14;
+                showToast('🟡 콜레스테롤에 빠졌다!', 'SPACE 로 드리프트하면 미끄러져 빠져나옵니다!');
+            }
+            k.stickyTime = Math.max(k.stickyTime, .5);
+        }
+}
+
+function updateSkills(dt) {
+    for (let i = smokeClouds.length - 1; i >= 0; i--) {
+        const c = smokeClouds[i];
+        c.r += dt * 26; c.life -= dt;
+        if (c.life <= 0) smokeClouds.splice(i, 1);
+    }
+    for (let i = stickyPatches.length - 1; i >= 0; i--) {
+        stickyPatches[i].life -= dt;
+        if (stickyPatches[i].life <= 0) stickyPatches.splice(i, 1);
+    }
+    for (let i = wbcShots.length - 1; i >= 0; i--) {
+        wbcShots[i].t += dt / wbcShots[i].life;
+        if (wbcShots[i].t >= 1) wbcShots.splice(i, 1);
+    }
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const b = projectiles[i];
+        // 목표를 향해 서서히 방향을 튼다 (유도)
+        if (b.target && !b.target.finished) {
+            const dx = b.target.x - b.x, dy = b.target.y - b.y;
+            const d = Math.hypot(dx, dy) || 1;
+            const sp = Math.hypot(b.vx, b.vy) || 1;
+            b.vx = lerp(b.vx, dx / d * sp, 1 - Math.pow(.12, dt));
+            b.vy = lerp(b.vy, dy / d * sp, 1 - Math.pow(.12, dt));
+        }
+        b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+        b.trail = b.trail || [];
+        b.trail.push({ x: b.x, y: b.y });
+        if (b.trail.length > 12) b.trail.shift();
+        let hit = false;
+        for (const k of karts) {
+            if (k === b.owner || k.finished) continue;
+            if ((k.x - b.x) ** 2 + (k.y - b.y) ** 2 < 52 * 52) {
+                k.vx *= .25; k.vy *= .25; k.hitTime = 1.1;
+                k.ang += (Math.random() - .5) * .8;
+                popup(k.x, k.y, '혈전 명중!', '#ff8a3c');
+                if (k.isPlayer) { cam.shake = 14; showToast('🟠 혈전에 막혔다!', '혈관이 막히면 피가 못 흐릅니다. 잠시 멈춰 서요.'); }
+                hit = true; break;
+            }
+        }
+        if (hit || b.life <= 0) projectiles.splice(i, 1);
+    }
+}
+
+function checkPads(k) {
+    for (const p of track.pads) {
+        if ((p.x - k.x) ** 2 + (p.y - k.y) ** 2 > 58 * 58) continue;
+        const dur = .55 + p.power * 1.5;
+        if (k.boostTime >= dur) continue;
+        k.boostTime = dur;
+        // 심실 수축은 실제로 뒤에서 확 밀어낸다
+        if (p.pump) {
+            if (k.isPlayer) cam.kick = Math.max(cam.kick, .7 + p.power * .5);
+            const push = 210 * p.power;
+            k.vx += Math.cos(p.ang) * push; k.vy += Math.sin(p.ang) * push;
+            if (k.isPlayer) {
+                cam.shake = 8 + p.power * 12;
+                playBeep(300 + p.power * 500, .16);
+                popup(p.x, p.y, p.pump.label, p.power > .8 ? '#ff5c5c' : '#7fb0ff');
+                showToast(p.pump.label, p.pump.desc);
+            }
+        } else if (k.isPlayer) { playBeep(1050, .06); cam.shake = 5; }
+    }
+}
+
+function kartCollisions() {
+    for (let i = 0; i < karts.length; i++)
+        for (let j = i + 1; j < karts.length; j++) {
+            const a = karts[i], b = karts[j];
+            let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+            if (d < 50 && d > .001) {
+                const push = (50 - d) / 2; dx /= d; dy /= d;
+                a.x -= dx * push; a.y -= dy * push; b.x += dx * push; b.y += dy * push;
+                a.vx -= dx * 65; a.vy -= dy * 65; b.vx += dx * 65; b.vy += dy * 65;
+                if (a.isPlayer || b.isPlayer) { cam.shake = 6; sfxCrash(.5); popup((a.x + b.x) / 2, (a.y + b.y) / 2, '팡!', '#fff'); }
+            }
+        }
+}
+
+function useItemFor(k) {
+    if (!k.slots.length) return;
+    const it = k.slots.shift(), e = it.effect;
+    const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
+
+    if (e === 'turbo') {
+        k.boostTime = Math.max(k.boostTime, EFFECT_DUR.turbo);
+        k.turboTime = EFFECT_DUR.turbo;
+        // 즉시 밀어 준다 — 아이템을 쓴 순간이 확실히 느껴지게
+        k.vx += ca * 170; k.vy += sa * 170;
+        if (k.isPlayer) { cam.kick = 1.6; cam.shake = 12; cam.flash = .8; }
+
+    } else if (e === 'wbc') {
+        // 순위상 가장 가까운 상대 한 대를 붙잡는다
+        let best = null, bestD = 1e18;
+        for (const o of karts) {
+            if (o === k || o.finished) continue;
+            const d = Math.abs(o.progress - k.progress);
+            if (d < bestD) { bestD = d; best = o; }
+        }
+        if (best) {
+            best.trapTime = EFFECT_DUR.wbc;
+            best.wbcHold = EFFECT_DUR.wbc;                 // 백혈구가 감싸는 연출
+            // 시전자에서 목표까지 백혈구가 날아가는 궤적
+            wbcShots.push({ from: k, to: best, t: 0, life: .55 });
+            if (k.isPlayer) {
+                cam.flash = .5; sfxBoost();
+                showToast('⚪ ' + best.name + ' 포획!', '백혈구가 세균을 잡아먹듯 붙잡았습니다. 화면 가장자리 화살표로 위치를 확인하세요.');
+            }
+            if (best.isPlayer) {
+                cam.shake = 14;
+                showToast('⚪ 백혈구에 붙잡혔다!', 'SPACE 로 드리프트하면 떨쳐낼 수 있어요!');
+            }
+        }
+
+    } else if (e === 'smoke') {
+        for (let i = 0; i < 8; i++)
+            smokeClouds.push({ x: k.x - ca * (70 + i * 110), y: k.y - sa * (70 + i * 110),
+                               r: 190 + i * 26, life: EFFECT_DUR.smoke, owner: k });
+
+    } else if (e === 'sticky') {
+        for (let i = 0; i < 7; i++)
+            stickyPatches.push({ x: k.x - ca * (80 + i * 110), y: k.y - sa * (80 + i * 110),
+                                 r: 130, life: EFFECT_DUR.sticky, owner: k });
+
+    } else if (e === 'clot') {
+        // 바로 앞 순위의 카트를 쫓아간다
+        let tgt = null, bestGap = 1e18;
+        for (const o of karts) {
+            if (o === k || o.finished) continue;
+            const gap = o.progress - k.progress;
+            if (gap > 0 && gap < bestGap) { bestGap = gap; tgt = o; }
+        }
+        projectiles.push({ x: k.x + ca * 70, y: k.y + sa * 70,
+                           vx: ca * 780, vy: sa * 780,
+                           life: 4.5, owner: k, target: tgt });
+    }
+
+    if (k.isPlayer) { showToast(it.icon + ' ' + it.name, it.desc); playBeep(680, .1); popup(k.x, k.y, it.icon, '#ffe066'); }
+}
+
+function updateRanks() {
+    karts.slice().sort((a, b) => {
+        if (a.finished && b.finished) return a.finishTime - b.finishTime;
+        if (a.finished) return -1; if (b.finished) return 1;
+        return b.progress - a.progress;
+    }).forEach((k, i) => k.rank = i + 1);
+}
+
+/* ============================================================================
+   5. 이펙트
+   ========================================================================== */
+const skids = [], dusts = [], popups = [], confetti = [], smokes = [];
+const smokeClouds = [], stickyPatches = [], projectiles = [], wbcShots = [];   // 스킬로 생긴 것들
+function addSkid(k) {
+    const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
+    // 드리프트 중에는 더 굵고 진하게, 뒷바퀴 쪽에 남는다
+    const heavy = k.driftAmt > .25;
+    const r = heavy ? 8 + k.driftAmt * 4 : 5;
+    const a = heavy ? .75 : .5;
+    for (const o of [-20, 20]) skids.push({ x: k.x - ca * 22 - sa * o, y: k.y - sa * 22 + ca * o, a, r });
+    if (skids.length > 2200) skids.splice(0, 400);
+}
+
+/* 드리프트 연기 — 뒷바퀴에서 옆으로 흩어진다 */
+function addDriftSmoke(k) {
+    const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
+    const hot = k.driftCharge > 65;
+    for (const o of [-20, 20]) {
+        const px = k.x - ca * 24 - sa * o, py = k.y - sa * 24 + ca * o;
+        smokes.push({
+            x: px, y: py,
+            vx: -ca * 60 - sa * o * 3 + (Math.random() - .5) * 50,
+            vy: -sa * 60 + ca * o * 3 + (Math.random() - .5) * 50,
+            r: 12 + Math.random() * 10, life: .55 + Math.random() * .25,
+            hot: hot && Math.random() < .5
+        });
+    }
+    if (smokes.length > 400) smokes.splice(0, 80);
+}
+function addDust(k) {
+    dusts.push({ x: k.x - Math.cos(k.ang) * 17, y: k.y - Math.sin(k.ang) * 17,
+        vx: (Math.random() - .5) * 70, vy: (Math.random() - .5) * 70, life: .6, r: 7 + Math.random() * 9 });
+}
+function popup(x, y, text, color) { popups.push({ x, y, text, color, life: 1 }); }
+function burstConfetti(x, y) {
+    for (let i = 0; i < 100; i++)
+        confetti.push({ x, y, vx: (Math.random() - .5) * 540, vy: -Math.random() * 470, rot: Math.random() * TAU,
+            spin: (Math.random() - .5) * 12, life: 1 + Math.random(), c: `hsl(${Math.random() * 360},90%,62%)` });
+}
+function updateEffects(dt) {
+    for (let i = skids.length - 1; i >= 0; i--) { skids[i].a -= dt * .09; if (skids[i].a <= 0) skids.splice(i, 1); }
+    for (let i = smokes.length - 1; i >= 0; i--) {
+        const m = smokes[i];
+        m.x += m.vx * dt; m.y += m.vy * dt; m.vx *= .94; m.vy *= .94;
+        m.r += dt * 46; m.life -= dt * 1.5;
+        if (m.life <= 0) smokes.splice(i, 1);
+    }
+    for (let i = dusts.length - 1; i >= 0; i--) {
+        const d = dusts[i]; d.x += d.vx * dt; d.y += d.vy * dt; d.r += dt * 24; d.life -= dt * 1.6;
+        if (d.life <= 0) dusts.splice(i, 1);
+    }
+    for (let i = popups.length - 1; i >= 0; i--) { popups[i].y -= dt * 48; popups[i].life -= dt * 1.1; if (popups[i].life <= 0) popups.splice(i, 1); }
+    for (let i = confetti.length - 1; i >= 0; i--) {
+        const c = confetti[i]; c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 230 * dt; c.rot += c.spin * dt; c.life -= dt * .5;
+        if (c.life <= 0) confetti.splice(i, 1);
+    }
+    cam.shake = Math.max(0, cam.shake - dt * 30);
+    cam.kick = Math.max(0, cam.kick - dt * 2.4);
+    cam.flash = Math.max(0, cam.flash - dt * 3.2);
+}
+
+/* ============================================================================
+   6. 렌더링 (의사 3D : 그림자 + 베벨 + 하이라이트)
+   ========================================================================== */
+function render() {
+    const g = ctx;
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.clearRect(0, 0, VW, VH);
+    if (!track) return;
+
+    cam.zoom = lerp(cam.zoom, cam.targetZoom, .14);
+    // 빠를수록 살짝 뒤로 물러나 앞이 더 보이게 (코너 대비 시간 확보)
+    const spdOut = player ? lerp(1.06, .74, clamp(Math.abs(player.speed) / MAXSPEED, 0, 1)) : 1;
+    let zoom = cam.zoom * spdOut * (1 - cam.kick * .1);
+
+    // ── 카운트다운 : 하늘에서 카트로 훅 내려오는 도입 연출
+    if (state === 'countdown') {
+        const t = clamp(countdown / 3.99, 0, 1);          // 1 → 0
+        const ease = t * t;                                // 처음엔 확 멀리, 끝엔 제자리
+        zoom *= lerp(1, .34, ease);
+        cam.intro = ease;
+    } else cam.intro = lerp(cam.intro || 0, 0, .1);
+
+    // ── 코너를 돌 땐 카메라가 진행 방향으로 살짝 기울어진다 (속도감)
+    if (player && state !== 'menu') {
+        const want = clamp(player.steer * clamp(Math.abs(player.speed) / MAXSPEED, 0, 1), -1, 1);
+        cam.tilt = lerp(cam.tilt || 0, want, .06);
+    } else cam.tilt = lerp(cam.tilt || 0, 0, .1);
+    if (fullMap) {
+        zoom = Math.min(VW / track.bounds.w, VH / track.bounds.h) * .95;
+        cam.x = lerp(cam.x, track.bounds.x + track.bounds.w / 2, .18);
+        cam.y = lerp(cam.y, track.bounds.y + track.bounds.h / 2, .18);
+    } else if (player) {
+        cam.x = lerp(cam.x, player.x + player.vx * .22, .14);
+        cam.y = lerp(cam.y, player.y + player.vy * .22, .14);
+    }
+
+    const grad = g.createLinearGradient(0, 0, 0, VH);
+    grad.addColorStop(0, track.sys.grass[0]); grad.addColorStop(1, track.sys.grass[1]);
+    g.fillStyle = grad; g.fillRect(0, 0, VW, VH);
+
+    const sh = cam.shake;
+    g.save();
+    g.translate(VW / 2 + (Math.random() - .5) * sh, VH / 2 + (Math.random() - .5) * sh);
+    g.rotate((cam.tilt || 0) * -.055);          // 코너에서 화면이 살짝 기운다
+    g.scale(zoom, zoom);
+    g.translate(-cam.x, -cam.y);
+
+    const viewR = Math.hypot(VW, VH) / zoom / 2 + 300;
+    const inView = (x, y) => Math.abs(x - cam.x) < viewR && Math.abs(y - cam.y) < viewR;
+
+    // 층 분리 : 지상 도로 → 지상 카트 → 다리 → 다리 위 카트
+    const ground = track.secs.filter(s => !s.elevated);
+    const high = track.secs.filter(s => s.elevated);
+    const layerOf = k => track.secs[track.pts[k.si].sec].elevated ? 1 : 0;
+
+    // 플레이어가 다리 밑을 지나면 위 도로를 서서히 비춰 준다
+    const pu = player && !layerOf(player) && track.pts[player.si].open;
+    bridgeAlpha = lerp(bridgeAlpha, pu ? .34 : 1, .12);
+
+    drawDecor(g, inView);
+    drawLandmarks(g, inView);
+    drawChambers(g, inView);
+    drawOrgans(g, inView);
+    drawRoadLayer(g, ground, zoom, 0, 1);
+    drawSkids(g);
+    drawPads(g);
+    drawGates(g, inView);
+    drawItems(g, inView);
+    drawHazards(g, inView);
+    drawLabels(g, zoom);
+    for (const k of karts) if (layerOf(k) === 0 && !k.isPlayer) drawKart(g, k);
+    if (player && layerOf(player) === 0) drawKart(g, player);
+
+    drawRoadLayer(g, high, zoom, 26, bridgeAlpha);
+    for (const k of karts) if (layerOf(k) === 1 && !k.isPlayer) drawKart(g, k, 26);
+    if (player && layerOf(player) === 1) drawKart(g, player, 26);
+
+    drawSticky(g);
+    drawProjectiles(g);
+    drawWbcShots(g);
+    drawDust(g);
+    drawSmoke(g);
+    drawSmokeClouds(g);
+    drawPopups(g);
+    drawConfetti(g);
+    g.restore();
+
+    // 화면 가장자리 비네트 (입체감)
+    const vg = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .42, VW / 2, VH / 2, Math.max(VW, VH) * .78);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.42)');
+    g.fillStyle = vg; g.fillRect(0, 0, VW, VH);
+
+    drawOffscreenMarkers(g, zoom);
+    drawSpeedLines(g);
+
+    // 순간 전환 플래시 (부스터·랩 완료)
+    if (cam.flash > 0.01) {
+        g.fillStyle = `rgba(255,255,255,${cam.flash * .3})`;
+        g.fillRect(0, 0, VW, VH);
+    }
+
+    // 연막에 갇히면 시야가 흐려진다
+    if (player && player.blindTime > 0) {
+        const a = clamp(player.blindTime / .55, 0, 1) * .82;
+        const fg = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .06,
+                                          VW / 2, VH / 2, Math.max(VW, VH) * .62);
+        fg.addColorStop(0, `rgba(150,162,172,${a * .55})`);
+        fg.addColorStop(1, `rgba(120,134,146,${a})`);
+        g.fillStyle = fg; g.fillRect(0, 0, VW, VH);
+    }
+}
+
+/* ---- 화면 밖 카트를 가장자리 화살표로 알려 준다 (스킬 효과가 보이도록) ---- */
+function drawOffscreenMarkers(g, zoom) {
+    if (!player || state === 'menu' || fullMap) return;
+    const cx = VW / 2, cy = VH / 2, m = 46;
+
+    for (const k of karts) {
+        if (k === player || k.finished) continue;
+        // 화면 좌표로 변환
+        const sx = cx + (k.x - cam.x) * zoom, sy = cy + (k.y - cam.y) * zoom;
+        const onScreen = sx > m && sx < VW - m && sy > m && sy < VH - m;
+        if (onScreen) continue;
+
+        // 붙잡힌 카트는 크게, 그 외엔 작게
+        const held = k.wbcHold > 0;
+        let dx = sx - cx, dy = sy - cy;
+        const len = Math.hypot(dx, dy) || 1;
+        dx /= len; dy /= len;
+        const r = Math.min((VW / 2 - m) / Math.abs(dx || 1e-6), (VH / 2 - m) / Math.abs(dy || 1e-6));
+        const px = cx + dx * r, py = cy + dy * r;
+
+        g.save(); g.translate(px, py);
+        g.globalAlpha = held ? .95 : .5;
+        g.rotate(Math.atan2(dy, dx));
+        const s = held ? 1.5 : 1;
+        g.fillStyle = held ? '#f2f6fa' : k.color;
+        g.beginPath();
+        g.moveTo(15 * s, 0); g.lineTo(-9 * s, -11 * s); g.lineTo(-9 * s, 11 * s);
+        g.closePath(); g.fill();
+        g.strokeStyle = '#141414'; g.lineWidth = 3; g.stroke();
+        g.restore();
+
+        if (held) {                                  // 포획됨 표시
+            g.save(); g.translate(px - dx * 34, py - dy * 34);
+            g.globalAlpha = .95;
+            g.fillStyle = '#f2f6fa';
+            g.beginPath(); g.arc(0, 0, 17 + Math.sin(performance.now() / 110) * 2, 0, TAU); g.fill();
+            g.strokeStyle = '#141414'; g.lineWidth = 3; g.stroke();
+            g.fillStyle = '#141414'; g.font = 'bold 15px sans-serif';
+            g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillText('⚪', 0, 1);
+            g.restore();
+        }
+    }
+    g.globalAlpha = 1;
+}
+
+/* ---- 스피드 라인 : 빠를수록 화면 가장자리에서 중심으로 선이 뻗는다 ---- */
+function drawSpeedLines(g) {
+    if (!player || state === 'menu') return;
+    const ratio = clamp(Math.abs(player.speed) / (MAXSPEED * 1.45), 0, 1);
+    const boost = player.boostTime > 0 || player.starTime > 0;
+    const strength = clamp((ratio - .62) / .38, 0, 1) * .55 + (boost ? .45 : 0);
+    if (strength <= 0.02) return;
+
+    const cx = VW / 2, cy = VH / 2;
+    const R = Math.hypot(VW, VH) / 2;
+    g.save();
+    g.strokeStyle = '#fff'; g.lineCap = 'round';
+    const n = 15;
+    for (let i = 0; i < n; i++) {
+        // 프레임마다 살짝 다른 위치 → 떨리는 스피드감
+        const a = (i / n) * TAU + Math.sin(performance.now() / 90 + i * 13.7) * .07;
+        const inner = R * (boost ? .48 : .62) + Math.random() * R * .1;
+        const len = R * (.12 + Math.random() * .16) * (boost ? 1.5 : 1);
+        g.globalAlpha = strength * (.25 + Math.random() * .3);
+        g.lineWidth = 2 + Math.random() * 2.5;
+        g.beginPath();
+        g.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+        g.lineTo(cx + Math.cos(a) * (inner + len), cy + Math.sin(a) * (inner + len));
+        g.stroke();
+    }
+    g.restore();
+    g.globalAlpha = 1;
+}
+
+function drawDecor(g, inView) {
+    for (const d of track.decor) {
+        if (!inView(d.x, d.y)) continue;
+        g.fillStyle = 'rgba(0,0,0,.2)';
+        g.beginPath(); g.ellipse(d.x + 7, d.y + 11, d.r * .95, d.r * .5, 0, 0, TAU); g.fill();
+        if (d.tree) {
+            g.fillStyle = '#5a3a22';
+            g.fillRect(d.x - 5, d.y - 2, 10, d.r * .6);
+            const base = `hsl(${100 + d.hue * 40},48%,${25 + d.hue * 12}%)`;
+            g.fillStyle = base;
+            g.beginPath(); g.arc(d.x, d.y - d.r * .25, d.r, 0, TAU); g.fill();
+            g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 3.5; g.stroke();
+            g.fillStyle = `hsl(${104 + d.hue * 40},52%,${40 + d.hue * 14}%)`;
+            g.beginPath(); g.arc(d.x - d.r * .28, d.y - d.r * .5, d.r * .5, 0, TAU); g.fill();
+        } else {
+            g.fillStyle = `hsl(${88 + d.hue * 46},44%,${30 + d.hue * 12}%)`;
+            g.beginPath(); g.ellipse(d.x, d.y, d.r * .95, d.r * .6, 0, 0, TAU); g.fill();
+            g.fillStyle = 'rgba(255,255,255,.12)';
+            g.beginPath(); g.ellipse(d.x - d.r * .2, d.y - d.r * .18, d.r * .45, d.r * .26, 0, 0, TAU); g.fill();
+        }
+    }
+}
+
+/* ---- 아기자기한 얼굴 (기관 공용) ---- */
+function drawFace(g, x, y, F, phase) {
+    const t = performance.now() / 1000;
+    const blink = Math.sin(t * 1.3 + phase) > .96 ? .12 : 1;
+    g.save(); g.translate(x, y);
+    const ex = F * .42, ey = -F * .18;
+    g.fillStyle = '#fff';
+    [-1, 1].forEach(s => { g.beginPath(); g.ellipse(ex * s, ey, F * .22, F * .26 * blink, 0, 0, TAU); g.fill(); });
+    g.fillStyle = '#1b1b1b';
+    [-1, 1].forEach(s => { g.beginPath(); g.ellipse(ex * s + F * .06, ey, F * .1, F * .13 * blink, 0, 0, TAU); g.fill(); });
+    g.fillStyle = 'rgba(255,120,140,.4)';
+    [-1, 1].forEach(s => { g.beginPath(); g.ellipse(ex * s * 1.6, ey + F * .3, F * .17, F * .1, 0, 0, TAU); g.fill(); });
+    g.strokeStyle = '#1b1b1b'; g.lineWidth = Math.max(4, F * .07); g.lineCap = 'round';
+    g.beginPath(); g.arc(0, ey + F * .1, F * .28, .18 * Math.PI, .82 * Math.PI); g.stroke();
+    g.restore();
+}
+
+/* ---- 심장 / 폐 : 도로 아래에 깔리는 큰 기관 그림 ---- */
+function heartPath(g, R) {
+    g.beginPath();
+    g.moveTo(0, R * .78);
+    g.bezierCurveTo(-R * 1.32, -R * .12, -R * .62, -R * 1.02, 0, -R * .40);
+    g.bezierCurveTo(R * .62, -R * 1.02, R * 1.32, -R * .12, 0, R * .78);
+    g.closePath();
+}
+function lobePath(g, R, side) {
+    g.beginPath();                                   // 바깥은 둥글고 안쪽은 살짝 파인 폐엽
+    g.moveTo(side * R * .1, -R * .82);
+    g.bezierCurveTo(side * R * .78, -R * .78, side * R * .95, -R * .1, side * R * .72, R * .62);
+    g.bezierCurveTo(side * R * .5, R * .95, side * R * .02, R * .9, -side * R * .12, R * .5);
+    g.bezierCurveTo(-side * R * .22, R * .1, -side * R * .2, -R * .5, side * R * .1, -R * .82);
+    g.closePath();
+}
+
+function drawLandmarks(g, inView) {
+    const lms = track.sys.landmarks;
+    if (!lms) return;
+    const t = performance.now() / 1000;
+
+    lms.forEach((lm, i) => {
+        if (!inView(lm.at[0], lm.at[1])) return;
+        g.save(); g.translate(lm.at[0], lm.at[1]);
+        const R = lm.r;
+
+        // 블렌더 렌더 이미지가 있으면 그것으로 그린다
+        const img = ORGAN_IMAGES[lm.type];
+        if (img && img.ready) {
+            const t2 = performance.now() / 1000;
+            // 심장은 두근거리고, 폐는 숨을 쉰다
+            const s = lm.type === 'heart'
+                ? 1 + Math.pow(Math.max(0, Math.sin(t2 * 2.2)), 8) * .06
+                : 1 + Math.sin(t2 * 1.1) * .03;
+            const D = R * 2.6 * s;
+            g.globalAlpha = .95;
+            g.drawImage(img, -D / 2, -D / 2, D, D);
+            g.globalAlpha = 1;
+            g.restore();
+            return;
+        }
+
+        if (lm.type === 'heart') {
+            const beat = 1 + Math.pow(Math.max(0, Math.sin(t * 2.2)), 8) * .07;   // 두근두근
+            g.scale(beat, beat);
+            g.save(); g.translate(18, 28); g.globalAlpha = .2; g.fillStyle = '#000';
+            heartPath(g, R); g.fill(); g.restore();
+
+            const grd = g.createRadialGradient(-R * .35, -R * .45, R * .1, 0, 0, R * 1.5);
+            grd.addColorStop(0, '#ff8f9c'); grd.addColorStop(1, '#bc2f3d');
+            g.globalAlpha = .88; heartPath(g, R); g.fillStyle = grd; g.fill(); g.globalAlpha = 1;
+            g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 14; heartPath(g, R); g.stroke();
+
+            g.globalAlpha = .22; g.fillStyle = '#fff';                            // 광택
+            g.beginPath(); g.ellipse(-R * .48, -R * .52, R * .24, R * .13, -.5, 0, TAU); g.fill();
+            g.globalAlpha = 1;
+            drawFace(g, 0, R * .34, R * .3, i);
+
+        } else if (lm.type === 'lungs') {
+            const br = 1 + Math.sin(t * 1.1) * .04;                               // 숨쉬기
+            g.scale(br, 2 - br);
+            g.fillStyle = '#e8eef5'; g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 12;
+            g.beginPath(); g.roundRect(-R * .1, -R * 1.18, R * .2, R * .62, R * .07);   // 기관
+            g.fill(); g.stroke();
+            [-1, 1].forEach(side => {
+                g.save(); g.translate(side * R * .58, R * .05);
+                g.save(); g.translate(14, 22); g.globalAlpha = .18; g.fillStyle = '#000';
+                lobePath(g, R, side); g.fill(); g.restore();
+                const grd = g.createRadialGradient(-side * R * .2, -R * .3, R * .05, 0, 0, R * 1.1);
+                grd.addColorStop(0, '#ffc6d8'); grd.addColorStop(1, '#dd7f9c');
+                g.globalAlpha = .9; lobePath(g, R, side); g.fillStyle = grd; g.fill(); g.globalAlpha = 1;
+                g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 12; lobePath(g, R, side); g.stroke();
+                drawFace(g, side * R * .22, R * .06, R * .26, i + side);
+                g.restore();
+            });
+        }
+        g.restore();
+    });
+}
+
+/* ---- 심장의 네 개 방·실. 벽 두께가 곧 그 방이 내는 압력이다 ---- */
+function drawChambers(g, inView) {
+    const t = performance.now() / 1000;
+    const beat = 1 + Math.pow(Math.max(0, Math.sin(t * 2.2)), 8) * .05;
+    track.checkpoints.forEach(cp => {
+        const ch = cp.node.chamber;
+        if (!ch) return;
+        const p = track.pts[cp.si];
+        if (!inView(p.x, p.y)) return;
+
+        const rw = ch.w / 2 + ch.wall, rh = ch.h / 2 + ch.wall;
+        g.save(); g.translate(p.x, p.y); g.scale(beat, beat);
+
+        g.fillStyle = 'rgba(0,0,0,.24)';
+        g.beginPath(); g.ellipse(10, 18, rw, rh, 0, 0, TAU); g.fill();
+
+        const wg = g.createRadialGradient(-rw * .3, -rh * .35, rw * .1, 0, 0, rw * 1.2);
+        wg.addColorStop(0, shade(ch.tint, -.18)); wg.addColorStop(1, shade(ch.tint, -.5));
+        g.fillStyle = wg;
+        g.beginPath(); g.ellipse(0, 0, rw, rh, 0, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 9; g.stroke();
+
+        g.save();                                          // 근육 결
+        g.beginPath(); g.ellipse(0, 0, rw, rh, 0, 0, TAU); g.clip();
+        g.strokeStyle = 'rgba(0,0,0,.13)'; g.lineWidth = Math.max(4, ch.wall * .2);
+        for (let a = 0; a < TAU; a += TAU / 22) {
+            g.beginPath();
+            g.moveTo(Math.cos(a) * rw * .96, Math.sin(a) * rh * .96);
+            g.lineTo(Math.cos(a) * (rw - ch.wall * 1.1), Math.sin(a) * (rh - ch.wall * 1.1));
+            g.stroke();
+        }
+        g.restore();
+
+        const ig = g.createRadialGradient(-ch.w * .16, -ch.h * .2, ch.w * .05, 0, 0, ch.w * .62);
+        ig.addColorStop(0, shade(ch.tint, .42)); ig.addColorStop(1, ch.tint);
+        g.fillStyle = ig;
+        g.beginPath(); g.ellipse(0, 0, ch.w / 2, ch.h / 2, 0, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(0,0,0,.3)'; g.lineWidth = 5; g.stroke();
+        g.restore();
+    });
+}
+
+// 기관 = 도로 아래에 깔린 커다란 캐릭터 (아기자기한 얼굴)
+function drawOrgans(g, inView) {
+    const t = performance.now() / 1000;
+    track.checkpoints.forEach(cp => {
+        const p = track.pts[cp.si], nd = cp.node;
+        if (!inView(p.x, p.y)) return;
+        if (nd.blob === 0) return;                       // 랜드마크가 대신 그린다
+        const R = nd.blob || track.halfWidth * 1.7;
+        g.save(); g.translate(p.x, p.y);
+
+        g.fillStyle = 'rgba(0,0,0,.2)';
+        g.beginPath(); g.ellipse(10, 18, R * 1.02, R * .82, 0, 0, TAU); g.fill();
+
+        const blob = () => {
+            g.beginPath();
+            for (let i = 0; i <= 28; i++) {
+                const a = i / 28 * TAU, rr = R * (1 + Math.sin(a * 3 + t + cp.num) * .06);
+                const x = Math.cos(a) * rr, y = Math.sin(a) * rr * .82;
+                i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+            }
+            g.closePath();
+        };
+        // 도로와 색이 뭉개지지 않도록 기관은 살짝 흐리게 깔고 테두리를 뚜렷하게
+        g.globalAlpha = .82;
+        const grd = g.createRadialGradient(-R * .3, -R * .35, R * .1, 0, 0, R * 1.15);
+        grd.addColorStop(0, shade(nd.color, .38)); grd.addColorStop(1, shade(nd.color, -.12));
+        blob(); g.fillStyle = grd; g.fill();
+        g.globalAlpha = 1;
+        g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 9; g.stroke();
+
+        // 얼굴은 도로에 가리지 않도록 도로 옆(라벨 반대편)으로 비켜 그린다
+        const d = track.halfWidth + R * .38;
+        g.translate(p.dy * d, -p.dx * d);
+        const F = Math.min(R * .46, 118);                   // 얼굴 크기 (너무 커지지 않게 상한)
+        const ey = -F * .18, ex = F * .42, blink = Math.sin(t * 1.3 + cp.num) > .96 ? .12 : 1;
+        g.fillStyle = '#fff';
+        [-1, 1].forEach(s => { g.beginPath(); g.ellipse(ex * s, ey, F * .22, F * .26 * blink, 0, 0, TAU); g.fill(); });
+        g.fillStyle = '#1b1b1b';
+        [-1, 1].forEach(s => { g.beginPath(); g.ellipse(ex * s + F * .06, ey, F * .1, F * .13 * blink, 0, 0, TAU); g.fill(); });
+        g.fillStyle = 'rgba(255,120,140,.4)';
+        [-1, 1].forEach(s => { g.beginPath(); g.ellipse(ex * s * 1.6, ey + F * .3, F * .17, F * .1, 0, 0, TAU); g.fill(); });
+        g.strokeStyle = '#1b1b1b'; g.lineWidth = Math.max(4, F * .07); g.lineCap = 'round';
+        g.beginPath(); g.arc(0, ey + F * .1, F * .28, .18 * Math.PI, .82 * Math.PI); g.stroke();
+        g.restore();
+    });
+}
+
+/* ---- 붉은 혈관벽이 있는 도로. 다리(elevated) 구간은 더 높이 띄워 그린다 ---- */
+const WALL_W = 26, WALL_H = 18;
+
+function strokeSecs(g, secs, w, style, offY) {
+    g.save();
+    if (offY) g.translate(0, offY);
+    g.strokeStyle = style; g.lineWidth = w;
+    secs.forEach(s => g.stroke(track.paths[s.idx]));
+    g.restore();
+}
+
+function drawRoadLayer(g, secs, zoom, lift, alpha) {
+    if (!secs.length) return;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.globalAlpha = alpha;
+    g.save();
+    if (lift) g.translate(0, -lift);                       // 다리는 위로 띄운다
+
+    // --- 혈관벽 : 좌우 가장자리를 따라 두껍게 (도로 폭이 구간마다 달라도 맞는다)
+    const wall = (w, style, offY) => {
+        g.save();
+        if (offY) g.translate(0, offY);
+        g.strokeStyle = style; g.lineWidth = w;
+        secs.forEach(s => { g.stroke(s.leftPath); g.stroke(s.rightPath); });
+        g.restore();
+    };
+    wall(WALL_W * 2.4, 'rgba(0,0,0,.34)', WALL_H + lift * 1.3);   // 바닥 그림자
+    wall(WALL_W * 2.1, '#54151a', WALL_H * .62);                  // 벽 앞면(높이)
+    wall(WALL_W * 2.1, '#9e2e37', 0);                             // 벽 윗면
+    wall(WALL_W * 1.1, '#c8474f', 0);                             // 안쪽 밝은 면
+
+    // --- 노면 (면으로 채워서 폭 변화가 자연스럽게)
+    secs.forEach(s => {
+        g.fillStyle = s.dark; g.fill(s.fillPath);
+        g.save(); g.translate(0, -6);
+        g.fillStyle = s.color; g.fill(s.fillPath);
+        g.restore();
+        if (s.tunnel) {                                   // 판막 = 좁고 어두운 통로
+            g.fillStyle = 'rgba(20,4,8,.45)'; g.fill(s.fillPath);
+            g.save(); g.clip(s.fillPath); g.setLineDash([10, 26]);
+            g.strokeStyle = 'rgba(255,220,225,.35)'; g.lineWidth = 12;
+            g.stroke(track.paths[s.idx]); g.restore();
+        }
+    });
+
+    g.save(); g.setLineDash([28, 34]);
+    g.strokeStyle = `rgba(255,255,255,${.3 * alpha})`; g.lineWidth = 6;
+    secs.forEach(s => g.stroke(track.paths[s.idx]));
+    g.restore();
+
+    if (zoom > .26) {                                                                        // 진행 방향 화살표
+        g.fillStyle = `rgba(255,255,255,${.4 * alpha})`;
+        secs.forEach(s => {
+            for (let i = s.from + 4; i < s.to; i += 11) {
+                const p = track.pts[i];
+                if (Math.abs(p.x - cam.x) > 2800 || Math.abs(p.y - cam.y) > 2800) continue;
+                g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+                g.beginPath(); g.moveTo(20, 0); g.lineTo(-10, -16); g.lineTo(-4, 0); g.lineTo(-10, 16);
+                g.closePath(); g.fill(); g.restore();
+            }
+        });
+    }
+    g.restore();
+    g.globalAlpha = 1;
+}
+
+function drawSkids(g) {
+    g.fillStyle = '#000';
+    for (const s of skids) { g.globalAlpha = s.a * .5; g.beginPath(); g.arc(s.x, s.y, s.r || 5, 0, TAU); g.fill(); }
+    g.globalAlpha = 1;
+}
+function drawDust(g) {
+    for (const d of dusts) { g.globalAlpha = clamp(d.life, 0, 1) * .5; g.fillStyle = '#d9c9a0'; g.beginPath(); g.arc(d.x, d.y, d.r, 0, TAU); g.fill(); }
+    g.globalAlpha = 1;
+}
+
+function drawSmoke(g) {
+    for (const m of smokes) {
+        const a = clamp(m.life, 0, 1);
+        g.globalAlpha = a * (m.hot ? .75 : .5);
+        // 충전이 다 차면 주황빛, 아니면 흰 연기
+        g.fillStyle = m.hot ? `rgba(255,${150 + a * 80},90,1)` : '#f2f6fa';
+        g.beginPath(); g.arc(m.x, m.y, m.r, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+}
+
+function drawSticky(g) {
+    const t = performance.now() / 700;
+    for (const sp of stickyPatches) {
+        const a = clamp(sp.life / 2, 0, 1);
+        g.save(); g.globalAlpha = a * .78;
+        const grd = g.createRadialGradient(sp.x, sp.y, sp.r * .2, sp.x, sp.y, sp.r);
+        grd.addColorStop(0, '#e8c94f'); grd.addColorStop(1, 'rgba(190,150,40,.15)');
+        g.fillStyle = grd;
+        g.beginPath();
+        for (let i = 0; i <= 16; i++) {
+            const ang = i / 16 * TAU;
+            const rr = sp.r * (1 + Math.sin(ang * 3 + t) * .12);
+            i === 0 ? g.moveTo(sp.x + Math.cos(ang) * rr, sp.y + Math.sin(ang) * rr)
+                    : g.lineTo(sp.x + Math.cos(ang) * rr, sp.y + Math.sin(ang) * rr);
+        }
+        g.closePath(); g.fill();
+        g.restore();
+    }
+    g.globalAlpha = 1;
+}
+
+function drawSmokeClouds(g) {
+    const t = performance.now() / 900;
+    for (const c of smokeClouds) {
+        const a = clamp(c.life / 2, 0, 1);
+        g.save(); g.globalAlpha = a * .82;
+        for (let i = 0; i < 5; i++) {
+            const ang = i / 5 * TAU + t;
+            const px = c.x + Math.cos(ang) * c.r * .34, py = c.y + Math.sin(ang) * c.r * .34;
+            const grd = g.createRadialGradient(px, py, 2, px, py, c.r * .8);
+            grd.addColorStop(0, 'rgba(150,162,172,.95)');
+            grd.addColorStop(1, 'rgba(120,134,146,0)');
+            g.fillStyle = grd;
+            g.beginPath(); g.arc(px, py, c.r * .8, 0, TAU); g.fill();
+        }
+        g.restore();
+    }
+    g.globalAlpha = 1;
+}
+
+function drawProjectiles(g) {
+    // 꼬리 자국
+    for (const b of projectiles) {
+        if (!b.trail) continue;
+        for (let i = 0; i < b.trail.length; i++) {
+            const t = i / b.trail.length;
+            g.globalAlpha = t * .5;
+            g.fillStyle = '#c96a3a';
+            g.beginPath(); g.arc(b.trail[i].x, b.trail[i].y, 6 + t * 14, 0, TAU); g.fill();
+        }
+    }
+    g.globalAlpha = 1;
+    for (const b of projectiles) {
+        // 유도 중이면 목표를 향한 조준선
+        if (b.target && !b.target.finished) {
+            g.save();
+            g.globalAlpha = .25; g.strokeStyle = '#ff7a3c'; g.lineWidth = 4;
+            g.setLineDash([14, 18]);
+            g.beginPath(); g.moveTo(b.x, b.y); g.lineTo(b.target.x, b.target.y); g.stroke();
+            g.restore();
+        }
+        g.save(); g.translate(b.x, b.y);
+        g.rotate(performance.now() / 90);
+        g.fillStyle = 'rgba(0,0,0,.25)';
+        g.beginPath(); g.ellipse(6, 12, 26, 12, 0, 0, TAU); g.fill();
+        const grd = g.createRadialGradient(-8, -8, 3, 0, 0, 30);
+        grd.addColorStop(0, '#e8935e'); grd.addColorStop(1, '#8f3d1c');
+        g.fillStyle = grd;
+        g.beginPath();
+        for (let i = 0; i < 9; i++) {
+            const a = i / 9 * TAU, rr = 26 * (i % 2 ? .78 : 1);
+            i === 0 ? g.moveTo(rr, 0) : g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        }
+        g.closePath(); g.fill();
+        g.strokeStyle = '#2a1208'; g.lineWidth = 4; g.stroke();
+        g.restore();
+    }
+}
+
+function drawWbcShots(g) {
+    for (const w of wbcShots) {
+        const t = clamp(w.t, 0, 1);
+        const x = lerp(w.from.x, w.to.x, t), y = lerp(w.from.y, w.to.y, t);
+        const arc = Math.sin(t * Math.PI) * 90;           // 포물선처럼 살짝 떠서 날아간다
+        g.save(); g.globalAlpha = 1 - t * .2;
+        g.fillStyle = '#ffffff';
+        g.beginPath(); g.arc(x, y - arc, 30 + Math.sin(performance.now() / 60) * 4, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(120,150,180,.9)'; g.lineWidth = 5; g.stroke();
+        g.restore();
+    }
+    g.globalAlpha = 1;
+
+    // 붙잡힌 카트를 백혈구가 감싸고 있는 표시
+    for (const k of karts) {
+        if (k.wbcHold <= 0) continue;
+        const pulse = 1 + Math.sin(performance.now() / 110) * .08;
+        g.save(); g.translate(k.x, k.y);
+        g.globalAlpha = clamp(k.wbcHold / 1.2, 0, 1) * .82;
+        g.fillStyle = '#f2f6fa';
+        g.beginPath();
+        for (let i = 0; i <= 20; i++) {
+            const a = i / 20 * TAU;
+            const rr = 52 * pulse * (1 + Math.sin(a * 4 + performance.now() / 260) * .1);
+            i === 0 ? g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr)
+                    : g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        }
+        g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(110,140,170,.95)'; g.lineWidth = 5; g.stroke();
+        g.globalAlpha = 1;
+        g.font = 'bold 26px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('⚪', 0, 1);
+        g.restore();
+    }
+}
+
+function drawPads(g) {
+    const beat = performance.now() / 1000;
+    for (const p of track.pads) {
+        const isPump = !!p.pump;
+        // 심실 수축 존은 심장 박동에 맞춰 크게 맥동한다
+        const pulse = isPump ? .82 + Math.pow(Math.max(0, Math.sin(beat * 2.4)), 6) * .5 : 1;
+        const t = (performance.now() / 260) % 1;
+        const len = track.halfWidth * (isPump ? 1.05 : .82) * pulse;
+        const wide = isPump ? 46 : 30;
+
+        g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+        const grd = g.createLinearGradient(-wide, 0, wide, 0);
+        if (isPump) {
+            const c = p.power > .8 ? '255,90,90' : '120,170,255';
+            grd.addColorStop(0, `rgba(${c},.15)`);
+            grd.addColorStop(.5, `rgba(${c},${.45 + (pulse - .82) * 1.1})`);
+            grd.addColorStop(1, `rgba(${c},.15)`);
+        } else {
+            grd.addColorStop(0, 'rgba(80,200,255,.2)');
+            grd.addColorStop(.5, `rgba(150,235,255,${.5 + t * .45})`);
+            grd.addColorStop(1, 'rgba(80,200,255,.2)');
+        }
+        g.fillStyle = grd;
+        g.beginPath(); g.roundRect(-wide, -len, wide * 2, len * 2, 16); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 3.5; g.stroke();
+
+        if (isPump) {                                   // 밀어내는 방향 화살표 세 겹
+            g.fillStyle = `rgba(255,255,255,${.45 + (pulse - .82) * 1.2})`;
+            for (let a = -1; a <= 1; a++) {
+                g.beginPath();
+                g.moveTo(20 + a * 22, 0); g.lineTo(-6 + a * 22, -len * .5);
+                g.lineTo(2 + a * 22, 0); g.lineTo(-6 + a * 22, len * .5);
+                g.closePath(); g.fill();
+            }
+        }
+        g.rotate(-p.ang);
+        g.font = `bold ${isPump ? 44 : 38}px sans-serif`;
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillStyle = '#fff'; g.fillText(isPump ? '💗' : '⚡', 0, 0);
+        g.restore();
+    }
+}
+
+function drawGates(g, inView) {
+    track.checkpoints.forEach(cp => {
+        const p = track.pts[cp.si];
+        if (!inView(p.x, p.y)) return;
+        const hw = (p.hw || track.halfWidth) + 12, cells = 12, ch = hw * 2 / cells;
+        g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+        for (let i = 0; i < cells; i++) { g.fillStyle = i % 2 ? '#1b1b1b' : '#fff'; g.fillRect(-15, -hw + i * ch, 30, ch); }
+        g.rotate(-p.ang);
+        g.fillStyle = '#1b1b1b'; g.beginPath(); g.arc(0, 0, 30, 0, TAU); g.fill();
+        g.fillStyle = cp.node.color; g.beginPath(); g.arc(0, 0, 25, 0, TAU); g.fill();
+        g.fillStyle = '#fff'; g.font = 'bold 27px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(cp.num, 0, 1);
+        g.restore();
+    });
+    if (!track.closed) {
+        const p = track.pts[track.N - 2], hw = track.halfWidth + 16, cells = 12, ch = hw * 2 / cells;
+        g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+        for (let r = 0; r < 3; r++)
+            for (let i = 0; i < cells; i++) { g.fillStyle = (i + r) % 2 ? '#111' : '#fff'; g.fillRect(-28 + r * 19, -hw + i * ch, 19, ch); }
+        g.restore();
+    }
+}
+
+/* 아이템 랜덤 박스 : 떠서 회전하는 상자. 먹어야 무엇인지 알 수 있다. */
+function drawItems(g, inView) {
+    const now = performance.now();
+    for (const it of track.items) {
+        if (!it.alive || !inView(it.x, it.y)) continue;
+        const bob = Math.sin(now / 320 + it.ph) * 7;
+        const spin = Math.sin(now / 620 + it.ph);        // 좌우로 흔들리며 회전하는 느낌
+        const R = 26, w = R * Math.abs(spin) * .55 + R * .5;
+
+        g.save(); g.translate(it.x, it.y + bob);
+        g.fillStyle = 'rgba(0,0,0,.28)';
+        g.beginPath(); g.ellipse(4, 24 - bob, w * .9, 8, 0, 0, TAU); g.fill();
+
+        // 상자 옆면 (두께)
+        g.fillStyle = '#b06a18';
+        g.beginPath(); g.roundRect(-w, -R + 8, w * 2, R * 2 - 4, 7); g.fill();
+        // 상자 윗면
+        const grd = g.createLinearGradient(0, -R, 0, R);
+        grd.addColorStop(0, '#ffd98a'); grd.addColorStop(.5, '#f5b53c'); grd.addColorStop(1, '#d98f1e');
+        g.fillStyle = grd;
+        g.beginPath(); g.roundRect(-w, -R, w * 2, R * 2, 8); g.fill();
+        g.strokeStyle = '#3a2000'; g.lineWidth = 4; g.stroke();
+        // 반짝임
+        g.fillStyle = 'rgba(255,255,255,.4)';
+        g.beginPath(); g.roundRect(-w + 5, -R + 5, w * 2 - 10, R * .5, 5); g.fill();
+        // 물음표
+        g.fillStyle = '#fff';
+        g.font = `bold ${Math.max(12, R * 1.25 * Math.abs(spin) * .8 + 8)}px sans-serif`;
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.strokeStyle = '#3a2000'; g.lineWidth = 5;
+        g.strokeText('?', 0, 2); g.fillText('?', 0, 2);
+        g.restore();
+    }
+}
+
+function drawHazards(g, inView) {
+    const t = performance.now() / 900;
+    for (const h of track.hazards) {
+        if (!h.alive || !inView(h.x, h.y)) continue;
+        g.save(); g.translate(h.x, h.y);
+        g.fillStyle = 'rgba(0,0,0,.24)';
+        g.beginPath(); g.ellipse(5, 14, h.kind.r, h.kind.r * .5, 0, 0, TAU); g.fill();
+        g.rotate(t + h.ph);
+        const grd = g.createRadialGradient(-h.kind.r * .3, -h.kind.r * .3, 3, 0, 0, h.kind.r * 1.2);
+        grd.addColorStop(0, shade(h.kind.color, .3)); grd.addColorStop(1, shade(h.kind.color, -.25));
+        g.fillStyle = grd;
+        g.beginPath();
+        for (let i = 0; i < 11; i++) {
+            const a = i / 11 * TAU, rr = h.kind.r * (i % 2 ? .8 : 1);
+            i === 0 ? g.moveTo(rr, 0) : g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        }
+        g.closePath(); g.fill();
+        g.strokeStyle = '#1b1b1b'; g.lineWidth = 3.5; g.stroke();
+        g.rotate(-(t + h.ph));
+        g.font = h.kind.r + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(h.kind.icon, 0, 1);
+        g.restore();
+    }
+}
+
+function drawLabels(g, zoom) {
+    track.checkpoints.forEach(cp => {
+        const p = track.pts[cp.si];
+        const x = p.x - p.dy * (track.halfWidth + 118), y = p.y + p.dx * (track.halfWidth + 118);
+        const label = `${cp.num}. ${cp.node.name}`;
+        g.font = 'bold 34px sans-serif';
+        const w = g.measureText(label).width + 40;
+        g.save(); g.translate(x, y);
+        g.fillStyle = '#1b1b1b'; g.beginPath(); g.roundRect(-w / 2 - 5, -32, w + 10, 62, 20); g.fill();
+        g.fillStyle = cp.node.color; g.beginPath(); g.roundRect(-w / 2, -28, w, 54, 17); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.roundRect(-w / 2 + 5, -23, w - 10, 18, 9); g.fill();
+        g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 5;
+        g.strokeText(label, 0, 1); g.fillText(label, 0, 1);
+        g.restore();
+    });
+
+    if (zoom > .2) {
+        g.font = 'bold 28px sans-serif';
+        track.secs.forEach(s => {
+            const mid = track.pts[Math.min(Math.floor((s.from + s.to) / 2), track.N - 1)];
+            g.save(); g.translate(mid.x, mid.y);
+            let a = mid.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
+            g.rotate(a); g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 6; g.strokeText(s.name, 0, 0);
+            g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(s.name, 0, 0);
+            g.restore();
+        });
+    }
+}
+
+/* ---- 가짜 3D 카트 : 아랫면(섀시) 위에 윗면을 어긋나게 얹어 높이를 만든다 ----
+   어긋나는 방향은 화면 중심에서 멀어질수록 커진다 (원근 카메라 흉내) */
+const KART_H = 18, KS = 1.8;      // 차 높이 / 카트 크기 배율
+
+function drawKart(g, k, lift = 0) {
+    const bounce = Math.sin(k.wobble) * 1.2;
+    const ox = clamp((k.x - cam.x) * .035, -14, 14);
+    const oy = clamp((k.y - cam.y) * .035, -14, 14) - KART_H;
+
+    g.save();
+    g.translate(k.x, k.y - lift);
+
+    // 그림자 — 광원은 항상 왼쪽 위
+    g.fillStyle = 'rgba(0,0,0,.34)';
+    g.beginPath(); g.ellipse(11, 16 + lift * .6, 32, 22, 0, 0, TAU); g.fill();
+
+    // 부스터 불꽃 (지면 높이)
+    if (k.boostTime > 0 || k.starTime > 0) {
+        g.save(); g.rotate(k.ang);
+        const f = 32 + Math.random() * 28;
+        const grd = g.createLinearGradient(-20, 0, -20 - f, 0);
+        grd.addColorStop(0, 'rgba(255,238,160,.95)');
+        grd.addColorStop(.5, 'rgba(255,140,50,.7)');
+        grd.addColorStop(1, 'rgba(255,80,40,0)');
+        g.fillStyle = grd;
+        g.beginPath(); g.moveTo(-18, -11); g.lineTo(-18 - f, 0); g.lineTo(-18, 11); g.closePath(); g.fill();
+        g.restore();
+    }
+    if (k.driftAmt > .3 && k.driftCharge > 15) {
+        g.save(); g.rotate(k.ang);
+        g.fillStyle = k.driftCharge > 70 ? 'rgba(255,120,60,.85)' : 'rgba(90,200,255,.8)';
+        [-13, 13].forEach(o => { g.beginPath(); g.arc(-15, o, 6 + Math.random() * 6, 0, TAU); g.fill(); });
+        g.restore();
+    }
+
+    // --- 블렌더 스프라이트가 로드됐으면 그걸로 그린다
+    const img = KART_SPRITES[k.sprite];
+    if (img && img.ready) {
+        g.save();
+        g.translate(ox, oy + bounce);
+        g.rotate(k.ang);
+        const S = 150;
+        g.drawImage(img, -S / 2, -S / 2, S, S);
+        g.restore();
+
+        if (k.shieldTime > 0) {
+            g.strokeStyle = 'rgba(150,225,255,.9)'; g.lineWidth = 4;
+            g.beginPath(); g.arc(ox, oy + bounce, 52 + Math.sin(performance.now() / 90) * 2, 0, TAU); g.stroke();
+        }
+        if (k.starTime > 0) {
+            g.strokeStyle = `hsl(${performance.now() / 4 % 360},95%,65%)`; g.lineWidth = 6;
+            g.beginPath(); g.arc(ox, oy + bounce, 58, 0, TAU); g.stroke();
+        }
+        g.restore();
+
+        if (!k.isPlayer) {
+            g.save(); g.translate(k.x + ox, k.y - lift + oy - 52);
+            g.font = 'bold 18px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+            const w = g.measureText(k.name).width + 18;
+            g.fillStyle = '#141414'; g.beginPath(); g.roundRect(-w / 2, -14, w, 26, 10); g.fill();
+            g.fillStyle = k.color; g.fillText(k.name, 0, 0);
+            g.restore();
+        }
+        return;
+    }
+
+    // --- 타이어 : 네 모서리에 크고 새까맣게 (차체보다 바깥으로 돌출)
+    const tire = (x, y) => {
+        g.fillStyle = '#0e0e0e';
+        g.beginPath(); g.roundRect(x, y, 17, 13, 5); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.16)';
+        g.beginPath(); g.roundRect(x + 3, y + 2, 11, 4, 2); g.fill();
+    };
+    g.save(); g.rotate(k.ang); g.scale(KS, KS);
+    tire(-17, -22); tire(-17, 9); tire(6, -22); tire(6, 9);
+    g.fillStyle = shade(k.color, -.55);                          // 차체 옆면(높이)
+    g.beginPath(); g.roundRect(-21, -15, 43, 30, 11); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 4; g.stroke();
+    g.restore();
+
+    // --- 윗면 : 어긋나게 올려서 옆면이 드러나게
+    g.save();
+    g.translate(ox, oy + bounce);
+    g.rotate(k.ang); g.scale(KS, KS);
+
+    const body = g.createLinearGradient(0, -16, 0, 16);
+    body.addColorStop(0, shade(k.color, .34)); body.addColorStop(.5, k.color); body.addColorStop(1, shade(k.color, -.24));
+    g.fillStyle = body;
+    g.beginPath();                                               // 앞이 살짝 좁은 레이싱 바디
+    g.moveTo(-19, -15); g.lineTo(14, -13);
+    g.quadraticCurveTo(23, -11, 23, 0);
+    g.quadraticCurveTo(23, 11, 14, 13);
+    g.lineTo(-19, 15);
+    g.quadraticCurveTo(-25, 12, -25, 0);
+    g.quadraticCurveTo(-25, -12, -19, -15);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 4; g.stroke();
+
+    g.fillStyle = 'rgba(255,255,255,.32)';                       // 윗면 반사광
+    g.beginPath(); g.roundRect(-18, -12, 34, 8, 5); g.fill();
+
+    g.fillStyle = '#262b34';                                     // 콕핏 (차체 색이 살도록 작게)
+    g.beginPath(); g.roundRect(-9, -7.5, 16, 15, 6); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 2.5; g.stroke();
+    g.fillStyle = '#f6c9a0';                                     // 드라이버 머리
+    g.beginPath(); g.arc(-1, 0, 5.4, 0, TAU); g.fill();
+    g.fillStyle = shade(k.color, .2);                            // 헬멧
+    g.beginPath(); g.arc(-1, -.4, 5.4, Math.PI, TAU); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 1.8; g.stroke();
+
+    g.fillStyle = shade(k.color, -.35);                          // 앞코 & 뒷날개
+    g.beginPath(); g.roundRect(16, -9, 6, 18, 3); g.fill();
+    g.beginPath(); g.roundRect(-23, -11, 5, 22, 3); g.fill();
+
+    if (k.motif) {                                               // 세포 아이콘 (적혈구·백혈구·혈소판)
+        g.font = '13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(k.motif, 16, 0);
+    }
+
+    if (k.shieldTime > 0) {
+        g.strokeStyle = 'rgba(150,225,255,.9)'; g.lineWidth = 4;
+        g.beginPath(); g.arc(0, 0, 34 + Math.sin(performance.now() / 90) * 2, 0, TAU); g.stroke();
+    }
+    if (k.starTime > 0) {
+        g.strokeStyle = `hsl(${performance.now() / 4 % 360},95%,65%)`; g.lineWidth = 6;
+        g.beginPath(); g.arc(0, 0, 38, 0, TAU); g.stroke();
+    }
+    g.restore();
+    g.restore();
+
+    if (!k.isPlayer) {
+        g.save(); g.translate(k.x + ox, k.y - lift + oy - 34);
+        g.font = 'bold 18px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        const w = g.measureText(k.name).width + 18;
+        g.fillStyle = '#141414'; g.beginPath(); g.roundRect(-w / 2, -14, w, 26, 10); g.fill();
+        g.fillStyle = k.color; g.fillText(k.name, 0, 0);
+        g.restore();
+    }
+}
+
+function drawPopups(g) {
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const p of popups) {
+        g.save(); g.globalAlpha = clamp(p.life, 0, 1);
+        g.translate(p.x, p.y - 46);
+        g.font = 'bold 32px sans-serif';
+        g.strokeStyle = '#1b1b1b'; g.lineWidth = 7; g.strokeText(p.text, 0, 0);
+        g.fillStyle = p.color; g.fillText(p.text, 0, 0);
+        g.restore();
+    }
+    g.globalAlpha = 1;
+}
+function drawConfetti(g) {
+    for (const c of confetti) {
+        g.save(); g.globalAlpha = clamp(c.life, 0, 1);
+        g.translate(c.x, c.y); g.rotate(c.rot);
+        g.fillStyle = c.c; g.fillRect(-7, -3.5, 14, 7);
+        g.restore();
+    }
+    g.globalAlpha = 1;
+}
+
+/* ============================================================================
+   7. HUD
+   ========================================================================== */
+const el = id => document.getElementById(id);
+
+function buildHudStatic() {
+    const s = track.sys;
+    el('lapTot').textContent = s.laps;
+    el('cpRows').innerHTML = track.checkpoints.map(cp =>
+        `<div class="cpRow"><div class="cpNum" style="background:${cp.node.color}">${cp.num}</div>
+         <div>${cp.node.name} <span style="color:#9fd0ff;font-weight:normal">· ${cp.node.role}</span></div></div>`).join('');
+    el('legItems').innerHTML = s.pickups.map(p => `<div class="row"><span class="ic">${p.icon}</span>${p.name}</div>`).join('');
+    el('legObs').innerHTML = s.hazards.map(h => `<div class="row"><span class="ic">${h.icon}</span>${h.name}</div>`).join('');
+    el('resPanel').innerHTML = s.pickups.slice(0, 4).map(p =>
+        `<div class="resItem"><span class="ic">${p.icon}</span><span data-cnt="${p.icon}">00</span></div>`).join('');
+
+    // 아이템을 끈 상태에서는 관련 패널을 숨겨 화면을 비운다
+    ['resPanel', 'slotPanel', 'legend'].forEach(id => el(id).style.display = SPAWN_ITEMS ? '' : 'none');
+    el('gaugeWrap').style.top = SPAWN_ITEMS ? '' : '14px';
+}
+
+function updateHud() {
+    if (!player || !track) return;
+    el('lapNow').textContent = Math.min(player.lap, track.sys.laps);
+    el('timeTxt').textContent = fmtTime(raceTime);
+    el('rankBadge').textContent = player.rank + ' 위';
+    el('kmh').textContent = Math.round(Math.abs(player.speed) * .22);
+
+    const rows = el('cpRows').children;
+    for (let i = 0; i < rows.length; i++)
+        rows[i].className = 'cpRow' + (i < player.cpDone ? ' done' : '') + (i === player.cpIndex % track.checkpoints.length ? ' now' : '');
+
+    el('driftBar').firstElementChild.style.width = player.driftCharge + '%';
+    const stuck = player.trapTime > 0 || player.stickyTime > 0 || player.hitTime > 0;
+    const gLabel = el('gaugeWrap').querySelector('.t');
+    if (gLabel) {
+        gLabel.textContent = stuck ? '⚡ SPACE 드리프트로 탈출!' : '드리프트 게이지 (SPACE)';
+        gLabel.style.color = stuck ? '#7ee081' : '';
+    }
+    const prog = track.closed
+        ? clamp(((player.lap - 1) + track.pts[player.si].t) / track.sys.laps, 0, 1)
+        : clamp(track.pts[player.si].t, 0, 1);
+    el('progBar').firstElementChild.style.width = prog * 100 + '%';
+    el('progTxt').textContent = Math.round(prog * 100) + '%';
+
+    el('resPanel').querySelectorAll('[data-cnt]').forEach(n =>
+        n.textContent = String(player.collected[n.dataset.cnt] || 0).padStart(2, '0'));
+
+    const slots = el('slots').children;
+    for (let i = 0; i < 3; i++) {
+        const it = player.slots[i];
+        slots[i].textContent = it ? it.icon : '';
+        slots[i].className = 'slot' + (it ? ' filled' : '');
+    }
+    drawSpeedo(); drawMinimap();
+}
+
+const fmtTime = t => {
+    const m = Math.floor(t / 60), s = Math.floor(t % 60), cs = Math.floor(t % 1 * 100);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+};
+
+const spdCvs = el('speedo'), spdCtx = spdCvs.getContext('2d');
+function drawSpeedo() {
+    const g = spdCtx, W = spdCvs.width, H = spdCvs.height;
+    g.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H - 12, R = 72, a0 = Math.PI * 1.02, a1 = Math.PI * 1.98;
+    for (let i = 0; i <= 22; i++) {
+        const t = i / 22, a = lerp(a0, a1, t);
+        g.strokeStyle = `hsl(${lerp(120, 0, t)},85%,55%)`; g.lineWidth = 8;
+        g.beginPath();
+        g.moveTo(cx + Math.cos(a) * (R - 12), cy + Math.sin(a) * (R - 12));
+        g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.stroke();
+    }
+    const na = lerp(a0, a1, clamp(Math.abs(player ? player.speed : 0) / (MAXSPEED * 1.45), 0, 1));
+    g.strokeStyle = '#fff'; g.lineWidth = 4; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(na) * (R - 16), cy + Math.sin(na) * (R - 16)); g.stroke();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(cx, cy, 7, 0, TAU); g.fill();
+}
+
+const miniCvs = el('minimap'), miniCtx = miniCvs.getContext('2d');
+function drawMinimap() {
+    const g = miniCtx, W = miniCvs.width, H = miniCvs.height;
+    g.clearRect(0, 0, W, H);
+    const b = track.bounds, s = Math.min((W - 14) / b.w, (H - 14) / b.h);
+    const ox = (W - b.w * s) / 2 - b.x * s, oy = (H - b.h * s) / 2 - b.y * s;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    track.secs.forEach(sec => {
+        g.strokeStyle = sec.color; g.lineWidth = 5; g.beginPath();
+        for (let i = sec.from; i <= sec.to; i++) {
+            const p = track.pts[i];
+            i === sec.from ? g.moveTo(p.x * s + ox, p.y * s + oy) : g.lineTo(p.x * s + ox, p.y * s + oy);
+        }
+        g.stroke();
+    });
+    track.checkpoints.forEach(cp => {
+        const p = track.pts[cp.si];
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x * s + ox, p.y * s + oy, 3.5, 0, TAU); g.fill();
+    });
+    for (const k of karts) {
+        g.fillStyle = k.color;
+        g.beginPath(); g.arc(k.x * s + ox, k.y * s + oy, k.isPlayer ? 5 : 3.5, 0, TAU); g.fill();
+        if (k.isPlayer) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); }
+    }
+}
+
+let toastTimer = 0;
+function showToast(title, desc) {
+    const t = el('toast');
+    t.querySelector('.tt').textContent = title;
+    t.querySelector('.td').textContent = desc || '';
+    t.classList.add('show'); toastTimer = 4.5;
+}
+/* 기관·혈관을 지날 때 화면 아래에 자막을 띄운다 */
+function showSubtitle(name, desc) {
+    const n = el('subtitle');
+    n.querySelector('.sname').textContent = name;
+    n.querySelector('.sdesc').textContent = desc || '';
+    n.classList.add('show');
+    subTimer = 3.2;
+}
+
+// 플레이어가 지금 어느 기관/혈관에 있는지 보고, 바뀌면 자막을 갱신
+function updateSubtitle(dt) {
+    if (subTimer > 0) { subTimer -= dt; if (subTimer <= 0) el('subtitle').classList.remove('show'); }
+    if (!player || state !== 'race') return;
+
+    const sec = track.secs[track.pts[player.si].sec];
+    const cp = track.checkpoints[sec.idx];
+    // 기관 근처(체크포인트 앞뒤)면 기관 이름, 그 밖이면 지나는 혈관 이름
+    const near = Math.abs(player.si - cp.si) < 14 ||
+                 (track.closed && Math.abs(player.si - cp.si) > track.N - 14);
+    const key = near ? 'n' + sec.idx : 'v' + sec.idx;
+    if (key === lastSubKey) return;
+    lastSubKey = key;
+
+    if (near) showSubtitle(`${cp.num}. ${cp.node.name}`, cp.node.role);
+    else showSubtitle(sec.name, sec.node.seg && sec.node.seg.desc);
+}
+
+function flashBig(text) {
+    const b = el('bigMsg');
+    b.textContent = text; b.style.transition = ''; b.style.opacity = 1;
+    setTimeout(() => { b.style.transition = 'opacity .5s'; b.style.opacity = 0; }, 750);
+}
+
+let audioCtx = null;
+
+/* ---- 엔진음 : 속도에 따라 음정이 오르내리는 지속음 ---- */
+let engineOsc = null, engineGain = null, engineFilter = null;
+function updateEngine() {
+    if (!audioCtx) return;
+    loadSfx();
+    const active = (state === 'race' || state === 'countdown') && player;
+    if (!engineOsc) {
+        engineOsc = audioCtx.createOscillator();
+        engineGain = audioCtx.createGain();
+        engineFilter = audioCtx.createBiquadFilter();
+        engineOsc.type = 'sawtooth';
+        engineFilter.type = 'lowpass'; engineFilter.frequency.value = 620;
+        engineGain.gain.value = 0;
+        engineOsc.connect(engineFilter); engineFilter.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineOsc.start();
+    }
+    const t = audioCtx.currentTime;
+    if (!active) { engineGain.gain.setTargetAtTime(0, t, .1); loopSfx('engine', 0, 1); return; }
+    // 저rpm·고rpm 두 음원을 동시에 재생하며 볼륨만 교차시킨다.
+    // 재생 속도를 크게 흔들지 않으므로 음정 왜곡 없이 자연스럽게 rpm 이 변한다.
+    const hasBlend = SFX.engine_low && SFX.engine_low.ok && SFX.engine_high && SFX.engine_high.ok;
+    if (hasBlend || (SFX.engine && SFX.engine.ok)) {
+        engineGain.gain.setTargetAtTime(0, t, .1);      // 합성음은 끈다
+        const sp = Math.abs(player.speed || 0);
+        const boost = player.boostTime > 0 || player.starTime > 0;
+
+        let mix, rate, vol;
+        if (state === 'countdown') {
+            // 출발 전 : 액셀을 밟았다 놓는 공회전 — 부릉, 부릉
+            const rev = Math.pow(Math.max(0, Math.sin(performance.now() / 320)), 3);
+            mix = rev * .8;                    // 0=저rpm, 1=고rpm
+            rate = .95 + rev * .12;
+            vol = .17 + rev * .09;
+        } else {
+            mix = clamp(sp / MAXSPEED, 0, 1);
+            if (boost) mix = Math.min(1, mix + .25);
+            rate = .97 + mix * .16;            // 아주 조금만 (질감 유지)
+            vol = .2 + mix * .06;
+        }
+
+        if (hasBlend) {
+            // 양 끝에서 한쪽이 완전히 사라지도록 곡선을 준다
+            loopSfx('engine_low',  vol * Math.cos(mix * Math.PI / 2), rate);
+            loopSfx('engine_high', vol * Math.sin(mix * Math.PI / 2), rate);
+        } else {
+            loopSfx('engine', vol, .92 + mix * .42);
+        }
+        return;
+    }
+    const spd = Math.abs(player.speed || 0);
+    const boost = player.boostTime > 0 || player.starTime > 0;
+    const freq = 46 + spd * .30 + (boost ? 46 : 0) + Math.sin(performance.now() / 60) * 3;
+    engineOsc.frequency.setTargetAtTime(freq, t, .05);
+    engineGain.gain.setTargetAtTime(spd > 8 ? .014 + spd / MAXSPEED * .017 : .005, t, .08);
+}
+
+/* ============================================================================
+   효과음 — 음원 파일이 있으면 그것을, 없으면 코드 합성음을 쓴다.
+   assets/ 에 아래 파일을 넣으면 코드 수정 없이 자동으로 교체된다 :
+     sfx_crash.mp3   충돌
+     sfx_skid.mp3    타이어 마찰 (반복 재생 — 끊김 없이 이어지는 구간으로)
+     sfx_pickup.mp3  아이템 획득
+     sfx_boost.mp3   부스터
+     sfx_engine.mp3  엔진 (반복 재생 — 일정한 rpm 으로 녹음)
+   ========================================================================== */
+const SFX_NAMES = ['crash', 'skid', 'pickup', 'boost', 'engine', 'engine_low', 'engine_high', 'count', 'go'];
+const SFX = {};
+
+// file:// 에서는 fetch 가 막히므로 <audio> 요소로 불러온다.
+// mp3 가 없으면 wav 로 한 번 더 시도한다.
+SFX_NAMES.forEach(name => {
+    const a = new Audio();
+    a.preload = 'auto';
+    a.addEventListener('canplaythrough', () => { a.ok = true; });
+    a.addEventListener('error', () => {
+        if (!a.triedWav) { a.triedWav = true; a.src = 'assets/sfx_' + name + '.wav'; a.load(); }
+        else a.ok = false;
+    });
+    a.src = 'assets/sfx_' + name + '.mp3';
+    SFX[name] = a;
+});
+function loadSfx() { /* 요소 방식이라 별도 로딩 단계가 필요 없다 */ }
+
+// 한 번 재생 (겹쳐 울리도록 복제해서 사용)
+function playSfx(name, vol = 1, rate = 1) {
+    const a = SFX[name];
+    if (!a || !a.ok) return false;
+    const c = a.cloneNode();
+    c.volume = clamp(vol, 0, 1); c.playbackRate = clamp(rate, .25, 4);
+    c.play().catch(() => {});
+    return true;
+}
+
+/* 반복 재생(엔진·타이어) — 짧은 음원도 이음매 없이 이어지도록 두 개를 엇갈려
+   재생하며 겹치는 구간을 서로 페이드한다(크로스페이드 루프). */
+const loopRigs = {};
+function loopSfx(name, vol, rate) {
+    const base = SFX[name];
+    if (!base || !base.ok || !base.duration) return false;
+
+    let rig = loopRigs[name];
+    if (!rig) {
+        const a = base.cloneNode(), b = base.cloneNode();
+        a.volume = b.volume = 0;
+        rig = loopRigs[name] = { a, b, cur: a, other: b, started: false };
+    }
+    rate = clamp(rate, .25, 4);
+    vol = clamp(vol, 0, 1);
+
+    if (vol <= .002) {                       // 꺼진 상태
+        [rig.a, rig.b].forEach(e => { e.volume = 0; if (!e.paused) e.pause(); });
+        rig.started = false;
+        return true;
+    }
+    if (!rig.started) {
+        rig.started = true;
+        rig.cur.currentTime = 0;
+        rig.cur.playbackRate = rate;
+        rig.cur.play().catch(() => {});
+    }
+
+    const dur = base.duration;
+    const fade = Math.min(.22, dur * .3);    // 겹치는 길이
+    const cur = rig.cur, other = rig.other;
+    cur.playbackRate = other.playbackRate = rate;
+
+    const left = dur - cur.currentTime;      // 끝까지 남은 시간
+    if (left <= fade) {
+        if (other.paused) { other.currentTime = 0; other.play().catch(() => {}); }
+        const t = clamp(1 - left / fade, 0, 1);
+        cur.volume = vol * (1 - t);
+        other.volume = vol * t;
+        if (left <= .02) {                   // 자리 교대
+            cur.pause(); cur.currentTime = 0; cur.volume = 0;
+            rig.cur = other; rig.other = cur;
+        }
+    } else {
+        cur.volume = vol;
+        if (!other.paused) other.volume = 0;
+    }
+    return true;
+}
+
+/* ---- 효과음 : 코드로 합성 (샘플 파일 없이) ---- */
+function noiseBuffer(sec) {
+    const n = Math.floor(audioCtx.sampleRate * sec);
+    const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+}
+
+// 충돌 : 낮은 쿵 + 부서지는 잡음
+function sfxCrash(power = 1) {
+    if (!audioCtx) return;
+    if (playSfx('crash', .55 * power, .9 + Math.random() * .2)) return;
+    const t = audioCtx.currentTime;
+    const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer(0.35);
+    const f = audioCtx.createBiquadFilter(); f.type = 'lowpass';
+    f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(180, t + .3);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(.16 * power, t); g.gain.exponentialRampToValueAtTime(.001, t + .32);
+    src.connect(f); f.connect(g); g.connect(audioCtx.destination); src.start(); src.stop(t + .35);
+
+    const o = audioCtx.createOscillator(), og = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + .22);
+    og.gain.setValueAtTime(.22 * power, t); og.gain.exponentialRampToValueAtTime(.001, t + .26);
+    o.connect(og); og.connect(audioCtx.destination); o.start(); o.stop(t + .28);
+}
+
+// 타이어 마찰음 : 드리프트/브레이크 중 계속 울린다
+let skidSrc = null, skidGain = null;
+function sfxSkid(amount) {
+    if (!audioCtx) return;
+    if (loopSfx('skid', clamp(amount, 0, 1) * .38, 1.05)) return;
+    if (!skidSrc) {
+        skidSrc = audioCtx.createBufferSource();
+        skidSrc.buffer = noiseBuffer(2); skidSrc.loop = true;
+        const f = audioCtx.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 2100; f.Q.value = 5.5;
+        skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
+        skidSrc.connect(f); f.connect(skidGain); skidGain.connect(audioCtx.destination);
+        skidSrc.start();
+    }
+    skidGain.gain.setTargetAtTime(clamp(amount, 0, 1) * .10, audioCtx.currentTime, .06);
+}
+
+// 아이템 획득 : 밝게 튀는 두 음
+function sfxPickup() {
+    if (!audioCtx) return;
+    if (playSfx('pickup', .5)) return;
+    const t = audioCtx.currentTime;
+    [880, 1320].forEach((fr, i) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'triangle'; o.frequency.value = fr;
+        g.gain.setValueAtTime(0, t + i * .07);
+        g.gain.linearRampToValueAtTime(.09, t + i * .07 + .01);
+        g.gain.exponentialRampToValueAtTime(.001, t + i * .07 + .16);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t + i * .07); o.stop(t + i * .07 + .18);
+    });
+}
+
+// 부스터 : 쉭 하고 뻗는 소리
+function sfxBoost() {
+    if (!audioCtx) return;
+    if (playSfx('boost', .55)) return;
+    const t = audioCtx.currentTime;
+    const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer(.6);
+    const f = audioCtx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2.2;
+    f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(3200, t + .45);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .5);
+    src.connect(f); f.connect(g); g.connect(audioCtx.destination);
+    src.start(); src.stop(t + .55);
+}
+
+// 카운트다운 3·2·1 과 GO!
+function sfxCount() {
+    if (!audioCtx) return;
+    if (playSfx('count', .6)) return;
+    playBeep(660, .16);
+}
+function sfxGo() {
+    if (!audioCtx) return;
+    if (playSfx('go', .7)) return;
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(700, t);
+    o.frequency.exponentialRampToValueAtTime(1500, t + .18);
+    g.gain.setValueAtTime(.10, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + .38);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(t + .4);
+}
+
+function playBeep(freq, dur) {
+    try {
+        if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); loadSfx(); }
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = freq; o.type = 'square'; g.gain.value = .05;
+        g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch (e) {}
+}
+
+/* ============================================================================
+   8. 게임 흐름
+   ========================================================================== */
+let track = null, karts = [], player = null;
+let state = 'menu', raceTime = 0, countdown = 0, fullMap = false, selectedId = 'circulatory';
+
+function placeOnStart(k, lane) {
+    const p = track.pts[0];
+    const off = (lane - 1.5) * 42, back = lane * 22;
+    k.x = p.x - p.dy * off - p.dx * back;
+    k.y = p.y + p.dx * off - p.dy * back;
+    k.ang = p.ang; k.si = 0; k.prevSi = 0; k.vx = k.vy = 0;
+    // 1번 체크포인트(출발 기관)는 이미 그 위에 서 있으므로 통과한 것으로 친다
+    k.cpIndex = 1; k.cpDone = 1;
+}
+
+function startRace(id) {
+    track = buildTrack(SYSTEMS[id]);
+    skids.length = dusts.length = popups.length = confetti.length = smokes.length = 0;
+    smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = 0;
+    karts = [];
+    player = makeKart(true, 0, '나'); karts.push(player);
+    for (let i = 0; i < 3; i++) {
+        const ai = makeKart(false, i + 1, AI_NAMES[i]);
+        ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
+        karts.push(ai);
+    }
+    karts.forEach((k, i) => placeOnStart(k, i));
+
+    cam.x = player.x; cam.y = player.y;
+    cam.targetZoom = .74; cam.zoom = .4;
+    raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; countShown = -1; stickyHint = 0;
+    subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
+
+    buildHudStatic();
+    el('hud').classList.remove('hidden');
+    el('menu').classList.add('hidden');
+    el('result').classList.add('hidden');
+    el('touch').classList.toggle('on', IS_TOUCH);
+    showToast(track.sys.name, track.sys.flow.map(f => f.name).join(' → '));
+}
+
+function renderGarage() {
+    const g = el('garage');
+    if (!g) return;
+    g.innerHTML = `<div class="gh"><span>🔧 카트 성능 강화</span><span>보유 <b style="color:#ffe066">${save.points} P</b></span></div>` +
+        UPGRADES.map(u => {
+            const lv = save.lv[u.key];
+            const maxed = lv >= u.max;
+            const cost = maxed ? 0 : u.cost[lv];
+            const can = !maxed && save.points >= cost;
+            const pips = Array.from({ length: u.max }, (_, i) =>
+                `<span class="pip${i < lv ? ' on' : ''}"></span>`).join('');
+            return `<div class="upRow">
+                <span class="ic">${u.icon}</span>
+                <span class="nm">${u.name}<small>${u.desc}</small></span>
+                <span class="pips">${pips}</span>
+                <button data-up="${u.key}" ${maxed || !can ? 'disabled' : ''} class="${can ? 'can' : ''}">
+                    ${maxed ? 'MAX' : cost + ' P'}
+                </button>
+            </div>`;
+        }).join('');
+
+    g.querySelectorAll('[data-up]').forEach(btn => {
+        btn.onclick = () => {
+            const u = UPGRADES.find(x => x.key === btn.dataset.up);
+            const lv = save.lv[u.key];
+            if (lv >= u.max || save.points < u.cost[lv]) return;
+            save.points -= u.cost[lv];
+            save.lv[u.key] = lv + 1;
+            writeSave();
+            playBeep(1200, .12);
+            renderGarage();
+        };
+    });
+}
+
+function endRace() {
+    state = 'finish';
+    updateRanks(); burstConfetti(player.x, player.y);
+    el('resTitle').textContent = player.rank === 1 ? '🏆 1위로 완주!' : '완주!';
+    el('resRank').textContent = player.rank + '위';
+    el('resTime').textContent = fmtTime(player.finishTime);
+    el('resTop').textContent = Math.round(player.topSpeed * .22);
+    el('resDrift').textContent = player.driftCount;
+    const items = Object.entries(player.collected).map(([k, v]) => `${k} ${v}`).join('   ');
+    el('resCollect').textContent = '수집 : ' + (items || '없음');
+
+    // ── 포인트 정산 : 순위 보너스 + 신기록 보너스
+    const rankBonus = [120, 80, 50, 30][player.rank - 1] || 20;
+    const id = track.sys.id;
+    const isBest = !save.best[id] || player.finishTime < save.best[id];
+    const bestBonus = isBest ? 100 : 0;
+    if (isBest) save.best[id] = player.finishTime;
+    const total = player.earned + rankBonus + bestBonus;
+    save.points += total;
+    writeSave();
+
+    el('resPoints').innerHTML =
+        `주행 <b>${player.earned}</b> + 순위 <b>${rankBonus}</b>` +
+        (bestBonus ? ` + <b style="color:#7ee081">신기록 ${bestBonus}</b>` : '') +
+        ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>`;
+    if (isBest) el('resBest').textContent = '🏅 신기록! ' + fmtTime(player.finishTime);
+    else el('resBest').textContent = '최고 기록 ' + fmtTime(save.best[id]);
+    renderGarage();
+
+    const q = track.sys.quiz[Math.floor(Math.random() * track.sys.quiz.length)];
+    el('quizQ').textContent = '🧠 ' + q.q;
+    el('quizEx').style.display = 'none'; el('quizEx').textContent = q.ex;
+    el('quizA').innerHTML = '';
+    q.a.forEach((txt, i) => {
+        const b = document.createElement('button');
+        b.textContent = txt;
+        b.onclick = () => {
+            Array.from(el('quizA').children).forEach((c, ci) => {
+                c.disabled = true;
+                if (ci === q.correct) c.className = 'ok'; else if (ci === i) c.className = 'no';
+            });
+            el('quizEx').style.display = 'block';
+            playBeep(i === q.correct ? 1200 : 220, .15);
+        };
+        el('quizA').appendChild(b);
+    });
+
+    setTimeout(() => { el('result').classList.remove('hidden'); el('hud').classList.add('hidden'); el('touch').classList.remove('on'); }, 1400);
+}
+
+let last = performance.now();
+function loop(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+
+    if (state === 'countdown') {
+        countdown -= dt;
+        const n = Math.ceil(countdown);
+        if (n !== countShown) { countShown = n; if (n > 0) sfxCount(); }
+        el('bigMsg').textContent = n > 0 ? n : 'GO!';
+        el('bigMsg').style.opacity = 1;
+        if (!audioCtx) playBeep(1, .01);
+        if (countdown <= 0) { state = 'race'; sfxGo(); setTimeout(() => el('bigMsg').style.opacity = 0, 550); }
+        karts.forEach(updateProgress);
+    } else if (state === 'race') {
+        raceTime += dt;
+        karts.forEach(k => updateKart(k, dt));
+        kartCollisions(); updateRanks();
+        karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.sys.laps) finishKart(k); });
+    } else if (state === 'finish') {
+        karts.forEach(k => updateKart(k, dt));
+    }
+
+    if (state !== 'menu') { updateEffects(dt); updateSkills(dt); updateSubtitle(dt); stickyHint -= dt; }
+    if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) el('toast').classList.remove('show'); }
+
+    render();
+    updateEngine();
+    if (player && state === 'race')
+        sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
+    else sfxSkid(0);
+    if (state !== 'menu') updateHud();
+    requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ============================================================================
+   9. 입력 (키보드 + 터치)
+   ========================================================================== */
+const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+const input = { gas: false, brake: false, left: false, right: false, drift: false };
+const keys = {};
+
+function syncKeys() {
+    input.gas = !!(keys['w'] || keys['W'] || keys['ArrowUp'] || touchState.gas);
+    input.brake = !!(keys['s'] || keys['S'] || keys['ArrowDown'] || touchState.brake);
+    input.left = !!(keys['a'] || keys['A'] || keys['ArrowLeft'] || touchState.left);
+    input.right = !!(keys['d'] || keys['D'] || keys['ArrowRight'] || touchState.right);
+    // 드리프트는 엄지로 누르는 Space가 기본. Shift도 그대로 받는다.
+    input.drift = !!(keys[' '] || keys['Shift'] || touchState.drift);
+}
+
+window.addEventListener('keydown', e => {
+    keys[e.key] = true; syncKeys();
+    if (e.key === ' ') e.preventDefault();
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (state === 'race') useItemFor(player);
+        else if (state === 'menu') startRace(selectedId);
+    }
+    if (e.key === 'm' || e.key === 'M') fullMap = !fullMap;
+    if (e.key === '+' || e.key === '=') zoomBy(1.18);
+    if (e.key === '-' || e.key === '_') zoomBy(.85);
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; syncKeys(); });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; syncKeys(); });
+
+/* ---- 터치 버튼 ---- */
+const touchState = { gas: false, brake: false, left: false, right: false, drift: false };
+function bindTouch(id, key, onPress) {
+    const node = el(id);
+    const down = e => { e.preventDefault(); node.classList.add('act'); if (key) { touchState[key] = true; syncKeys(); } if (onPress) onPress(); };
+    const up = e => { e.preventDefault(); node.classList.remove('act'); if (key) { touchState[key] = false; syncKeys(); } };
+    node.addEventListener('touchstart', down, { passive: false });
+    node.addEventListener('touchend', up, { passive: false });
+    node.addEventListener('touchcancel', up, { passive: false });
+    node.addEventListener('mousedown', down);
+    node.addEventListener('mouseup', up);
+    node.addEventListener('mouseleave', up);
+}
+bindTouch('tLeft', 'left'); bindTouch('tRight', 'right');
+bindTouch('tGas', 'gas'); bindTouch('tBrake', 'brake'); bindTouch('tDrift', 'drift');
+bindTouch('tItem', null, () => { if (state === 'race') useItemFor(player); });
+
+/* ---- 두 손가락 핀치 줌 ---- */
+let pinchDist = 0;
+cvs.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+}, { passive: false });
+cvs.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+        e.preventDefault();
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (pinchDist > 0) zoomBy(clamp(d / pinchDist, .9, 1.1));
+        pinchDist = d;
+    }
+}, { passive: false });
+cvs.addEventListener('touchend', () => { pinchDist = 0; });
+
+/* ============================================================================
+   10. 메뉴
+   ========================================================================== */
+function buildMenu() {
+    const wrap = el('mapCards'); wrap.innerHTML = '';
+    Object.values(SYSTEMS).forEach(sys => {
+        const card = document.createElement('div');
+        card.className = 'card' + (sys.id === selectedId ? ' sel' : '');
+        card.innerHTML = `<h3>${sys.name}</h3>
+            <div class="route">${sys.flow.map(f => f.name).join(' → ')}</div>
+            <canvas width="420" height="230"></canvas>
+            <div class="meta">${sys.laps} LAP · 체크포인트 ${sys.flow.length}개</div>`;
+        card.onclick = () => {
+            selectedId = sys.id;
+            Array.from(wrap.children).forEach(c => c.classList.remove('sel'));
+            card.classList.add('sel');
+        };
+        card.ondblclick = () => startRace(sys.id);
+        wrap.appendChild(card);
+        drawPreview(card.querySelector('canvas'), sys);
+    });
+}
+
+function drawPreview(cv, sys) {
+    const t = buildTrack(sys), g = cv.getContext('2d'), b = t.bounds;
+    const s = Math.min((cv.width - 24) / b.w, (cv.height - 24) / b.h);
+    const ox = (cv.width - b.w * s) / 2 - b.x * s, oy = (cv.height - b.h * s) / 2 - b.y * s;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    const path = new Path2D();
+    path.moveTo(t.pts[0].x * s + ox, t.pts[0].y * s + oy);
+    for (let i = 1; i < t.N; i++) path.lineTo(t.pts[i].x * s + ox, t.pts[i].y * s + oy);
+    if (t.closed) path.closePath();
+    g.strokeStyle = '#08111d'; g.lineWidth = 14; g.stroke(path);
+    t.secs.forEach(sec => {
+        g.strokeStyle = sec.color; g.lineWidth = 9; g.beginPath();
+        for (let i = sec.from; i <= sec.to; i++) {
+            const p = t.pts[i];
+            i === sec.from ? g.moveTo(p.x * s + ox, p.y * s + oy) : g.lineTo(p.x * s + ox, p.y * s + oy);
+        }
+        g.stroke();
+    });
+    t.checkpoints.forEach(cp => {
+        const p = t.pts[cp.si];
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x * s + ox, p.y * s + oy, 7, 0, TAU); g.fill();
+        g.fillStyle = '#123'; g.font = 'bold 10px sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(cp.num, p.x * s + ox, p.y * s + oy + .5);
+    });
+}
+
+el('startBtn').onclick = () => startRace(selectedId);
+el('retryBtn').onclick = () => startRace(track.sys.id);
+el('menuBtn').onclick = () => {
+    state = 'menu';
+    el('result').classList.add('hidden'); el('hud').classList.add('hidden');
+    el('touch').classList.remove('on'); el('menu').classList.remove('hidden');
+};
+
+buildMenu();
+</script>
+</body>
+</html>
