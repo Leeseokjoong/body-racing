@@ -1672,19 +1672,20 @@ function render() {
     if (!track) return;
 
     if (twoPlayer && player2) {
-        const h = VH / 2;
-        renderView(g, cam,  player,  0, 0, VW, h - 3);
-        renderView(g, cam2, player2, 0, h + 3, VW, h - 3);
+        // 좌우 분할 : 위아래로 자르면 코스가 세로로 긴 맵에서 안 보인다
+        const w = VW / 2;
+        renderView(g, cam,  player,  0, 0, w - 3, VH);
+        renderView(g, cam2, player2, w + 3, 0, w - 3, VH);
         // 가운데 구분선
         g.setTransform(DPR, 0, 0, DPR, 0, 0);
-        g.fillStyle = '#0a1420'; g.fillRect(0, h - 4, VW, 8);
-        g.fillStyle = '#3f6c9c'; g.fillRect(0, h - 1, VW, 2);
+        g.fillStyle = '#0a1420'; g.fillRect(w - 4, 0, 8, VH);
+        g.fillStyle = '#3f6c9c'; g.fillRect(w - 1, 0, 2, VH);
         // 각 화면 라벨
         g.font = 'bold 15px sans-serif'; g.textAlign = 'left'; g.textBaseline = 'top';
-        [['1P', 8], ['2P', h + 11]].forEach(([t, y]) => {
+        [['1P', 8], ['2P', w + 11]].forEach(([t, x]) => {
             g.fillStyle = 'rgba(10,20,32,.7)';
-            g.beginPath(); g.roundRect(8, y, 38, 22, 7); g.fill();
-            g.fillStyle = '#ffe066'; g.fillText(t, 17, y + 4);
+            g.beginPath(); g.roundRect(x, 8, 38, 22, 7); g.fill();
+            g.fillStyle = '#ffe066'; g.fillText(t, x + 9, 12);
         });
         return;
     }
@@ -3302,6 +3303,7 @@ function startRace(id) {
     el('menu').classList.add('hidden');
     el('result').classList.add('hidden');
     el('touch').classList.toggle('on', IS_TOUCH);
+    el('miniPanel').style.display = twoPlayer ? 'none' : '';
     showToast(track.sys.name, track.sys.flow.map(f => f.name).join(' → '));
 }
 
