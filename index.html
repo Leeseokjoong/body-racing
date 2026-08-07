@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#08111d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a1420">
 <title>오장육부 레이싱 · Organ Racing</title>
@@ -4596,6 +4599,45 @@ el('menuBtn').onclick = () => {
 };
 
 buildMenu();
+
+/* ============================================================================
+   11. 앱(Capacitor)에서만 도는 부분
+   웹으로 열었을 때는 window.Capacitor 가 없으므로 통째로 건너뛴다.
+   ========================================================================== */
+(function setupNativeApp() {
+    const cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return;
+    const P = cap.Plugins || {};
+
+    // 가로 모드로 잠근다 — 세로로 들면 맵이 잘려 아무것도 안 보인다
+    if (P.ScreenOrientation) P.ScreenOrientation.lock({ orientation: 'landscape' }).catch(() => {});
+
+    // 뒤로가기 : 게임 중이면 메뉴로, 메뉴에서 누르면 앱을 닫는다
+    if (P.App) {
+        P.App.addListener('backButton', () => {
+            if (state === 'menu') { P.App.exitApp(); return; }
+            const mb = el('menuBtn');
+            if (mb) mb.click();
+        });
+        // 홈 버튼 등으로 앱이 가려지면 소리를 멈춘다
+        P.App.addListener('appStateChange', ({ isActive }) => {
+            if (!audioCtx) return;
+            isActive ? audioCtx.resume().catch(() => {}) : audioCtx.suspend().catch(() => {});
+        });
+    }
+
+    // AdMob : 웹의 애드센스 대신 네이티브 전면 광고를 쓴다
+    if (P.AdMob) {
+        P.AdMob.initialize({ initializeForTesting: !AD.admobId }).catch(() => {});
+        window.admob = {
+            prepareInterstitial: o => P.AdMob.prepareInterstitial(
+                { adId: o.adId, isTesting: !AD.admobId }),
+            showInterstitial: () => P.AdMob.showInterstitial()
+        };
+        // 실제 ID 를 안 넣었으면 구글 테스트 광고 단위로 돌린다
+        if (!AD.admobId) AD.admobId = 'ca-app-pub-3940256099942544/1033173712';
+    }
+})();
 </script>
 </body>
 </html>

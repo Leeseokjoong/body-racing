@@ -1,0 +1,13 @@
+{
+  "name": "Organ Racing",
+  "short_name": "Organ Racing",
+  "description": "Race through a living body.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#08111d",
+  "theme_color": "#08111d",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
