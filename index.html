@@ -392,9 +392,18 @@
     #wrongWay.on { opacity: 1; animation: wwBlink .5s steps(1) infinite; }
     @keyframes wwBlink { 50% { opacity: .35; } }
 
+    /* 인앱 브라우저 안내 */
+    #inApp { gap: 16px; }
+    #inAppMsg { max-width: 460px; text-align: center; font-size: 14px; line-height: 1.75; color: #cfe6ff; }
+    #inAppMsg b { display: block; font-size: 17px; color: #ffe066; margin-bottom: 7px; }
+    #inAppMsg b + br { display: none; }
+    #inAppHow { font-size: 13px; color: #9fd0ff; text-align: center; line-height: 1.7; }
+    #inAppHow em { font-style: normal; color: #ffe066; font-weight: bold; }
+    .inAppRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
     /* 빌드 번호 — 폰이 예전 파일을 들고 있는지 바로 알아보기 위한 것 */
-    #build { position: absolute; left: 10px; bottom: 8px; z-index: 2;
-             font-size: 10px; color: rgba(159,208,255,.45); letter-spacing: 1px; }
+    #build { position: fixed; left: 8px; bottom: 6px; z-index: 999; pointer-events: none;
+             font-size: 10px; color: rgba(159,208,255,.5); letter-spacing: 1px; }
 
     /* ================= 음량 · 전체 화면 ================= */
     #opts {
@@ -617,6 +626,8 @@
     <div id="bigMsg"></div>
 </div>
 
+<div id="build">v260807.1438</div>
+
 <div id="touch">
     <!-- 왼손 : 달리는 일 -->
     <div class="tbtn" id="tGas">가속</div>
@@ -626,6 +637,25 @@
     <div class="tbtn" id="tRight"><b class="arw r"></b></div>
     <div class="tbtn" id="tBrake">브레이크</div>
     <div class="tbtn" id="tItem">아이템</div>
+</div>
+
+<!-- 카톡·인스타 같은 앱 안에서 열렸을 때 뜨는 안내.
+     인앱 브라우저는 캐시를 세게 잡고 전체 화면도 안 되어 게임이 제대로 돌지 않는다. -->
+<div class="overlay hidden" id="inApp">
+    <div class="titleSign"><div class="titleBoard">
+        <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
+    </div></div>
+    <div id="inAppMsg">
+        <b id="inAppWhere">앱 안에서 열렸습니다</b>
+        여기서는 전체 화면이 안 되고 화면이 예전 것으로 남기 쉽습니다.<br>
+        <b>크롬</b>이나 <b>사파리</b>로 열어 주세요.
+    </div>
+    <div id="inAppHow"></div>
+    <div class="inAppRow">
+        <button class="btn small" id="openBrowser">브라우저로 열기</button>
+        <button class="btn small" id="copyLink">주소 복사</button>
+    </div>
+    <button class="btn small" id="inAppIgnore" style="opacity:.6">그냥 여기서 할래요</button>
 </div>
 
 <!-- 터치 기기 전용 시작 화면.
@@ -640,7 +670,6 @@
 </div>
 
 <div class="overlay" id="menu">
-    <div id="build">v260807.1434</div>
     <div id="opts">
         <button class="optBtn" id="muteBtn" title="소리 끄기/켜기">소리</button>
         <input type="range" id="volSlider" min="0" max="100" step="1" title="음량">
@@ -4863,13 +4892,68 @@ document.addEventListener('fullscreenchange', refreshFsUI);
 document.addEventListener('webkitfullscreenchange', refreshFsUI);
 refreshFsUI();
 
+/* ---- 인앱 브라우저 ----
+   한국에서는 링크를 카톡으로 주고받는 게 기본이라, 대부분 카톡 안에서 열린다.
+   그런데 인앱 브라우저는 캐시를 세게 잡아 고친 게 반영되지 않고,
+   전체 화면도 안 되어 주소창이 화면을 계속 깎아먹는다.
+   그래서 감지되면 진짜 브라우저로 나가는 길을 먼저 안내한다. */
+const IN_APP = (() => {
+    const ua = navigator.userAgent || '';
+    if (/KAKAOTALK/i.test(ua))          return { name: '카카오톡', how: '오른쪽 아래 <em>⋮</em> → <em>다른 브라우저로 열기</em>' };
+    if (/NAVER\(inapp/i.test(ua))       return { name: '네이버 앱', how: '오른쪽 아래 <em>⋮</em> → <em>다른 브라우저로 열기</em>' };
+    if (/Instagram/i.test(ua))          return { name: '인스타그램', how: '오른쪽 위 <em>⋯</em> → <em>외부 브라우저에서 열기</em>' };
+    if (/FBAN|FBAV/i.test(ua))          return { name: '페이스북', how: '오른쪽 위 <em>⋯</em> → <em>외부 브라우저에서 열기</em>' };
+    if (/Line\//i.test(ua))             return { name: '라인', how: '오른쪽 위 <em>⋯</em> → <em>다른 브라우저로 열기</em>' };
+    if (/DaumApps|everytimeApp/i.test(ua)) return { name: '앱 안', how: '메뉴에서 <em>다른 브라우저로 열기</em>' };
+    return null;
+})();
+
+if (IN_APP) {
+    el('inApp').classList.remove('hidden');
+    el('menu').classList.add('hidden');
+    el('inAppWhere').textContent = IN_APP.name + ' 안에서 열렸습니다';
+    el('inAppHow').innerHTML = IN_APP.how;
+
+    // 안드로이드는 인텐트로 크롬을 직접 부를 수 있다. 아이폰은 복사해서 붙이는 수밖에 없다.
+    const copyUrl = () => {
+        const t = location.href;
+        if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
+        else {
+            const ta = document.createElement('textarea');
+            ta.value = t; document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); } catch (e) {}
+            ta.remove();
+        }
+    };
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    el('openBrowser').onclick = () => {
+        const url = location.href.replace(/^https?:\/\//, '');
+        if (isAndroid) {
+            location.href = 'intent://' + url + '#Intent;scheme=https;package=com.android.chrome;end';
+        } else {
+            // 사파리를 직접 열 방법이 없으므로, 주소를 복사해 주고 안내한다
+            copyUrl();
+            el('inAppHow').innerHTML = '주소를 복사했습니다.<br><em>사파리</em>를 열고 주소창에 붙여넣어 주세요.';
+        }
+    };
+    el('copyLink').onclick = () => {
+        copyUrl();
+        el('copyLink').textContent = '복사됨';
+        setTimeout(() => { el('copyLink').textContent = '주소 복사'; }, 1600);
+    };
+    el('inAppIgnore').onclick = () => {
+        el('inApp').classList.add('hidden');
+        el(IS_TOUCH ? 'tapStart' : 'menu').classList.remove('hidden');
+    };
+}
+
 /* ---- 터치 기기 : 첫 탭에 전체 화면 · 가로 고정 · 소리를 한꺼번에 연다 ----
    브라우저는 사용자가 한 번 건드리기 전에는 이 셋 중 아무것도 허용하지 않는다.
    그래서 메뉴보다 앞에 탭 화면을 하나 두고, 거기서 다 열고 들어간다.
    (앱으로 감싸면 Capacitor 가 가로로 잠그므로 이 화면은 건너뛴다) */
 if (IS_TOUCH && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
-    el('tapStart').classList.remove('hidden');
     el('menu').classList.add('hidden');
+    if (!IN_APP) el('tapStart').classList.remove('hidden');   // 인앱 안내가 먼저다
 
     let entered = false;
     const enter = () => {
@@ -4894,7 +4978,11 @@ if (IS_TOUCH && !(window.Capacitor && window.Capacitor.isNativePlatform && windo
         });
     };
     el('tapStartBtn').onclick = enter;
-    el('tapStart').addEventListener('touchend', enter);
+    // 인앱 브라우저마다 오는 이벤트가 제각각이라 하나만 걸면 못 넘어가는 기기가 생긴다
+    ['touchend', 'touchstart', 'pointerup', 'click', 'mouseup'].forEach(ev =>
+        el('tapStart').addEventListener(ev, enter, { passive: true }));
+    // 그래도 안 넘어가는 기기를 대비한 안전장치
+    setTimeout(() => { if (!entered) el('tapStartBtn').textContent = '화면을 눌러 시작 (아무 곳이나)'; }, 4000);
 }
 
 /* ============================================================================
