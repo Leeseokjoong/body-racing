@@ -737,7 +737,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1656</div>
+<div id="build">v260807.1734</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -979,7 +979,7 @@ function shade(hex, amt) {
 const SYSTEMS = {
     circulatory: {
         id: 'circulatory', name: '순환계 서킷', laps: 5, closed: true, halfWidth: 178,
-        grass: ['#3a8a46', '#2c7038'], accent: '#e04a4a',
+        grass: ['#2f7a44', '#1f5c33'], accent: '#e04a4a',
         // 도로 아래에 깔리는 큰 기관 그림 (심장·폐는 제대로 된 모양으로)
         landmarks: [
             { type: 'lungs', at: [1900, 1560], r: 900 },
@@ -1064,7 +1064,7 @@ const SYSTEMS = {
 
     digestive: {
         id: 'digestive', name: '소화계 어드벤처', laps: 5, closed: true, halfWidth: 176,
-        grass: ['#3a8a46', '#2c7038'], accent: '#e2687e',
+        grass: ['#3f7f5c', '#28603f'], accent: '#e2687e',
         // 소화는 일방통행이지만, 영양소는 순환한다 :
         //   소장에서 흡수 → 간문맥 → 간 → 쓸개즙 → 다시 소장.
         //   위쪽 큰 고리 = 음식의 길(입·식도·위), 아래쪽 큰 고리 = 영양소의 길(간·쓸개·대장)
@@ -1148,7 +1148,7 @@ const SYSTEMS = {
 
     respiratory: {
         id: 'respiratory', name: '호흡계 서킷', laps: 4, closed: true, halfWidth: 182,
-        grass: ['#3a8090', '#2b6674'], accent: '#8fd0e8',
+        grass: ['#2c7484', '#1c5563'], accent: '#8fd0e8',
         // 숨의 길 : 들숨은 갈수록 좁아지고(코→기관→기관지→세기관지),
         //           폐포 그물에서 실컷 감았다가, 날숨은 시원하게 뻗어 나간다.
         landmarks: [
@@ -1226,7 +1226,7 @@ const SYSTEMS = {
     },
     nervous: {
         id: 'nervous', name: '신경계 · 뇌 탐험', laps: 4, closed: true, halfWidth: 178,
-        grass: ['#4a4478', '#37326a'], accent: '#ffd166',
+        grass: ['#443e78', '#2c2856'], accent: '#ffd166',
         // 자극 → 반응의 닫힌 고리. 대뇌 네 개 엽을 지나며 뇌를 탐험한다.
         //   신경은 가늘고(좁은 길), 대뇌 안은 주름져(구불구불) 있다.
         landmarks: [
@@ -1302,7 +1302,7 @@ const SYSTEMS = {
     },
     urinary: {
         id: 'urinary', name: '배설계 코스', laps: 4, closed: true, halfWidth: 178,
-        grass: ['#35876a', '#296e56'], accent: '#5ec2f5',
+        grass: ['#2b7d68', '#1b5c4c'], accent: '#5ec2f5',
         // 오줌은 한 번 나가면 끝이지만, 피는 계속 돈다.
         //   콩팥으로 들어온 피가 걸러지고, 필요한 것은 재흡수되어 다시 몸으로.
         //   그 혈액의 고리를 따라 달린다. 사구체는 실타래처럼 촘촘하다.
@@ -1727,7 +1727,9 @@ function buildTrack(sys) {
             const d = (pts[i].x - x) ** 2 + (pts[i].y - y) ** 2;
             if (d < near) near = d;
         }
-        if (Math.sqrt(near) > hw + 120) decor.push({ x, y, r: 15 + rng() * 32, tree: rng() < .5, hue: rng() });
+        // 도로 밖은 서킷 바깥이다. 잔디밭·모래밭·타이어 벽처럼 레이싱장의 물건을 둔다.
+        if (Math.sqrt(near) > hw + 110)
+            decor.push({ x, y, r: 16 + rng() * 30, kind: rng(), hue: rng(), ph: rng() * TAU });
     }
 
     const checkpoints = sys.flow.map((node, i) => ({ si: Math.min(nodeIdx[i] * SEG_SAMPLES, N - 1), node, num: i + 1 }));
@@ -2785,25 +2787,46 @@ function drawSpeedLines(g) {
     g.globalAlpha = 1;
 }
 
+/* ---- 도로 밖 = 서킷 바깥 ----
+   몸속처럼 그리면 징그러워진다. 그냥 레이싱장 바깥처럼 둔다 —
+   타이어 벽, 모래밭, 잔디 무늬. 코스가 인체인 것만으로 컨셉은 충분히 전해진다. */
 function drawDecor(g, inView) {
     for (const d of track.decor) {
         if (!inView(d.x, d.y)) continue;
-        g.fillStyle = 'rgba(0,0,0,.2)';
-        g.beginPath(); g.ellipse(d.x + 7, d.y + 11, d.r * .95, d.r * .5, 0, 0, TAU); g.fill();
-        if (d.tree) {
-            g.fillStyle = '#5a3a22';
-            g.fillRect(d.x - 5, d.y - 2, 10, d.r * .6);
-            const base = `hsl(${100 + d.hue * 40},48%,${25 + d.hue * 12}%)`;
-            g.fillStyle = base;
-            g.beginPath(); g.arc(d.x, d.y - d.r * .25, d.r, 0, TAU); g.fill();
-            g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 3.5; g.stroke();
-            g.fillStyle = `hsl(${104 + d.hue * 40},52%,${40 + d.hue * 14}%)`;
-            g.beginPath(); g.arc(d.x - d.r * .28, d.y - d.r * .5, d.r * .5, 0, TAU); g.fill();
+        const R = d.r;
+
+        if (d.kind < .34) {
+            // 타이어 벽 : 서킷 바깥의 완충재
+            g.fillStyle = 'rgba(0,0,0,.22)';
+            g.beginPath(); g.ellipse(d.x + 4, d.y + 6, R * .9, R * .62, 0, 0, TAU); g.fill();
+            for (let n = 0; n < 3; n++) {
+                const ox = (n - 1) * R * .62;
+                g.fillStyle = '#23262c';
+                g.beginPath(); g.ellipse(d.x + ox, d.y, R * .34, R * .3, 0, 0, TAU); g.fill();
+                g.fillStyle = '#3a3f47';
+                g.beginPath(); g.ellipse(d.x + ox, d.y - R * .06, R * .34, R * .28, 0, 0, TAU); g.fill();
+                g.fillStyle = '#15171b';
+                g.beginPath(); g.ellipse(d.x + ox, d.y - R * .06, R * .14, R * .12, 0, 0, TAU); g.fill();
+            }
+        } else if (d.kind < .62) {
+            // 모래밭 : 코스를 벗어나면 밟게 되는 곳
+            g.fillStyle = 'rgba(214,186,132,.5)';
+            g.beginPath();
+            for (let i = 0; i <= 12; i++) {
+                const a = i / 12 * TAU;
+                const rr = R * (1.15 + Math.sin(a * 3 + d.ph) * .18);
+                const px = d.x + Math.cos(a) * rr, py = d.y + Math.sin(a) * rr * .62;
+                i === 0 ? g.moveTo(px, py) : g.lineTo(px, py);
+            }
+            g.closePath(); g.fill();
+            g.fillStyle = 'rgba(236,214,168,.35)';
+            g.beginPath(); g.ellipse(d.x - R * .2, d.y - R * .12, R * .5, R * .28, 0, 0, TAU); g.fill();
         } else {
-            g.fillStyle = `hsl(${88 + d.hue * 46},44%,${30 + d.hue * 12}%)`;
-            g.beginPath(); g.ellipse(d.x, d.y, d.r * .95, d.r * .6, 0, 0, TAU); g.fill();
-            g.fillStyle = 'rgba(255,255,255,.12)';
-            g.beginPath(); g.ellipse(d.x - d.r * .2, d.y - d.r * .18, d.r * .45, d.r * .26, 0, 0, TAU); g.fill();
+            // 잔디 무늬 : 밝고 어두운 결
+            g.fillStyle = `hsla(${d.hue < .5 ? 132 : 122},26%,${16 + d.hue * 10}%,.34)`;
+            g.beginPath(); g.ellipse(d.x, d.y, R * 1.2, R * .7, d.ph, 0, TAU); g.fill();
+            g.fillStyle = `hsla(128,30%,${42 + d.hue * 12}%,.16)`;
+            g.beginPath(); g.ellipse(d.x - R * .25, d.y - R * .16, R * .6, R * .3, d.ph, 0, TAU); g.fill();
         }
     }
 }
