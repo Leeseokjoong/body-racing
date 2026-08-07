@@ -1524,7 +1524,11 @@ function resize() {
     cvs.width = Math.floor(VW * DPR); cvs.height = Math.floor(VH * DPR);
     cvs.style.width = VW + 'px'; cvs.style.height = VH + 'px';
 }
-window.addEventListener('resize', resize); resize();
+window.addEventListener('resize', resize);
+// 전체 화면 전환·화면 회전은 resize 가 늦거나 안 올 수 있어 따로 걸어 둔다
+['fullscreenchange', 'webkitfullscreenchange', 'orientationchange'].forEach(ev =>
+    window.addEventListener(ev, () => setTimeout(resize, 120)));
+resize();
 
 const cam  = { x: 0, y: 0, zoom: .62, targetZoom: .62, shake: 0, kick: 0, tilt: 0, intro: 0, flash: 0 };
 const ZOOM_MIN = .12, ZOOM_MAX = 2.2;
@@ -4771,8 +4775,9 @@ el('joinRoom').onclick = joinRoom;
 el('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
 el('startBtn').onclick = () => {
-    // 달리는 동안 주소창이 보이면 화면이 좁아진다. 시작할 때 한 번 더 전체 화면을 청한다
-    if (IS_TOUCH && !isFullscreen()) goFullscreen().catch(() => {});
+    // 달리는 동안 주소창이 보이면 화면이 좁아진다. 시작할 때 한 번 더 전체 화면을 청한다.
+    //   다만 이건 곁다리다 — 거부되든 응답이 없든 레이스는 반드시 시작되어야 한다.
+    if (IS_TOUCH && !isFullscreen()) { try { goFullscreen(); } catch (e) {} }
     startRace(selectedId);
 };
 el('retryBtn').onclick = () => {
@@ -4821,10 +4826,13 @@ refreshVolUI();
 /* 전체 화면 — 주소창이 사라져야 화면이 넓어진다.
    브라우저가 사용자 동작 안에서만 허락하므로 버튼으로 받는다. */
 function goFullscreen() {
+    // 구형 브라우저는 아무것도 돌려주지 않는다. 무엇이 오든 Promise 로 감싸
+    // 호출한 쪽이 .then/.catch 를 안전하게 붙일 수 있게 한다.
     const d = document.documentElement;
     const req = d.requestFullscreen || d.webkitRequestFullscreen || d.msRequestFullscreen;
-    if (req) { try { return req.call(d); } catch (e) {} }
-    return Promise.reject();
+    if (!req) return Promise.resolve(false);
+    try { return Promise.resolve(req.call(d)).then(() => true, () => false); }
+    catch (e) { return Promise.resolve(false); }
 }
 function exitFullscreen() {
     const x = document.exitFullscreen || document.webkitExitFullscreen;
@@ -4853,28 +4861,30 @@ if (IS_TOUCH && !(window.Capacitor && window.Capacitor.isNativePlatform && windo
     el('tapStart').classList.remove('hidden');
     el('menu').classList.add('hidden');
 
-    const enter = async () => {
-        // 1) 전체 화면 — 주소창이 사라져야 화면이 넓어지고, 화면 잠금도 여기서만 된다
-        try { await (document.documentElement.requestFullscreen
-                     || document.documentElement.webkitRequestFullscreen).call(document.documentElement); }
-        catch (e) { /* 거부돼도 계속 진행 */ }
+    let entered = false;
+    const enter = () => {
+        if (entered) return;                 // 탭 한 번에 touchend 와 click 이 겹쳐 들어온다
+        entered = true;
 
-        // 2) 가로로 잠근다. 안 되는 기기(iOS)에서는 눕히라는 안내가 대신 뜬다
-        try { await screen.orientation.lock('landscape'); } catch (e) {}
+        // 화면부터 넘긴다. 전체 화면·가로 잠금은 거부되거나 응답이 없을 수 있는데,
+        //   그걸 기다리면 시작 화면에서 영영 못 넘어간다.
+        el('tapStart').classList.add('hidden');
+        el('menu').classList.remove('hidden');
 
-        // 3) 소리 — 사용자 동작 안에서만 오디오를 켤 수 있다
+        // 소리 — 사용자 동작 안에서만 오디오를 켤 수 있다
         if (!audioCtx) {
             try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = null; } catch (e) {}
         }
-        if (audioCtx) audioCtx.resume().catch(() => {});
+        if (audioCtx) { try { audioCtx.resume(); } catch (e) {} }
 
-        el('tapStart').classList.add('hidden');
-        el('menu').classList.remove('hidden');
+        // 전체 화면이 열리면 이어서 가로로 잠근다 (열리지 않아도 그냥 넘어간다)
+        goFullscreen().then(ok => {
+            if (!ok) return;
+            try { screen.orientation.lock('landscape'); } catch (e) {}
+        });
     };
     el('tapStartBtn').onclick = enter;
-    el('tapStart').addEventListener('touchend', e => {
-        if (e.target.id !== 'tapStartBtn') enter();      // 화면 아무 곳이나 눌러도 된다
-    });
+    el('tapStart').addEventListener('touchend', enter);
 }
 
 /* ============================================================================
