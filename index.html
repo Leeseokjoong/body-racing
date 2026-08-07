@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a1420">
-<title>인체 탐험 레이싱 - 2D 코믹 카트</title>
+<title>오장육부 레이싱 · Organ Racing</title>
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -67,7 +67,14 @@
     #gaugeWrap .t { text-align: left; margin-bottom: 4px; }
     .bar { height: 14px; border-radius: 7px; background: rgba(0,0,0,.45); overflow: hidden; border: 2px solid #3f6c9c; }
     .bar > i { display: block; height: 100%; width: 0%; transition: width .12s; }
-    #driftBar > i { background: linear-gradient(90deg, #4ad0ff, #7ee081, #ffe066, #ff7a3c); }
+    #driftBar { position: relative; }
+    #driftBar > i { background: linear-gradient(90deg, #4ad0ff, #7ee081, #ffe066, #ff7a3c);
+                    box-shadow: 0 0 10px currentColor; }
+    /* 지금 카트가 물 수 있는 한계 — 여기가 오른쪽으로 갈수록 큰 부스터가 열린다 */
+    #driftCap { position: absolute; top: 0; bottom: 0; width: 3px; background: #fff; opacity: .85;
+                box-shadow: 0 0 6px #fff; pointer-events: none; }
+    #driftBar > i.full { animation: capPulse .5s infinite alternate; }
+    @keyframes capPulse { from { filter: brightness(1); } to { filter: brightness(1.6); } }
     #progBar > i { background: linear-gradient(90deg, #3aa0ff, #7fd4ff); }
 
     #speedPanel { bottom: 186px; right: 14px; width: 206px; text-align: center; }
@@ -143,10 +150,42 @@
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     }
     .overlay.hidden { display: none; }
+    /* 서킷 입구에 걸린 노란 간판 — 기둥 두 개에 매달려 살짝 흔들린다 */
+    .titleSign {
+        position: relative; margin: 6px 0 4px; transform: rotate(-1.6deg);
+        animation: signSway 4.5s ease-in-out infinite alternate;
+    }
+    @keyframes signSway {
+        from { transform: rotate(-2.2deg); } to { transform: rotate(1.2deg); }
+    }
+    .titleSign::before, .titleSign::after {          /* 매달린 쇠사슬 */
+        content: ''; position: absolute; top: -22px; width: 5px; height: 26px;
+        background: linear-gradient(180deg, #6b5a3a, #b99a54); border-radius: 3px;
+    }
+    .titleSign::before { left: 15%; }
+    .titleSign::after  { right: 15%; }
+    .titleBoard {
+        position: relative; padding: 14px 42px 16px;
+        background: linear-gradient(180deg, #ffd76a 0%, #f5b731 48%, #e09a1c 52%, #c97f12 100%);
+        border: 7px solid #7a4a10; border-radius: 20px;
+        box-shadow: 0 10px 0 rgba(0,0,0,.4), inset 0 3px 0 rgba(255,255,255,.55),
+                    inset 0 -5px 0 rgba(0,0,0,.16);
+    }
+    .titleBoard::before, .titleBoard::after {        /* 간판 모서리 나사못 */
+        content: ''; position: absolute; top: 9px; width: 11px; height: 11px;
+        border-radius: 50%; background: radial-gradient(#fff5cf, #a8741e);
+        box-shadow: 0 1px 0 rgba(0,0,0,.4);
+    }
+    .titleBoard::before { left: 11px; } .titleBoard::after { right: 11px; }
     .title {
-        font-size: clamp(30px, 6vw, 54px); font-weight: 900; letter-spacing: -2px; color: #ffd76a;
-        -webkit-text-stroke: 6px #1a0f00; paint-order: stroke fill;
-        text-shadow: 0 8px 0 rgba(0,0,0,.35); transform: rotate(-2deg); text-align: center;
+        font-size: clamp(28px, 5.6vw, 52px); font-weight: 900; letter-spacing: -2px; color: #fff6d8;
+        -webkit-text-stroke: 7px #6b3d0a; paint-order: stroke fill;
+        text-shadow: 0 5px 0 rgba(120,66,10,.55); text-align: center; line-height: 1.05;
+    }
+    .titleEn {
+        display: block; font-size: 15px; font-weight: 900; letter-spacing: 8px; color: #7a4a10;
+        -webkit-text-stroke: 0; margin-top: 6px; text-indent: 8px;
+        text-shadow: 0 1px 0 rgba(255,255,255,.5);
     }
     .subtitle { font-size: 14px; color: #9fd0ff; text-align: center; max-width: 760px; }
     .cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1180px; }
@@ -251,6 +290,37 @@
     .upRow button:disabled { opacity: .35; cursor: default; }
     .upRow button.can { background: #e8a020; border-color: #ffd166; color: #2a1a00; }
 
+    /* 자동차 목록 */
+    .carRow { display: flex; align-items: center; gap: 10px; margin: 6px 0; padding: 7px 8px; border-radius: 10px;
+              background: rgba(255,255,255,.04); border: 2px solid transparent; }
+    .carRow.picked { border-color: #ffd166; background: rgba(255,209,102,.12); }
+    .carRow .ic { font-size: 19px; width: 34px; height: 34px; line-height: 32px; text-align: center;
+                  border-radius: 9px; border: 2px solid #3f6c9c; flex: none; }
+    .carRow .nm { flex: 1; font-size: 13px; font-weight: bold; }
+    .carRow .nm small { display: block; font-weight: normal; color: #9fd0ff; font-size: 11px; margin: 2px 0 4px; }
+    .carRow .stats { display: flex; gap: 4px; }
+    .carRow .statBar { display: block; width: 34px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.13); overflow: hidden; }
+    .carRow .statBar i { display: block; height: 100%; background: linear-gradient(90deg,#5ec2f5,#ffd166); }
+    .carRow button {
+        padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;
+        background: #2f6ea8; color: #fff; border: 2px solid #4d8ac9; font-family: inherit; min-width: 74px;
+    }
+    .carRow button:disabled { opacity: .35; cursor: default; }
+    .carRow button.can { background: #e8a020; border-color: #ffd166; color: #2a1a00; }
+    .carRow button.on  { background: #2a2f38; border-color: #ffd166; color: #ffd166; cursor: default; }
+
+    /* 전면 광고 */
+    #adBox { width: min(92vw, 720px); background: #10141c; border: 3px solid #2f3a4c; border-radius: 16px;
+             overflow: hidden; box-shadow: 0 18px 60px rgba(0,0,0,.6); }
+    #adTop { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px;
+             background: #1a2130; font-size: 12px; color: #8fa4bd; letter-spacing: 2px; }
+    #adTop button { padding: 6px 14px; font-size: 12px; font-weight: bold; border-radius: 8px;
+                    background: #2a3444; color: #8fa4bd; border: 2px solid #3a475c; font-family: inherit; cursor: default; }
+    #adTop button:not(:disabled) { background: #e8a020; border-color: #ffd166; color: #2a1a00; cursor: pointer; }
+    #adSlot { min-height: 250px; display: flex; align-items: center; justify-content: center;
+              background: #0b0e14; color: #4d5a6d; font-size: 13px; text-align: center; padding: 10px; }
+    #adFoot { padding: 9px; font-size: 12px; color: #7f8fa5; text-align: center; background: #1a2130; }
+
     .quiz { margin-top: 14px; text-align: left; background: rgba(0,0,0,.25); border-radius: 14px; padding: 14px; }
     .quiz .q { font-size: 15px; font-weight: bold; margin-bottom: 9px; color: #ffe066; }
     .quiz button {
@@ -287,6 +357,11 @@
         #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
     }
 </style>
+<!-- 애드센스 : 아래 client 를 본인 계정 ID 로 바꾸고 주석을 풀면 실제 광고가 나갑니다.
+     스크립트 주소의 client 와 body-racing.html 안의 AD.client 를 같은 값으로 맞춰 주세요.
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        crossorigin="anonymous"></script>
+-->
 </head>
 <body>
 
@@ -315,7 +390,7 @@
 
     <div class="panel" id="gaugeWrap">
         <div class="t">드리프트 게이지 (SPACE)</div>
-        <div class="bar" id="driftBar"><i></i></div>
+        <div class="bar" id="driftBar"><i></i><span id="driftCap"></span></div>
         <div class="t" style="margin-top:8px">진행도 <span id="progTxt">0%</span></div>
         <div class="bar" id="progBar"><i></i></div>
     </div>
@@ -347,8 +422,10 @@
 </div>
 
 <div class="overlay" id="menu">
-    <div class="title">인체 탐험 레이싱</div>
-    <div class="subtitle">꼬마 카트를 몰고 몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성되고, 아이템과 장애물은 그 기관에 실제로 있는 물질입니다.</div>
+    <div class="titleSign"><div class="titleBoard">
+        <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
+    </div></div>
+    <div class="subtitle">몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성되고, 아이템과 장애물은 그 기관에 실제로 있는 물질입니다.</div>
     <div class="cards" id="mapCards"></div>
     <div class="keys">
         <span>W 가속</span><span>S 브레이크·후진</span><span>A / D 조향</span>
@@ -374,6 +451,15 @@
         <div id="roomState"></div>
     </div>
     <button class="btn" id="startBtn">레이스 시작</button>
+</div>
+
+<!-- 서킷이 끝나면 결과 전에 끼어드는 전면 광고 -->
+<div class="overlay hidden" id="adBreak">
+    <div id="adBox">
+        <div id="adTop"><span>광고</span><button id="adSkip" disabled>5초 후 건너뛰기</button></div>
+        <div id="adSlot"></div>
+        <div id="adFoot">광고 수익으로 게임이 계속 만들어집니다 🙏</div>
+    </div>
 </div>
 
 <div class="overlay hidden" id="result">
@@ -423,7 +509,7 @@ try {
 
 <script>
 /* ============================================================================
-   인체 탐험 레이싱 — 아기자기한 코믹 인체 탐험 카트 레이서 (2D 탑다운)
+   오장육부 레이싱 (Organ Racing) — 아기자기한 코믹 인체 탐험 카트 레이서 (2D 탑다운)
    · 코스는 각 계통의 flow(기관 → 기관) 정의에서 자동 생성
    · 아이템/장애물은 그 기관에 실제로 존재하는 물질 (적혈구·효소·이산화탄소 …)
    · Circuit Superstars 풍의 드리프트 주행 + 의사 3D(그림자/베벨) 연출
@@ -619,41 +705,76 @@ const SYSTEMS = {
     },
 
     respiratory: {
-        id: 'respiratory', name: '호흡계 서킷', laps: 3, closed: true, halfWidth: 168,
+        id: 'respiratory', name: '호흡계 서킷', laps: 4, closed: true, halfWidth: 182,
         grass: ['#3a8090', '#2b6674'], accent: '#8fd0e8',
+        // 숨의 길 : 들숨은 갈수록 좁아지고(코→기관→기관지→세기관지),
+        //           폐포 그물에서 실컷 감았다가, 날숨은 시원하게 뻗어 나간다.
+        landmarks: [
+            { type: 'lungs', at: [2100, 2900], r: 1150 }
+        ],
         flow: [
-            { name: '코 · 입', at: [500, 400], color: '#f0b8a0', role: '공기 흡입',
+            { name: '코 · 입', at: [640, 520], color: '#f0b8a0', role: '공기 흡입', blob: 260,
               info: '코털과 점액이 먼지를 거르고, 공기를 따뜻하고 촉촉하게 만들어 줍니다.',
-              seg: { name: '인두 · 후두', color: '#e0a68e' }, via: [[560, 660]] },
-            { name: '기관', at: [620, 950], color: '#c9d6e8', role: '공기 길',
+              seg: { name: '인두 · 후두', color: '#e0a68e', wMul: .72, tunnel: true,
+                     desc: '목구멍의 좁은 통로. 음식은 식도로, 공기는 기관으로 갈라집니다' },
+              via: [[700, 760], [720, 1000]] },
+
+            { name: '기관', at: [760, 1260], color: '#c9d6e8', role: '공기 길', blob: 0,
+              chamber: { w: 260, h: 250, wall: 44, tint: '#dce6f2' },
+              pump: { power: .6, label: '들숨!', desc: '가로막이 내려가며 공기가 쑥 빨려 들어옵니다.' },
               info: '고리 모양 연골이 있어 눌려도 찌그러지지 않는 튼튼한 공기 통로입니다.',
-              seg: { name: '기관', color: '#c9d6e8' }, via: [[700, 1250]] },
-            { name: '기관지', at: [850, 1500], color: '#a8c0da', role: '좌우 분기',
-              info: '기관이 좌우 폐로 갈라지는 지점. 점점 가늘어져 세기관지가 됩니다.',
-              seg: { name: '세기관지', color: '#a8c0da' }, via: [[1050, 1850], [1350, 2060]] },
-            { name: '폐포', at: [1750, 2250], color: '#f2a0c0', role: '기체 교환',
-              info: '포도송이 모양의 작은 공기주머니. 표면적이 넓어 산소를 빠르게 넘겨줍니다.',
-              seg: { name: '폐포 모세혈관', color: '#e2707a' }, via: [[2150, 2400], [2550, 2350]] },
-            { name: '산소 교환', at: [2900, 2150], color: '#e04a4a', role: '혈액에 전달',
+              seg: { name: '기관', color: '#c9d6e8', wMul: .95,
+                     desc: '연골 고리가 받쳐 주어 절대 찌그러지지 않는 공기 길' },
+              via: [[820, 1520], [900, 1760]] },
+
+            { name: '기관지', at: [1020, 2000], color: '#a8c0da', role: '좌우 분기', blob: 240,
+              info: '기관이 좌우 폐로 갈라지는 지점. 여기서부터 점점 가늘어집니다.',
+              seg: { name: '세기관지', color: '#a8c0da', wMul: .62,
+                     desc: '나뭇가지처럼 자꾸 갈라지며 점점 가늘어지는 길' },
+              via: [[1180, 2240], [1420, 2320], [1520, 2560], [1300, 2680], [1060, 2740],
+                    [900, 2960], [1060, 3180], [1340, 3220], [1540, 3060], [1480, 2820],
+                    [1700, 2720], [1900, 2860], [1840, 3120], [1600, 3320], [1720, 3540],
+                    [1980, 3560], [2100, 3340], [1980, 3120]] },
+
+            { name: '폐포', at: [2120, 2880], color: '#f2a0c0', role: '기체 교환', blob: 0,
+              chamber: { w: 360, h: 350, wall: 34, tint: '#f7b8d0' },
+              info: '포도송이 모양의 작은 공기주머니. 여기서 산소와 이산화탄소가 자리를 바꿉니다.',
+              seg: { name: '폐포 모세혈관', color: '#e2707a', wMul: .7,
+                     desc: '폐포 송이송이를 그물처럼 감고 도는 아주 가는 혈관' },
+              // 포도송이를 하나하나 감아 도는 그물망 — 이 코스에서 드리프트가 가장 많이 나오는 구간
+              via: [[2360, 3020], [2560, 3200], [2820, 3180], [2920, 2960], [2760, 2800],
+                    [2520, 2820], [2440, 2600], [2620, 2440], [2880, 2480], [3020, 2680],
+                    [3260, 2760], [3420, 2580], [3320, 2340], [3060, 2320], [2960, 2100],
+                    [3120, 1920], [3380, 1960], [3480, 2180], [3660, 2280], [3780, 2080]] },
+
+            { name: '산소 교환', at: [3660, 1820], color: '#e04a4a', role: '혈액에 전달', blob: 250,
               info: '산소는 혈액으로, 이산화탄소는 폐포로. 농도 차이 때문에 저절로 이동합니다.',
-              seg: { name: '날숨 통로', color: '#8fd0e8' }, via: [[3250, 1900], [3450, 1550]] },
-            { name: '날숨', at: [3450, 1150], color: '#8fd0e8', role: '이산화탄소 배출',
+              seg: { name: '날숨 통로', color: '#8fd0e8', wMul: 1.15,
+                     desc: '이산화탄소를 실은 공기가 시원하게 빠져나가는 넓은 길' },
+              via: [[3820, 1560], [3700, 1300], [3820, 1040], [3620, 860]] },
+
+            { name: '날숨', at: [3340, 760], color: '#8fd0e8', role: '이산화탄소 배출', blob: 250,
+              pump: { power: 1, label: '날숨! 후—', desc: '가로막이 올라가며 가슴이 좁아져 공기가 힘차게 밀려 나갑니다.' },
               info: '가로막과 갈비뼈가 올라가며 가슴 속 공간이 좁아져 공기가 밀려 나갑니다.',
-              seg: { name: '기도 복귀', color: '#8fd0e8' },
-              via: [[3350, 750], [3050, 450], [2600, 300], [2100, 270], [1500, 280], [1000, 320]] }
+              seg: { name: '기도 복귀', color: '#8fd0e8', wMul: 1.15,
+                     desc: '숨을 내쉬고 나면 다시 들이마실 차례. 숨은 쉬지 않고 반복됩니다' },
+              via: [[3000, 560], [2620, 440], [2200, 380], [1760, 360], [1340, 380], [980, 440]] }
         ],
         pickups: [
-            { icon: '🫧', name: '산소',     color: '#6ec6f2', effect: 'boost',  desc: '폐포에서 혈액으로 넘어가는 기체. 힘차게 가속!' },
-            { icon: '💨', name: '깨끗한 공기', color: '#cfe8f5', effect: 'boost', desc: '코털과 점액이 걸러 준 맑은 공기.' },
-            { icon: '🛡️', name: '점액',     color: '#a8d8c0', effect: 'shield', desc: '기도를 덮어 먼지와 세균을 붙잡는 끈끈한 액체.' },
-            { icon: '🌬️', name: '섬모',     color: '#e8f0f5', effect: 'star',   desc: '먼지를 밖으로 쓸어 내는 작은 털. 장애물을 밀어냅니다!' },
-            { icon: '💧', name: '수분',     color: '#8fd0e8', effect: 'energy', desc: '들이마신 공기를 촉촉하게 만들어 주는 물기.' }
+            { icon: '🫧', name: '산소',       color: '#6ec6f2', effect: 'turbo', img: 'rbc',
+              desc: '폐포에서 혈액으로 넘어가는 기체. 힘차게 가속!' },
+            { icon: '🛡️', name: '점액 포획',  color: '#a8d8c0', effect: 'wbc', img: 'wbc',
+              desc: '기도를 덮은 끈끈한 액체. 가까운 카트를 붙잡습니다.' },
+            { icon: '💨', name: '이산화탄소', color: '#8a9aa8', effect: 'smoke', img: 'co2',
+              desc: '내보내야 할 노폐 기체. 뒤차의 시야를 가립니다.' },
+            { icon: '🟤', name: '가래',       color: '#8a7b55', effect: 'sticky', img: 'chol',
+              desc: '먼지와 세균이 엉긴 덩어리. 지나온 길을 끈적하게!' },
+            { icon: '🌫️', name: '미세먼지',   color: '#9a9a9a', effect: 'clot', img: 'clot',
+              desc: '앞차에 날려 숨이 막히게 만듭니다!' }
         ],
         hazards: [
-            { icon: '🌫️', name: '미세먼지',   color: '#9a9a9a', r: 42, slow: .45, spin: false, desc: '아주 작아 폐포까지 들어오는 먼지. 숨이 막혀 느려집니다.' },
-            { icon: '💨', name: '이산화탄소', color: '#8a9aa8', r: 42, slow: .5,  spin: false, desc: '내보내야 할 노폐 기체. 쌓이면 답답합니다.' },
-            { icon: '🦠', name: '바이러스',   color: '#a884d6', r: 34, slow: .4,  spin: true,  desc: '감기를 일으키는 침입자. 점액 실드로 막으세요.' },
-            { icon: '🟤', name: '가래',       color: '#8a7b55', r: 40, slow: .42, spin: true,  desc: '먼지와 세균이 점액에 엉긴 덩어리. 길이 좁아집니다.' }
+            { icon: '🌫️', name: '미세먼지', color: '#9a9a9a', r: 42, slow: .45, spin: false, desc: '폐포까지 들어오는 아주 작은 먼지.' },
+            { icon: '🦠', name: '바이러스', color: '#a884d6', r: 34, slow: .4, spin: true, desc: '감기를 일으키는 침입자.' }
         ],
         quiz: [
             { q: '산소와 이산화탄소가 실제로 교환되는 곳은?', a: ['기관', '폐포', '코'], correct: 1, ex: '폐포는 표면적이 매우 넓어 기체 교환에 유리합니다.' },
@@ -661,45 +782,75 @@ const SYSTEMS = {
             { q: '기관에 연골 고리가 있는 이유는?', a: ['소리를 내려고', '길이 막히지 않게', '산소를 만들려고'], correct: 1, ex: '연골이 기관을 지지해 공기 통로가 눌리지 않게 합니다.' }
         ]
     },
-
     nervous: {
-        id: 'nervous', name: '신경계 서킷', laps: 2, closed: true, halfWidth: 162,
+        id: 'nervous', name: '신경계 · 뇌 탐험', laps: 4, closed: true, halfWidth: 178,
         grass: ['#4a4478', '#37326a'], accent: '#ffd166',
+        // 자극 → 반응의 닫힌 고리. 대뇌 네 개 엽을 지나며 뇌를 탐험한다.
+        //   신경은 가늘고(좁은 길), 대뇌 안은 주름져(구불구불) 있다.
+        landmarks: [
+            { type: 'brain', at: [2000, 900], r: 1100 }
+        ],
         flow: [
-            { name: '감각 기관', at: [600, 2200], color: '#ffd166', role: '자극 받기',
+            { name: '감각 기관', at: [800, 3000], color: '#ffd166', role: '자극 받기', blob: 270,
               info: '눈·귀·코·혀·피부가 빛, 소리, 냄새, 맛, 온도 같은 자극을 받아들입니다.',
-              seg: { name: '감각 신경', color: '#ffb703' }, via: [[560, 1900]] },
-            { name: '감각 신경', at: [700, 1500], color: '#ffb703', role: '신호 전달',
-              info: '자극을 전기 신호(활동 전위)로 바꿔 척수와 뇌로 빠르게 올려 보냅니다.',
-              seg: { name: '척수 상행로', color: '#fb8500' }, via: [[850, 1200]] },
-            { name: '척수', at: [1200, 900], color: '#fb8500', role: '반사 중추',
+              seg: { name: '감각 신경', color: '#ffb703', wMul: .6, tunnel: true,
+                     desc: '자극을 전기 신호로 바꿔 척수로 올려 보내는 아주 가는 길' },
+              via: [[720, 2740], [780, 2460]] },
+
+            { name: '척수', at: [880, 2160], color: '#fb8500', role: '반사 중추', blob: 0,
+              chamber: { w: 250, h: 300, wall: 46, tint: '#ffa23a' },
+              pump: { power: .6, label: '반사!', desc: '뜨거우면 뇌를 거치지 않고 척수가 바로 명령합니다. 그래서 빠릅니다!' },
               info: '뜨거운 것을 만졌을 때처럼 급할 땐 뇌를 거치지 않고 바로 명령합니다(반사).',
-              seg: { name: '뇌줄기', color: '#f77f00' }, via: [[1500, 600]] },
-            { name: '대뇌', at: [2000, 380], color: '#ff85a1', role: '판단 · 기억',
-              info: '생각하고 판단하고 기억하는 곳. 몸의 움직임을 최종적으로 명령합니다.',
-              seg: { name: '소뇌 연결로', color: '#e56b9f' }, via: [[2450, 420]] },
-            { name: '소뇌 · 뇌줄기', at: [2800, 700], color: '#c77dff', role: '균형 조절',
-              info: '소뇌는 몸의 균형과 정교한 운동을, 뇌줄기는 호흡·심장 박동을 조절합니다.',
-              seg: { name: '운동 신경', color: '#9d4edd' }, via: [[3100, 1050]] },
-            { name: '운동 신경', at: [3250, 1550], color: '#9d4edd', role: '명령 전달',
+              seg: { name: '뇌줄기', color: '#f77f00', wMul: .62,
+                     desc: '숨쉬기·심장 박동을 조절하는 생명의 길목' },
+              via: [[980, 1900], [1120, 1660]] },
+
+            { name: '뇌줄기 · 소뇌', at: [1300, 1460], color: '#c77dff', role: '균형 조절', blob: 260,
+              info: '소뇌는 몸의 균형과 정교한 움직임을, 뇌줄기는 호흡과 심장 박동을 조절합니다.',
+              seg: { name: '후두엽 · 두정엽', color: '#7fd4ff', wMul: .7,
+                     desc: '후두엽은 보는 것을, 두정엽은 만지는 감각을 담당합니다. 뇌 주름을 따라!' },
+              via: [[1420, 1240], [1300, 1020], [1460, 820], [1300, 600], [1500, 440],
+                    [1760, 420], [1900, 620], [1740, 800], [1560, 960], [1720, 1140],
+                    [1980, 1180], [2140, 1000], [2060, 780], [2220, 580], [2480, 520],
+                    [2660, 680], [2560, 900], [2340, 980], [2300, 1220], [2520, 1340],
+                    [2760, 1300], [2860, 1100]] },
+
+            { name: '대뇌', at: [2900, 900], color: '#ff85a1', role: '판단 · 기억', blob: 0,
+              chamber: { w: 340, h: 320, wall: 84, tint: '#ff9db4' },
+              info: '전두엽에서 생각하고 판단합니다. 몸의 움직임을 최종적으로 명령하는 곳!',
+              seg: { name: '운동 신경', color: '#9d4edd', wMul: .62, tunnel: true,
+                     desc: '뇌의 명령을 근육까지 전달하는 가는 길. 신호는 전기처럼 빠릅니다' },
+              via: [[3160, 940], [3340, 1120], [3220, 1360], [3420, 1540], [3300, 1780]] },
+
+            { name: '운동 신경', at: [3400, 2020], color: '#9d4edd', role: '명령 전달', blob: 250,
               info: '뇌와 척수의 명령을 근육까지 전달하는 내리막 고속 구간입니다.',
-              seg: { name: '신경 근육 이음부', color: '#7b2cbf' }, via: [[3200, 1950]] },
-            { name: '근육(반응)', at: [2750, 2350], color: '#ff6b6b', role: '반응',
+              seg: { name: '신경 근육 이음부', color: '#7b2cbf', wMul: 1.1,
+                     desc: '신경이 근육에게 명령을 건네주는 마지막 지점' },
+              via: [[3560, 2240], [3440, 2500], [3600, 2740], [3380, 2960], [3100, 3020]] },
+
+            { name: '근육(반응)', at: [2820, 3220], color: '#ff6b6b', role: '반응', blob: 280,
+              pump: { power: 1, label: '반응!', desc: '명령을 받은 근육이 수축하며 실제 움직임이 나타납니다.' },
               info: '명령을 받은 근육이 수축하면서 실제 움직임(반응)이 나타납니다.',
-              seg: { name: '감각 되먹임', color: '#ffd166' }, via: [[2100, 2550], [1400, 2520], [900, 2450]] }
+              seg: { name: '감각 되먹임', color: '#ffd166', wMul: 1.05,
+                     desc: '움직인 결과를 다시 감각기관이 느낍니다. 그래서 계속 돌고 돕니다' },
+              via: [[2500, 3420], [2180, 3300], [1860, 3460], [1540, 3360], [1240, 3460],
+                    [960, 3300]] }
         ],
         pickups: [
-            { icon: '⚡', name: '활동 전위', color: '#ffe066', effect: 'boost',  desc: '신경을 타고 흐르는 전기 신호. 순간적으로 빨라집니다!' },
-            { icon: '🧠', name: '뉴런',     color: '#ff85a1', effect: 'energy', desc: '신호를 주고받는 신경 세포.' },
-            { icon: '✨', name: '도파민',   color: '#c77dff', effect: 'boost',  desc: '기분을 좋게 하는 신경 전달 물질.' },
-            { icon: '🛡️', name: '말이집',   color: '#cfe8f5', effect: 'shield', desc: '신경을 감싼 절연 껍질. 신호를 지키고 빠르게 합니다.' },
-            { icon: '🫧', name: '산소',     color: '#6ec6f2', effect: 'star',   desc: '뇌가 가장 많이 쓰는 연료. 잠시 무적이 됩니다!' }
+            { icon: '⚡', name: '활동 전위',  color: '#ffe066', effect: 'turbo', img: 'rbc',
+              desc: '신경을 타고 흐르는 전기 신호. 순간적으로 빨라집니다!' },
+            { icon: '🛡️', name: '말이집 포획', color: '#cfe8f5', effect: 'wbc', img: 'wbc',
+              desc: '신경을 감싼 절연 껍질. 가까운 카트를 붙잡습니다.' },
+            { icon: '🌀', name: '신호 간섭',  color: '#6a5acd', effect: 'smoke', img: 'co2',
+              desc: '신호를 뒤엉키게 해 뒤차의 시야를 가립니다.' },
+            { icon: '😵', name: '피로 물질',  color: '#7a7a9a', effect: 'sticky', img: 'chol',
+              desc: '쌓이면 반응이 느려집니다. 지나온 길을 끈적하게!' },
+            { icon: '🔻', name: '신경 압박',  color: '#5a4a7a', effect: 'clot', img: 'clot',
+              desc: '앞차의 신경을 눌러 저릿하게 멈춰 세웁니다!' }
         ],
         hazards: [
-            { icon: '😵', name: '피로 물질', color: '#7a7a9a', r: 40, slow: .45, spin: false, desc: '쌓이면 반응이 느려집니다. 잠이 보약!' },
-            { icon: '🌀', name: '신호 간섭', color: '#6a5acd', r: 42, slow: .5,  spin: true,  desc: '신호가 뒤엉켜 차가 빙글 돌아갑니다.' },
-            { icon: '🦠', name: '염증',     color: '#a884d6', r: 34, slow: .4,  spin: false, desc: '신경이 부어 신호 전달이 느려집니다.' },
-            { icon: '🔻', name: '신경 압박', color: '#5a4a7a', r: 38, slow: .38, spin: true,  desc: '눌린 신경 구간. 저릿하게 속도가 떨어집니다.' }
+            { icon: '😵', name: '피로 물질', color: '#7a7a9a', r: 40, slow: .45, spin: false, desc: '쌓이면 반응이 느려집니다.' },
+            { icon: '🦠', name: '염증', color: '#a884d6', r: 34, slow: .4, spin: false, desc: '신경이 부어 신호 전달이 느려집니다.' }
         ],
         quiz: [
             { q: '뜨거운 것을 만졌을 때 바로 손을 떼는 반응의 중추는?', a: ['대뇌', '척수', '소뇌'], correct: 1, ex: '급한 상황에서는 척수가 바로 명령하는 반사가 일어납니다.' },
@@ -707,44 +858,77 @@ const SYSTEMS = {
             { q: '자극 → 반응의 올바른 순서는?', a: ['감각기관→감각신경→중추→운동신경→근육', '근육→뇌→감각기관', '중추→감각기관→근육'], correct: 0, ex: '자극은 감각기관에서 시작해 중추를 거쳐 근육으로 전달됩니다.' }
         ]
     },
-
     urinary: {
-        id: 'urinary', name: '배설계 코스', laps: 1, closed: false, halfWidth: 164,
+        id: 'urinary', name: '배설계 코스', laps: 4, closed: true, halfWidth: 178,
         grass: ['#35876a', '#296e56'], accent: '#5ec2f5',
+        // 오줌은 한 번 나가면 끝이지만, 피는 계속 돈다.
+        //   콩팥으로 들어온 피가 걸러지고, 필요한 것은 재흡수되어 다시 몸으로.
+        //   그 혈액의 고리를 따라 달린다. 사구체는 실타래처럼 촘촘하다.
+        landmarks: [
+            { type: 'kidney', at: [2200, 1700], r: 1100 }
+        ],
         flow: [
-            { name: '콩팥 동맥', at: [400, 350], color: '#e04a4a', role: '혈액 공급',
+            { name: '콩팥 동맥', at: [820, 520], color: '#e04a4a', role: '혈액 공급', blob: 260,
               info: '노폐물이 섞인 혈액이 콩팥으로 들어오는 입구입니다.',
-              seg: { name: '콩팥 동맥', color: '#e04a4a' }, via: [[750, 320], [1100, 380]] },
-            { name: '사구체', at: [1450, 480], color: '#ff8fab', role: '여과',
+              seg: { name: '콩팥 동맥', color: '#e04a4a', wMul: 1.15,
+                     desc: '심장이 보낸 피의 4분의 1이 콩팥으로 옵니다. 그만큼 중요한 기관!' },
+              via: [[1200, 440], [1600, 460], [1980, 560], [2260, 700]] },
+
+            { name: '사구체', at: [2500, 940], color: '#ff8fab', role: '여과', blob: 0,
+              chamber: { w: 300, h: 290, wall: 40, tint: '#ff9fb8' },
+              pump: { power: .6, label: '여과 시작!', desc: '높은 압력으로 물과 노폐물을 한 번에 걸러 냅니다.' },
               info: '실타래처럼 얽힌 모세혈관 뭉치. 높은 압력으로 물과 노폐물을 걸러 냅니다.',
-              seg: { name: '보먼주머니', color: '#f4a3c0' }, via: [[1800, 600], [2100, 850]] },
-            { name: '세뇨관', at: [2250, 1200], color: '#7fd4ff', role: '재흡수',
-              info: '몸에 필요한 포도당·물·무기염류를 다시 혈액으로 되돌려 받습니다.',
-              seg: { name: '집합관', color: '#5ec2f5' }, via: [[2400, 1550], [2200, 1800], [1800, 1850]] },
-            { name: '콩팥 깔때기', at: [1450, 1650], color: '#5ec2f5', role: '오줌 모으기',
-              info: '만들어진 오줌이 모이는 깔때기 모양의 공간입니다.',
-              seg: { name: '오줌관', color: '#48c9b0' }, via: [[1350, 1950]] },
-            { name: '오줌관', at: [1400, 2250], color: '#48c9b0', role: '이동',
-              info: '꿈틀 운동으로 오줌을 방광까지 내려 보냅니다.',
-              seg: { name: '오줌관', color: '#48c9b0' }, via: [[1600, 2500], [1950, 2600]] },
-            { name: '방광', at: [2350, 2600], color: '#f4d35e', role: '저장',
-              info: '오줌을 모아 두었다가 일정량이 차면 배출 신호를 보냅니다.',
-              seg: { name: '요도', color: '#ee964b' }, via: [[2750, 2550]] },
-            { name: '요도', at: [3050, 2500], color: '#ee964b', role: '배출',
-              info: '몸 밖으로 오줌을 내보내는 마지막 통로입니다.',
-              seg: { name: '배출', color: '#ee964b' }, via: [[3350, 2560], [3620, 2620]] }
+              seg: { name: '보먼주머니 · 세뇨관', color: '#7fd4ff', wMul: .62, reabsorb: 1,
+                     desc: '실타래처럼 구불구불한 관. 벽이 필요한 걸 도로 빨아들여 카트까지 당깁니다' },
+              via: [[2780, 1060], [2980, 1240], [2860, 1460], [2600, 1480], [2400, 1320],
+                    [2180, 1420], [2160, 1660], [2380, 1780], [2640, 1740], [2860, 1860],
+                    [2960, 2080], [2760, 2240], [2500, 2200], [2280, 2060], [2060, 2140],
+                    [1980, 2380], [2160, 2540], [2420, 2560], [2660, 2480], [2880, 2560],
+                    [3020, 2760]] },
+
+            { name: '세뇨관', at: [3060, 3000], color: '#5ec2f5', role: '재흡수', blob: 0,
+              chamber: { w: 280, h: 270, wall: 36, tint: '#7fd0f8' },
+              info: '포도당·물·무기염류를 다시 혈액으로 되돌려 받습니다. 오줌에 포도당이 없는 이유!',
+              seg: { name: '집합관', color: '#48c9b0', wMul: .74, reabsorb: .55,
+                     desc: '여러 세뇨관이 모이는 길. 마지막까지 물을 되찾아 갑니다' },
+              via: [[3200, 3220], [3060, 3440], [2800, 3480], [2600, 3320], [2380, 3400],
+                    [2200, 3600]] },
+
+            { name: '오줌관 · 방광', at: [1900, 3700], color: '#f4d35e', role: '저장', blob: 280,
+              info: '꿈틀 운동으로 내려온 오줌이 방광에 모입니다. 일정량이 차면 신호를 보내요.',
+              seg: { name: '요도 · 배출', color: '#ee964b', wMul: .72, tunnel: true,
+                     desc: '몸 밖으로 내보내는 마지막 좁은 통로' },
+              via: [[1600, 3820], [1300, 3760], [1060, 3580]] },
+
+            { name: '배출', at: [880, 3340], color: '#ee964b', role: '몸 밖으로', blob: 250,
+              pump: { power: 1, label: '시원하게 배출!', desc: '노폐물을 내보내면 몸이 깨끗해집니다.' },
+              info: '걸러진 노폐물이 몸 밖으로. 이제 깨끗해진 피가 다시 몸을 돕니다.',
+              seg: { name: '콩팥 정맥', color: '#4a86d8', wMul: 1.1,
+                     desc: '재흡수로 깨끗해진 피가 콩팥을 빠져나가 온몸으로 돌아갑니다' },
+              via: [[640, 3180], [520, 2940], [640, 2700], [460, 2480], [560, 2240],
+                    [420, 2020]] },
+
+            { name: '깨끗한 피', at: [560, 1740], color: '#4a86d8', role: '온몸으로', blob: 260,
+              info: '노폐물을 버리고 깨끗해진 혈액이 다시 온몸을 돌다가, 또 콩팥으로 옵니다.',
+              seg: { name: '온몸 순환', color: '#5b93c9', wMul: 1.05,
+                     desc: '피는 하루에도 몇 번씩 콩팥을 지나며 계속 걸러집니다' },
+              via: [[520, 1440], [620, 1140], [700, 820]] }
         ],
         pickups: [
-            { icon: '💧', name: '물',       color: '#6ec6f2', effect: 'boost',  desc: '세뇨관에서 대부분 다시 흡수되는 소중한 물.' },
-            { icon: '🍬', name: '포도당',   color: '#f4d35e', effect: 'boost',  desc: '여과됐다가 100% 재흡수되는 영양소. 오줌에 나오면 안 돼요!' },
-            { icon: '🧂', name: '무기염류', color: '#cfe8f5', effect: 'energy', desc: '몸의 농도를 맞추는 나트륨·칼륨 같은 이온.' },
-            { icon: '🛡️', name: '보먼주머니', color: '#f4a3c0', effect: 'shield', desc: '사구체를 감싸 여과액을 받아 내는 컵. 충격을 막아 줍니다.' }
+            { icon: '💧', name: '물',        color: '#6ec6f2', effect: 'turbo', img: 'rbc',
+              desc: '세뇨관에서 대부분 다시 흡수되는 소중한 물. 힘차게 가속!' },
+            { icon: '🛡️', name: '보먼주머니', color: '#f4a3c0', effect: 'wbc', img: 'wbc',
+              desc: '사구체를 감싼 컵. 가까운 카트를 붙잡습니다.' },
+            { icon: '🟡', name: '요소',      color: '#d8c05a', effect: 'smoke', img: 'co2',
+              desc: '단백질이 분해되며 생긴 노폐물. 뒤차의 시야를 가립니다.' },
+            { icon: '🧂', name: '무기염류',  color: '#cfe8f5', effect: 'sticky', img: 'chol',
+              desc: '굳으면 끈적해집니다. 지나온 길을 미끄럽게!' },
+            { icon: '🪨', name: '콩팥 결석', color: '#9a8a7a', effect: 'clot', img: 'clot',
+              desc: '무기염류가 굳어 생긴 돌. 앞차의 길을 막습니다!' }
         ],
         hazards: [
-            { icon: '🪨', name: '콩팥 결석', color: '#9a8a7a', r: 42, slow: .3,  spin: true,  desc: '무기염류가 굳어 생긴 돌. 부딪히면 크게 튕깁니다.' },
-            { icon: '🟡', name: '요소',     color: '#d8c05a', r: 38, slow: .5,  spin: false, desc: '단백질이 분해되며 생긴 노폐물. 내보내야 합니다.' },
-            { icon: '🦠', name: '세균',     color: '#a884d6', r: 34, slow: .42, spin: false, desc: '요로에 들어온 세균. 염증을 일으킵니다.' },
-            { icon: '🔻', name: '막힌 오줌관', color: '#4a7a6a', r: 38, slow: .35, spin: true, desc: '좁아진 구간. 통과 속도가 뚝 떨어집니다.' }
+            { icon: '🪨', name: '콩팥 결석', color: '#9a8a7a', r: 42, slow: .3, spin: true, desc: '무기염류가 굳어 생긴 돌.' },
+            { icon: '🦠', name: '세균', color: '#a884d6', r: 34, slow: .42, spin: false, desc: '요로에 들어온 세균.' }
         ],
         quiz: [
             { q: '혈액 속 노폐물을 처음 걸러 내는 곳은?', a: ['사구체', '방광', '요도'], correct: 0, ex: '사구체에서 높은 압력으로 여과가 일어납니다.' },
@@ -762,11 +946,39 @@ const UPGRADES = [
     { key: 'speed',  icon: '🏁', name: '최고 속도', desc: '더 빨리 달립니다',       max: 5, cost: [60, 140, 260, 420, 640] },
     { key: 'accel',  icon: '⚡', name: '가속력',   desc: '더 빨리 속도가 붙습니다', max: 5, cost: [50, 120, 230, 380, 580] },
     { key: 'grip',   icon: '🛞', name: '접지력',   desc: '코너에서 덜 미끄러집니다', max: 5, cost: [50, 120, 230, 380, 580] },
-    { key: 'boost',  icon: '🔥', name: '부스터',   desc: '부스터가 더 오래갑니다',   max: 5, cost: [70, 160, 300, 480, 720] }
+    { key: 'boost',  icon: '🔥', name: '부스터',   desc: '부스터가 더 오래갑니다',   max: 5, cost: [70, 160, 300, 480, 720] },
+    { key: 'hold',   icon: '🌀', name: '드리프트 지속', desc: '더 오래 미끄러져 큰 부스터까지 갑니다', max: 5, cost: [80, 180, 330, 520, 780] }
 ];
 
+/* ---- 자동차 종류 ----
+   소재는 전부 몸속 세포·물질. 성능이 곧 그 세포의 실제 기능이라
+   "혈소판 카트는 잘 안 밀린다" 같은 감각이 그대로 지식이 된다.
+   위로 갈수록 비싸고 빠르다. 첫 차(적혈구)는 처음부터 준다. */
+const CARS = [
+    { id: 'rbc', hold: 1.00,   name: '적혈구 루키',  motif: '🔴', color: '#d4353f', sprite: 'red',   cost: 0,
+      speed: 1.00, accel: 1.00, grip: 1.00, boost: 1.00,
+      desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
+    { id: 'plt', hold: 1.10,   name: '혈소판 터프',  motif: '🟡', color: '#e8a33d', sprite: 'red',   cost: 260,
+      speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
+      desc: '상처를 막는 세포. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
+    { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '⚪', color: '#e8eef5', sprite: 'blue',  cost: 520,
+      speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
+      desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
+    { id: 'o2', hold: 0.95,    name: '산소 러너',    motif: '🫧', color: '#4fb8e8', sprite: 'blue',  cost: 900,
+      speed: 1.12, accel: 1.10, grip: 0.96, boost: 1.14,
+      desc: '폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.' },
+    { id: 'nerve', hold: 1.15, name: '신경 스파크',  motif: '⚡', color: '#c77dff', sprite: 'pink',  cost: 1400,
+      speed: 1.10, accel: 1.22, grip: 1.04, boost: 1.20,
+      desc: '전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.' },
+    { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: '✨', color: '#ffd166', sprite: 'green', cost: 2200,
+      speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
+      desc: '세포가 쓰는 에너지 그 자체. 모든 수치가 최고인 마지막 카트입니다.' }
+];
+const carById = id => CARS.find(c => c.id === id) || CARS[0];
+
 const SAVE_KEY = 'bodyRacing.save.v1';
-let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0 }, best: {} };
+let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
+             cars: ['rbc'], car: 'rbc' };
 
 function loadSave() {
     try {
@@ -774,20 +986,24 @@ function loadSave() {
         if (raw) {
             const d = JSON.parse(raw);
             save.points = d.points || 0;
-            save.lv = Object.assign({ speed: 0, accel: 0, grip: 0, boost: 0 }, d.lv || {});
+            save.lv = Object.assign({ speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, d.lv || {});
             save.best = d.best || {};
+            save.cars = Array.isArray(d.cars) && d.cars.length ? d.cars : ['rbc'];
+            if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
+            save.car = save.cars.includes(d.car) ? d.car : 'rbc';
         }
     } catch (e) { /* 저장이 막힌 환경이면 그냥 진행 */ }
 }
 function writeSave() {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
 }
-// 레벨당 성능 배율
+// 최종 성능 = 자동차 기본기 × 강화 레벨
 const upMul = {
-    speed: () => 1 + save.lv.speed * .045,      // 최대 +22%
-    accel: () => 1 + save.lv.accel * .07,       // 최대 +35%
-    grip:  () => 1 + save.lv.grip  * .06,       // 최대 +30%
-    boost: () => 1 + save.lv.boost * .10        // 최대 +50%
+    speed: () => carById(save.car).speed * (1 + save.lv.speed * .045),
+    accel: () => carById(save.car).accel * (1 + save.lv.accel * .07),
+    grip:  () => carById(save.car).grip  * (1 + save.lv.grip  * .06),
+    boost: () => carById(save.car).boost * (1 + save.lv.boost * .10),
+    hold:  () => carById(save.car).hold  * (1 + save.lv.hold  * .28)
 };
 loadSave();
 
@@ -873,11 +1089,55 @@ function buildTrack(sys) {
         const to = Math.min((i + 1 < sys.flow.length) ? nodeIdx[i + 1] * SEG_SAMPLES : (closed ? N : N - 1), N - 1);
         const col = node.seg ? node.seg.color : node.color;
         return { idx: i, num: i + 1, node, from, to, name: node.seg ? node.seg.name : node.name,
-                 color: col, dark: shade(col, -.34), elevated: !!(node.seg && node.seg.over) };
+                 color: col, dark: shade(col, -.34), elevated: !!(node.seg && node.seg.over),
+                 reabsorb: (node.seg && node.seg.reabsorb) || 0 };
     });
     // 각 샘플이 어느 구간(층)에 속하는지 표시 — 다리 위/아래 판정에 사용
     secs.forEach(s => { for (let i = s.from; i <= s.to; i++) pts[i].sec = s.idx; });
     for (let i = 0; i < N; i++) if (pts[i].sec === undefined) pts[i].sec = secs.length - 1;
+
+    // 도로 폭보다 급한 코너는 살짝 펴 준다 — 드리프트로 돌 수 있는 한계를 지킨다
+    {
+        const spacing0 = total / N;
+        for (let pass = 0; pass < 10; pass++) {
+            const cx = pts.map(p => p.x), cy = pts.map(p => p.y);
+            for (let i = 0; i < N; i++) {
+                const a = (i - 1 + N) % N, b = (i + 1) % N;
+                if (!closed && (i === 0 || i === N - 1)) continue;
+                const d1x = cx[i] - cx[a], d1y = cy[i] - cy[a];
+                const d2x = cx[b] - cx[i], d2y = cy[b] - cy[i];
+                const l1 = Math.hypot(d1x, d1y) || 1, l2 = Math.hypot(d2x, d2y) || 1;
+                const ang = Math.abs(angDiff(Math.atan2(d2y, d2x), Math.atan2(d1y, d1x)));
+                const radius = ((l1 + l2) / 2) / Math.max(ang, 1e-4);
+                if (radius < hw * 1.5) {                 // 너무 급한 곳만
+                    pts[i].x = cx[i] * .6 + (cx[a] + cx[b]) * .2;
+                    pts[i].y = cy[i] * .6 + (cy[a] + cy[b]) * .2;
+                }
+            }
+        }
+        // 좌표가 바뀌었으니 방향·거리·곡률을 다시 계산한다
+        total = 0;
+        for (let i = 0; i < N; i++) {
+            const a = pts[i], b = pts[closed ? (i + 1) % N : Math.min(i + 1, N - 1)];
+            const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+            a.dx = dx / len; a.dy = dy / len; a.ang = Math.atan2(dy, dx); a.dist = total;
+            total += (i === N - 1 && !closed) ? 0 : len;
+        }
+        pts.forEach(p => p.t = p.dist / total);
+        const arc2 = (total / N) * WIN;
+        for (let i = 0; i < N; i++) {
+            const j = closed ? (i + WIN) % N : Math.min(i + WIN, N - 1);
+            const c = Math.abs(angDiff(pts[j].ang, pts[i].ang));
+            pts[i].curve = c;
+            pts[i].vmax = clamp(TURN_RATE * STABLE_MIN * .78 * (arc2 / Math.max(c, .02)), 180, MAXSPEED);
+        }
+        for (let pass = 0; pass < 3; pass++)
+            for (let i = N - 1; i >= 0; i--) {
+                const j = closed ? (i + 1) % N : Math.min(i + 1, N - 1);
+                const reach = Math.sqrt(pts[j].vmax * pts[j].vmax + 2 * 900 * spacing0);
+                if (reach < pts[i].vmax) pts[i].vmax = reach;
+            }
+    }
 
     // 구간별 도로 폭 (판막은 좁은 문, 모세혈관은 가늘다) → 경계에서 부드럽게 이어지도록 평활화
     for (let i = 0; i < N; i++) {
@@ -1044,6 +1304,10 @@ const TURN_RATE = 3.95, GRIP_NORMAL = 11.5, GRIP_DRIFT = 1.9, ROLL_DRAG = .55, O
 const DRIFT_TURN = 1.05;     // 드리프트 중 선회 배율 (1보다 크게 하면 차가 홱 돈다)
 const DRIFT_SLIDE = 290;     // 뒤가 흐르는 정도
 const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움 (작을수록 즉각적)
+// 드리프트를 물고 있을 수 있는 기본 시간(초)과 게이지가 차는 속도.
+//   기본 상태로는 게이지를 절반쯤밖에 못 채운다.
+//   '드리프트 지속'을 올려야 오래 물 수 있고, 그래야 슈퍼 부스터가 열린다.
+const DRIFT_HOLD = 1.05, DRIFT_FILL = 45;
 const STEER_SMOOTH = .035;   // 조향 입력이 반영되는 속도. 클수록 부드럽고 덜 예민하다
 const STABLE_MIN = .88;      // 고속에서 남는 선회력 비율 (낮출수록 고속 안정, 대신 코너를 못 돈다)
 const ASSIST = 4.2;          // 도로 방향으로 스스로 정렬되는 세기 (초보 보조)
@@ -1080,12 +1344,18 @@ KART_KEYS.forEach(key => {
 });
 
 function makeKart(isPlayer, ci, name) {
+    // 1P 는 차고에서 고른 차를 그대로 탄다 (2P·AI 는 기본 색 배분)
+    const mine = isPlayer && ci === 0 ? carById(save.car) : null;
     return {
-        isPlayer, name, color: CAR_COLORS[ci], sprite: KART_KEYS[ci],
+        isPlayer, name,
+        color: mine ? mine.color : CAR_COLORS[ci],
+        sprite: mine ? mine.sprite : KART_KEYS[ci],
+        motif: mine ? mine.motif : null,
         x: 0, y: 0, ang: 0, vx: 0, vy: 0, speed: 0, slip: 0, steer: 0, wobble: Math.random() * TAU,
         si: 0, prevSi: 0, lap: 1, cpIndex: 0, cpDone: 0, progress: 0,
         finished: false, finishTime: 0, rank: 1,
-        drifting: false, driftAmt: 0, driftCharge: 0, driftCount: 0,
+        drifting: false, driftAmt: 0, driftCharge: 0, driftCount: 0, driftHold: 0,
+        wasDrifting: false, driftStage: 0, driftLocked: false,
         boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
         trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
         air: 0, airMax: 0, spin: 0,
@@ -1156,7 +1426,11 @@ function updateKart(k, dt) {
     // 부드럽게 보정된 조향값도 함께 본다 — 키를 뗀 직후에도 잠시 남아 있어 관대하다
     const turning = Math.abs(steerIn) > .02 || Math.abs(k.steer) > .12;
 
-    if (!wantDrift || !fastEnough) k.drifting = false;          // 손을 떼거나 너무 느리면 종료
+    // 한계까지 물어서 타이어가 놓친 뒤에는, 키를 한 번 떼야 다시 걸린다.
+    // (안 그러면 누르고만 있어도 무한히 다시 걸려 한계가 의미를 잃는다)
+    if (!wantDrift) k.driftLocked = false;
+
+    if (!wantDrift || !fastEnough || k.driftLocked) k.drifting = false;
     else if (k.drifting) k.drifting = true;                     // 유지 : 방향키를 요구하지 않는다
     else k.drifting = turning;                                  // 진입 : 방향키가 필요
     // 접지력을 한 번에 풀지 않고 서서히 — 차가 튕기듯 도는 것을 막는다
@@ -1180,20 +1454,60 @@ function updateKart(k, dt) {
         k.ang += clamp(angDiff(road, k.ang), -.9, .9) * ASSIST * w * fastAid * dt;
     }
 
+    // ── 드리프트 지속 한계 : 타이어가 버티는 시간만큼만 미끄러진다.
+    //    처음에는 짧게밖에 못 물지만, 강화할수록 길게 물어 큰 부스터까지 갈 수 있다.
+    const holdMax = k.isPlayer ? DRIFT_HOLD * upMul.hold() : DRIFT_HOLD * 1.5;
+    const wasDrifting = k.wasDrifting;
+    k.wasDrifting = k.drifting;
+
     if (k.drifting) {
-        vR += k.steer * DRIFT_SLIDE * k.driftAmt * dt;             // 미끄러짐도 서서히
-        k.driftCharge = Math.min(100, k.driftCharge + 95 * dt);    // 빨리 찬다 (약 1초면 발동)
-    } else if (k.driftCharge > 0) {
-        if (k.driftCharge > 12) {                                  // 문턱을 낮춰 거의 항상 터지게
-            k.boostTime = Math.max(k.boostTime, (.35 + k.driftCharge / 100 * 1.05) * (k.isPlayer ? upMul.boost() : 1));
-            k.driftCount++;
+        // 진입하는 그 순간에 '턱' 하고 걸리는 느낌을 준다 — 손맛의 절반은 여기서 난다
+        if (!wasDrifting) {
+            k.driftHold = 0; k.driftStage = 0;
             if (k.isPlayer) {
-                sfxBoost(); cam.shake = 7; cam.kick = 1; k.earned += 8;
-                popup(k.x, k.y, k.driftCharge > 70 ? '슈퍼 부스터!' : '부스터!',
-                      k.driftCharge > 70 ? '#ff8a3c' : '#ffe066');
+                cam.shake = Math.max(cam.shake, 5.5);
+                sfxSkid(.55);
+                for (let i = 0; i < 8; i++) addDriftSmoke(k);
             }
         }
-        k.driftCharge = 0;
+        k.driftHold += dt;
+        if (k.driftHold >= holdMax) {                              // 한계 도달 → 자동으로 놓는다
+            k.drifting = false; k.wasDrifting = false; k.driftLocked = true;
+            if (k.isPlayer) popup(k.x, k.y, '한계! 다시 눌러요', '#9fd0ff');
+        }
+    } else k.driftHold = 0;
+
+    if (k.drifting) {
+        vR += k.steer * DRIFT_SLIDE * k.driftAmt * dt;             // 미끄러짐도 서서히
+        k.driftCharge = Math.min(100, k.driftCharge + DRIFT_FILL * dt);
+
+        if (k.isPlayer) {
+            // 게이지가 단을 넘을 때마다 짧게 알려 준다 (파랑 → 노랑 → 빨강)
+            const stage = k.driftCharge >= 78 ? 3 : k.driftCharge >= 45 ? 2 : k.driftCharge >= 18 ? 1 : 0;
+            if (stage > (k.driftStage || 0)) {
+                k.driftStage = stage;
+                playBeep(700 + stage * 260, .05);
+                cam.shake = Math.max(cam.shake, 2 + stage * 1.4);
+            }
+            // 한계 직전 : 화면이 떨려 '지금이 최대' 라고 알려 준다
+            if (holdMax - k.driftHold < .28) cam.shake = Math.max(cam.shake, 4);
+        }
+    } else if (k.driftCharge > 0) {
+        if (k.driftCharge > 12) {                                  // 문턱을 낮춰 거의 항상 터지게
+            const q = k.driftCharge / 100;                         // 얼마나 잘 물었나
+            k.boostTime = Math.max(k.boostTime, (.35 + q * 1.05) * (k.isPlayer ? upMul.boost() : 1));
+            k.driftCount++;
+            if (k.isPlayer) {
+                // 잘 물수록 터지는 반응도 커진다 — 참은 만큼 돌려받는 감각
+                sfxBoost(); cam.shake = 5 + q * 9; cam.kick = .6 + q * .8;
+                cam.flash = Math.max(cam.flash || 0, q * .45);
+                k.earned += 8 + Math.round(q * 10);
+                popup(k.x, k.y, q > .78 ? '슈퍼 부스터!!' : q > .45 ? '부스터!' : '부스터',
+                      q > .78 ? '#ff5a2c' : q > .45 ? '#ff8a3c' : '#ffe066');
+                for (let i = 0; i < 4 + q * 10; i++) addDriftSmoke(k);
+            }
+        }
+        k.driftCharge = 0; k.driftStage = 0;
     }
 
     const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
@@ -1245,9 +1559,46 @@ function updateKart(k, dt) {
                 for (let i = 0; i < 14; i++) addDust(k);
             }
         }
-    } else applyBarrier(k);                     // 공중에서는 벽이 없다
+    } else { applyReabsorb(k, dt); applyBarrier(k); }   // 공중에서는 벽이 없다
     checkSkillZones(k);
     if (!k.finished) { checkPickups(k); checkHazards(k); checkPads(k); }
+}
+
+/* 재흡수 — 세뇨관 벽이 필요한 것을 도로 빨아들인다.
+   중앙을 벗어날수록 가까운 벽이 세게 당기므로, 가운데로 달리거나
+   드리프트로 미끄러져 빠져나와야 한다. 배설계의 성질을 손으로 익히는 구간. */
+function applyReabsorb(k, dt) {
+    const p = track.pts[k.si];
+    const sec = track.secs[p.sec];
+    const power = sec && sec.reabsorb;
+    if (!power) return;
+
+    const hw = p.hw || track.halfWidth;
+    let nx = k.x - p.x, ny = k.y - p.y;
+    const d = Math.hypot(nx, ny);
+    if (d < 6) return;
+    nx /= d; ny /= d;
+
+    // 중앙 0 → 벽 1. 바깥쪽일수록 급격히 세진다
+    const t = clamp(d / hw, 0, 1);
+    let pull = power * 640 * t * t;
+    if (k.driftAmt > .3) pull *= .25;        // 드리프트로 뿌리친다
+    if (k.boostTime > 0) pull *= .45;
+    k.vx += nx * pull * dt; k.vy += ny * pull * dt;
+
+    if (k.isPlayer) {
+        if (t > .62 && reabsorbHint <= 0) {
+            reabsorbHint = 16;
+            showToast('💧 재흡수 구역!', '세뇨관 벽이 잡아당깁니다. 가운데로 달리거나 드리프트로 뿌리치세요!');
+        }
+        if (t > .5 && Math.random() < t * .5) addReabsorbSpark(k, nx, ny, t);
+    }
+}
+let reabsorbHint = 0;
+const reabsorbSparks = [];
+function addReabsorbSpark(k, nx, ny, t) {
+    const s = 60 + Math.random() * 90;
+    reabsorbSparks.push({ x: k.x - nx * s, y: k.y - ny * s, nx, ny, life: .45, max: .45, t });
 }
 
 // 붉은 혈관벽 — 관대한 반응. 스치면 벽을 따라 미끄러지고, 정면으로 박아야 크게 손해.
@@ -1345,7 +1696,12 @@ function updateProgress(k) {
             k.lastLapAt = raceTime;
             k.lap++; k.cpIndex = 1; k.cpDone = 1;   // 출발선 = 1번 체크포인트 통과
             if (k.lap > track.sys.laps) finishKart(k);
-            else if (k.isPlayer) { playBeep(1250, .14); flashBig('LAP ' + k.lap); cam.flash = 1; k.earned += 25; }
+            else if (k.isPlayer) {
+                const last = k.lap >= track.sys.laps;
+                playBeep(last ? 1600 : 1250, last ? .22 : .14);
+                flashBig(last ? '🏁 마지막 바퀴!' : 'LAP ' + k.lap);
+                cam.flash = 1; k.earned += 25;
+            }
         }
     } else if (k.si >= N - 3) finishKart(k);
 
@@ -1446,6 +1802,13 @@ function updateSkills(dt) {
     for (let i = stickyPatches.length - 1; i >= 0; i--) {
         stickyPatches[i].life -= dt;
         if (stickyPatches[i].life <= 0) stickyPatches.splice(i, 1);
+    }
+    reabsorbHint -= dt;
+    for (let i = reabsorbSparks.length - 1; i >= 0; i--) {
+        const s = reabsorbSparks[i];
+        s.x += s.nx * 260 * dt; s.y += s.ny * 260 * dt;   // 벽 쪽으로 빨려 들어간다
+        s.life -= dt;
+        if (s.life <= 0) reabsorbSparks.splice(i, 1);
     }
     for (let i = wbcShots.length - 1; i >= 0; i--) {
         wbcShots[i].t += dt / wbcShots[i].life;
@@ -1775,6 +2138,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     if (player && layerOf(player) === 1) drawKart(g, player, 26);
 
     drawSticky(g);
+    drawReabsorb(g, inView);
     drawProjectiles(g);
     drawWbcShots(g);
     drawDust(g);
@@ -1984,6 +2348,67 @@ function drawLandmarks(g, inView) {
             g.beginPath(); g.ellipse(-R * .48, -R * .52, R * .24, R * .13, -.5, 0, TAU); g.fill();
             g.globalAlpha = 1;
             drawFace(g, 0, R * .34, R * .3, i);
+
+        } else if (lm.type === 'brain') {
+            // 뇌 : 주름진 두 반구 + 아래 소뇌
+            const pulse = 1 + Math.sin(t * 1.5) * .015;
+            g.scale(pulse, pulse);
+            g.save(); g.translate(16, 24); g.globalAlpha = .2; g.fillStyle = '#000';
+            g.beginPath(); g.ellipse(0, 0, R * .98, R * .78, 0, 0, TAU); g.fill(); g.restore();
+
+            const bg = g.createRadialGradient(-R * .3, -R * .35, R * .1, 0, 0, R * 1.2);
+            bg.addColorStop(0, '#ffb3c6'); bg.addColorStop(1, '#d4728c');
+            g.globalAlpha = .88; g.fillStyle = bg;
+            g.beginPath(); g.ellipse(0, -R * .06, R * .95, R * .72, 0, 0, TAU); g.fill();
+            g.globalAlpha = 1;
+            g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 11; g.stroke();
+
+            // 주름 (뇌회)
+            g.save();
+            g.beginPath(); g.ellipse(0, -R * .06, R * .95, R * .72, 0, 0, TAU); g.clip();
+            g.strokeStyle = 'rgba(150,60,85,.55)'; g.lineWidth = R * .07; g.lineCap = 'round';
+            for (let i = -4; i <= 4; i++) {
+                g.beginPath();
+                for (let x = -R; x <= R; x += R * .06) {
+                    const y = i * R * .17 + Math.sin(x / R * 4 + i) * R * .07 - R * .06;
+                    x === -R ? g.moveTo(x, y) : g.lineTo(x, y);
+                }
+                g.stroke();
+            }
+            g.restore();
+            // 좌우를 가르는 홈
+            g.strokeStyle = 'rgba(120,40,65,.6)'; g.lineWidth = R * .05;
+            g.beginPath(); g.moveTo(0, -R * .76); g.lineTo(0, R * .6); g.stroke();
+
+            // 소뇌 (아래 작은 덩이)
+            g.fillStyle = '#c77dff';
+            g.beginPath(); g.ellipse(R * .42, R * .62, R * .3, R * .18, .2, 0, TAU); g.fill();
+            g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 8; g.stroke();
+            drawFace(g, -R * .3, R * .3, R * .26, i);
+
+        } else if (lm.type === 'kidney') {
+            // 콩팥 : 강낭콩 두 쪽
+            const pulse = 1 + Math.sin(t * 1.3) * .02;
+            g.scale(pulse, pulse);
+            [-1, 1].forEach(side => {
+                g.save(); g.translate(side * R * .52, 0); g.scale(side, 1);
+                const bean = () => {
+                    g.beginPath();
+                    g.moveTo(-R * .1, -R * .62);
+                    g.bezierCurveTo(R * .55, -R * .68, R * .62, R * .68, -R * .1, R * .62);
+                    g.bezierCurveTo(-R * .48, R * .42, -R * .3, -R * .12, -R * .34, -R * .18);
+                    g.bezierCurveTo(-R * .3, -R * .3, -R * .42, -R * .46, -R * .1, -R * .62);
+                    g.closePath();
+                };
+                g.save(); g.translate(12, 20); g.globalAlpha = .2; g.fillStyle = '#000';
+                bean(); g.fill(); g.restore();
+                const kg = g.createRadialGradient(-R * .1, -R * .2, R * .05, 0, 0, R * .8);
+                kg.addColorStop(0, '#c4566a'); kg.addColorStop(1, '#8e2f45');
+                g.globalAlpha = .9; g.fillStyle = kg; bean(); g.fill(); g.globalAlpha = 1;
+                g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 10; bean(); g.stroke();
+                g.restore();
+                drawFace(g, side * R * .62, R * .02, R * .22, i + side);
+            });
 
         } else if (lm.type === 'lungs') {
             const br = 1 + Math.sin(t * 1.1) * .04;                               // 숨쉬기
@@ -2198,6 +2623,40 @@ function drawSmoke(g) {
     g.globalAlpha = 1;
 }
 
+/* 재흡수 : 벽으로 빨려 들어가는 물방울 + 노면에 안쪽을 가리키는 화살표 */
+function drawReabsorb(g, inView) {
+    const sec = track.secs[track.pts[player.si].sec];
+    if (sec && sec.reabsorb) {
+        const t = performance.now() / 460;
+        g.save();
+        for (let i = sec.from; i <= sec.to; i += 9) {
+            const p = track.pts[i];
+            if (!p || !inView(p.x, p.y)) continue;
+            const hw = (p.hw || track.halfWidth);
+            for (const side of [-1, 1]) {
+                const ph = (t + i * .14) % 1;                   // 벽 → 안쪽이 아니라 안쪽 → 벽
+                const off = hw * (.34 + ph * .58) * side;
+                g.globalAlpha = (1 - ph) * .5 * sec.reabsorb;
+                g.fillStyle = '#9fe8ff';
+                g.save();
+                g.translate(p.x - p.dy * off, p.y + p.dx * off);
+                g.rotate(p.ang + (side > 0 ? Math.PI / 2 : -Math.PI / 2));
+                g.beginPath(); g.moveTo(0, -16); g.lineTo(13, 0); g.lineTo(0, 16);
+                g.lineTo(-6, 0); g.closePath(); g.fill();
+                g.restore();
+            }
+        }
+        g.restore(); g.globalAlpha = 1;
+    }
+    for (const s of reabsorbSparks) {
+        const a = s.life / s.max;
+        g.globalAlpha = a * .9;
+        g.fillStyle = '#bff0ff';
+        g.beginPath(); g.ellipse(s.x, s.y, 4 + a * 5, 9 + a * 7, Math.atan2(s.ny, s.nx), 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+}
+
 function drawSticky(g) {
     const t = performance.now() / 700;
     for (const sp of stickyPatches) {
@@ -2381,27 +2840,76 @@ function drawPads(g) {
     }
 }
 
+/* 체크무늬는 진짜 골인선에만. 중간 관문은 기관 색 아치로 구분한다. */
+function drawCheckerLine(g, p, hw, rows) {
+    const cells = 12, ch = hw * 2 / cells;
+    g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+    for (let r = 0; r < rows; r++)
+        for (let i = 0; i < cells; i++) {
+            g.fillStyle = (i + r) % 2 ? '#111' : '#fff';
+            g.fillRect(-rows * 9.5 + r * 19, -hw + i * ch, 19, ch);
+        }
+    g.restore();
+}
+
 function drawGates(g, inView) {
+    const startSi = track.closed ? track.checkpoints[0].si : -1;
     track.checkpoints.forEach(cp => {
         const p = track.pts[cp.si];
         if (!inView(p.x, p.y)) return;
-        const hw = (p.hw || track.halfWidth) + 12, cells = 12, ch = hw * 2 / cells;
+        const hw = (p.hw || track.halfWidth) + 12;
+        if (cp.si === startSi) { drawCheckerLine(g, p, hw, 3); return; }   // 여기만 골인선
+        // 중간 관문 : 바닥에 얇은 기관 색 띠 + 번호판
         g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
-        for (let i = 0; i < cells; i++) { g.fillStyle = i % 2 ? '#1b1b1b' : '#fff'; g.fillRect(-15, -hw + i * ch, 30, ch); }
+        g.globalAlpha = .5; g.fillStyle = cp.node.color;
+        g.fillRect(-7, -hw, 14, hw * 2);
+        g.globalAlpha = .9;
+        g.fillRect(-7, -hw, 14, 26); g.fillRect(-7, hw - 26, 14, 26);
+        g.globalAlpha = 1;
         g.rotate(-p.ang);
-        g.fillStyle = '#1b1b1b'; g.beginPath(); g.arc(0, 0, 30, 0, TAU); g.fill();
-        g.fillStyle = cp.node.color; g.beginPath(); g.arc(0, 0, 25, 0, TAU); g.fill();
-        g.fillStyle = '#fff'; g.font = 'bold 27px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillStyle = 'rgba(20,20,26,.82)'; g.beginPath(); g.arc(0, 0, 28, 0, TAU); g.fill();
+        g.strokeStyle = cp.node.color; g.lineWidth = 5; g.stroke();
+        g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText(cp.num, 0, 1);
         g.restore();
     });
-    if (!track.closed) {
-        const p = track.pts[track.N - 2], hw = track.halfWidth + 16, cells = 12, ch = hw * 2 / cells;
-        g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
-        for (let r = 0; r < 3; r++)
-            for (let i = 0; i < cells; i++) { g.fillStyle = (i + r) % 2 ? '#111' : '#fff'; g.fillRect(-28 + r * 19, -hw + i * ch, 19, ch); }
+    if (!track.closed) drawCheckerLine(g, track.pts[track.N - 2], track.halfWidth + 16, 3);
+    drawLapFlags(g, inView);
+}
+
+/* 마지막 바퀴 : 골인선 양옆에서 체커기를 흔든다 */
+function drawLapFlags(g, inView) {
+    const lastLap = player.lap >= track.sys.laps && !player.finished;
+    if (!lastLap) return;
+    const p = track.pts[track.closed ? track.checkpoints[0].si : track.N - 2];
+    if (!inView(p.x, p.y)) return;
+    const hw = (p.hw || track.halfWidth) + 30;
+    const t = performance.now() / 1000;
+    for (const side of [-1, 1]) {
+        const bx = p.x - p.dy * hw * side, by = p.y + p.dx * hw * side;
+        g.save(); g.translate(bx, by);
+        // 깃대
+        g.strokeStyle = '#4a3a2a'; g.lineWidth = 7; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(0, 10); g.lineTo(0, -68); g.stroke();
+        // 흔들리는 체커기 — 좌우로 휘두르고 천이 물결친다
+        const swing = Math.sin(t * 7 + side) * .75;
+        g.translate(0, -64); g.rotate(swing);
+        const W = 74, H = 50, cell = W / 4;
+        for (let cx = 0; cx < 4; cx++)
+            for (let cy = 0; cy < 3; cy++) {
+                const wob = Math.sin(t * 9 + cx * .9) * 6 * (cx / 3);
+                g.fillStyle = (cx + cy) % 2 ? '#111' : '#fff';
+                g.fillRect(cx * cell, -H / 2 + cy * (H / 3) + wob, cell + 1, H / 3 + 1);
+            }
         g.restore();
     }
+    // 노면에 번쩍이는 FINAL LAP
+    const glow = .35 + Math.abs(Math.sin(t * 4)) * .45;
+    g.save(); g.translate(p.x, p.y); g.rotate(p.ang + Math.PI / 2);
+    g.globalAlpha = glow; g.fillStyle = '#ffd84a';
+    g.font = 'bold 46px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('마지막 바퀴!', 0, 0);
+    g.restore();
 }
 
 /* 아이템 랜덤 박스 : 떠서 회전하는 상자. 먹어야 무엇인지 알 수 있다. */
@@ -2722,7 +3230,11 @@ function updateHud() {
     for (let i = 0; i < rows.length; i++)
         rows[i].className = 'cpRow' + (i < player.cpDone ? ' done' : '') + (i === player.cpIndex % track.checkpoints.length ? ' now' : '');
 
-    el('driftBar').firstElementChild.style.width = player.driftCharge + '%';
+    const cap = Math.min(100, DRIFT_HOLD * upMul.hold() * DRIFT_FILL);
+    const bar = el('driftBar').firstElementChild;
+    bar.style.width = player.driftCharge + '%';
+    bar.classList.toggle('full', player.driftCharge >= cap - 1);
+    el('driftCap').style.left = cap + '%';
     const stuck = player.trapTime > 0 || player.stickyTime > 0 || player.hitTime > 0;
     const gLabel = el('gaugeWrap').querySelector('.t');
     if (gLabel) {
@@ -2845,60 +3357,108 @@ function flashBig(text) {
 let audioCtx = null;
 
 /* ---- 엔진음 : 속도에 따라 음정이 오르내리는 지속음 ---- */
-let engineOsc = null, engineGain = null, engineFilter = null;
+/* ---- 엔진음 ----
+   톱니파를 계속 울리면 '웅—' 하는 벌떼 소리가 된다. 진짜 엔진은 이어진 소리가 아니라
+   실린더가 하나씩 터지는 '두두두두' 펄스의 연속이다.
+   그래서 점화 한 번을 직접 그린 뒤 그것을 반복 재생하고,
+   재생 속도로 rpm 을, 로우패스로 액셀 밟는 정도를 표현한다.
+   실린더마다 힘을 살짝 다르게 줘서 기계다운 울퉁불퉁함을 남겼다. */
+const ENGINE_BASE_HZ = 62;          // 재생속도 1 일 때의 초당 점화 횟수
+let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
+let windSrc = null, windGain = null;
+
+function buildEngineBuffer() {
+    const sr = audioCtx.sampleRate;
+    const period = Math.round(sr / ENGINE_BASE_HZ);
+    const fires = 8;                                     // 루프 한 바퀴에 8번 점화
+    const buf = audioCtx.createBuffer(1, period * fires, sr);
+    const d = buf.getChannelData(0);
+    const cyl = [1, .88, .97, .82];                      // 실린더별 세기 — 소리를 울퉁불퉁하게
+    for (let f = 0; f < fires; f++) {
+        const amp = cyl[f % cyl.length];
+        const start = f * period;
+        for (let i = 0; i < period; i++) {
+            const t = i / sr;
+            const env = Math.exp(-t * 46);               // 터지고 빠르게 사그라든다
+            const tone =
+                Math.sin(TAU *  92 * t) * 1.00 +         // 배기음 몸통
+                Math.sin(TAU * 184 * t) *  .46 +
+                Math.sin(TAU * 276 * t) *  .24 +
+                Math.sin(TAU * 431 * t) *  .12;
+            const click = (Math.random() * 2 - 1) * Math.exp(-t * 520) * .30;   // 금속성 타격
+            d[start + i] += (tone * env + click) * amp * .19;
+        }
+    }
+    return buf;
+}
+function buildWindBuffer() {                             // 고속에서 얹는 바람 소리
+    const sr = audioCtx.sampleRate;
+    const buf = audioCtx.createBuffer(1, sr * 2, sr);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < d.length; i++) {                 // 저역이 실린 부드러운 잡음
+        last = last * .96 + (Math.random() * 2 - 1) * .04;
+        d[i] = last * 3.2;
+    }
+    return buf;
+}
+
 function updateEngine() {
     if (!audioCtx) return;
-    loadSfx();
     const active = (state === 'race' || state === 'countdown') && player;
-    if (!engineOsc) {
-        engineOsc = audioCtx.createOscillator();
-        engineGain = audioCtx.createGain();
-        engineFilter = audioCtx.createBiquadFilter();
-        engineOsc.type = 'sawtooth';
-        engineFilter.type = 'lowpass'; engineFilter.frequency.value = 620;
-        engineGain.gain.value = 0;
-        engineOsc.connect(engineFilter); engineFilter.connect(engineGain);
-        engineGain.connect(audioCtx.destination);
-        engineOsc.start();
+
+    if (!engineSrc) {
+        engineSrc = audioCtx.createBufferSource();
+        engineSrc.buffer = buildEngineBuffer();
+        engineSrc.loop = true;
+        engineLP = audioCtx.createBiquadFilter();
+        engineLP.type = 'lowpass'; engineLP.frequency.value = 700; engineLP.Q.value = .8;
+        engineBody = audioCtx.createBiquadFilter();      // 배기관이 울리는 공명
+        engineBody.type = 'peaking'; engineBody.frequency.value = 165;
+        engineBody.Q.value = 1.1; engineBody.gain.value = 6;
+        engineGain = audioCtx.createGain(); engineGain.gain.value = 0;
+        engineSrc.connect(engineLP); engineLP.connect(engineBody);
+        engineBody.connect(engineGain); engineGain.connect(audioCtx.destination);
+        engineSrc.start();
+
+        windSrc = audioCtx.createBufferSource();
+        windSrc.buffer = buildWindBuffer(); windSrc.loop = true;
+        const wf = audioCtx.createBiquadFilter();
+        wf.type = 'bandpass'; wf.frequency.value = 900; wf.Q.value = .7;
+        windGain = audioCtx.createGain(); windGain.gain.value = 0;
+        windSrc.connect(wf); wf.connect(windGain); windGain.connect(audioCtx.destination);
+        windSrc.start();
     }
+
     const t = audioCtx.currentTime;
-    if (!active) { engineGain.gain.setTargetAtTime(0, t, .1); loopSfx('engine', 0, 1); return; }
-    // 저rpm·고rpm 두 음원을 동시에 재생하며 볼륨만 교차시킨다.
-    // 재생 속도를 크게 흔들지 않으므로 음정 왜곡 없이 자연스럽게 rpm 이 변한다.
-    const hasBlend = SFX.engine_low && SFX.engine_low.ok && SFX.engine_high && SFX.engine_high.ok;
-    if (hasBlend || (SFX.engine && SFX.engine.ok)) {
-        engineGain.gain.setTargetAtTime(0, t, .1);      // 합성음은 끈다
-        const sp = Math.abs(player.speed || 0);
-        const boost = player.boostTime > 0 || player.starTime > 0;
-
-        let mix, rate, vol;
-        if (state === 'countdown') {
-            // 출발 전 : 액셀을 밟았다 놓는 공회전 — 부릉, 부릉
-            const rev = Math.pow(Math.max(0, Math.sin(performance.now() / 320)), 3);
-            mix = rev * .8;                    // 0=저rpm, 1=고rpm
-            rate = .95 + rev * .12;
-            vol = .17 + rev * .09;
-        } else {
-            mix = clamp(sp / MAXSPEED, 0, 1);
-            if (boost) mix = Math.min(1, mix + .25);
-            rate = .97 + mix * .16;            // 아주 조금만 (질감 유지)
-            vol = .2 + mix * .06;
-        }
-
-        if (hasBlend) {
-            // 양 끝에서 한쪽이 완전히 사라지도록 곡선을 준다
-            loopSfx('engine_low',  vol * Math.cos(mix * Math.PI / 2), rate);
-            loopSfx('engine_high', vol * Math.sin(mix * Math.PI / 2), rate);
-        } else {
-            loopSfx('engine', vol, .92 + mix * .42);
-        }
+    if (!active) {
+        engineGain.gain.setTargetAtTime(0, t, .12);
+        windGain.gain.setTargetAtTime(0, t, .12);
         return;
     }
-    const spd = Math.abs(player.speed || 0);
+
+    const sp = Math.abs(player.speed || 0);
     const boost = player.boostTime > 0 || player.starTime > 0;
-    const freq = 46 + spd * .30 + (boost ? 46 : 0) + Math.sin(performance.now() / 60) * 3;
-    engineOsc.frequency.setTargetAtTime(freq, t, .05);
-    engineGain.gain.setTargetAtTime(spd > 8 ? .014 + spd / MAXSPEED * .017 : .005, t, .08);
+    let load, rate;                                       // load = 액셀을 밟은 정도
+
+    if (state === 'countdown') {
+        // 출발 전 공회전 : 밟았다 놓기를 반복하는 '부릉— 부릉—'
+        const rev = Math.pow(Math.max(0, Math.sin(performance.now() / 340)), 2.4);
+        load = .25 + rev * .75;
+        rate = .62 + rev * 1.5;
+    } else {
+        const v = clamp(sp / MAXSPEED, 0, 1);
+        load = clamp(v * .85 + (player.pad && player.pad.gas ? .15 : 0) + (boost ? .25 : 0), .12, 1);
+        // 기어를 바꾸듯 rpm 이 올랐다 떨어지길 반복 → 한 음으로 붙어 있지 않게 한다
+        const gear = Math.min(3, Math.floor(v * 4));
+        const inGear = clamp(v * 4 - gear, 0, 1);
+        rate = .70 + inGear * 1.05 + gear * .16 + (boost ? .35 : 0);
+    }
+
+    engineSrc.playbackRate.setTargetAtTime(rate, t, .07);
+    engineLP.frequency.setTargetAtTime(520 + load * 3100, t, .08);   // 밟을수록 소리가 열린다
+    engineGain.gain.setTargetAtTime(.10 + load * .13, t, .08);
+    windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .05, t, .15);
 }
 
 /* ============================================================================
@@ -3326,7 +3886,8 @@ function placeOnStart(k, lane) {
 function startRace(id) {
     track = buildTrack(SYSTEMS[id]);
     skids.length = dusts.length = popups.length = confetti.length = smokes.length = 0;
-    smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = 0;
+    smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = reabsorbSparks.length = 0;
+    reabsorbHint = 0;
     karts = [];
     player = makeKart(true, 0, '1P'); player.pad = input; karts.push(player);
     player2 = null;
@@ -3386,7 +3947,28 @@ function gradeRace(k) {
 function renderGarage() {
     const g = el('garage');
     if (!g) return;
-    g.innerHTML = `<div class="gh"><span>🔧 카트 성능 강화</span><span>보유 <b style="color:#ffe066">${save.points} P</b></span></div>` +
+    const bars = c => ['speed', 'accel', 'grip', 'boost'].map(kk => {
+        const v = clamp((c[kk] - .95) / .35, .06, 1);
+        return `<i style="width:${Math.round(v * 100)}%"></i>`;
+    }).map((h, i) => `<span class="statBar" title="${['속도','가속','접지','부스터'][i]}">${h}</span>`).join('');
+
+    const carHtml = `<div class="gh"><span>🚗 자동차 고르기</span><span>보유 <b style="color:#ffe066">${save.points} P</b></span></div>` +
+        CARS.map(c => {
+            const owned = save.cars.includes(c.id);
+            const picked = save.car === c.id;
+            const can = !owned && save.points >= c.cost;
+            return `<div class="carRow${picked ? ' picked' : ''}">
+                <span class="ic" style="background:${c.color}22;border-color:${c.color}">${c.motif}</span>
+                <span class="nm">${c.name}<small>${c.desc}</small>
+                    <span class="stats">${bars(c)}</span></span>
+                <button data-car="${c.id}" ${owned || can ? '' : 'disabled'} class="${picked ? 'on' : (owned || can ? 'can' : '')}">
+                    ${picked ? '사용 중' : owned ? '선택' : c.cost + ' P'}
+                </button>
+            </div>`;
+        }).join('');
+
+    g.innerHTML = carHtml +
+        `<div class="gh"><span>🔧 카트 성능 강화</span><span>보유 <b style="color:#ffe066">${save.points} P</b></span></div>` +
         UPGRADES.map(u => {
             const lv = save.lv[u.key];
             const maxed = lv >= u.max;
@@ -3404,6 +3986,21 @@ function renderGarage() {
             </div>`;
         }).join('');
 
+    g.querySelectorAll('[data-car]').forEach(btn => {
+        btn.onclick = () => {
+            const c = carById(btn.dataset.car);
+            if (!save.cars.includes(c.id)) {
+                if (save.points < c.cost) return;
+                save.points -= c.cost;
+                save.cars.push(c.id);
+                playBeep(1500, .18);
+            } else playBeep(1100, .1);
+            save.car = c.id;
+            writeSave();
+            renderGarage();
+        };
+    });
+
     g.querySelectorAll('[data-up]').forEach(btn => {
         btn.onclick = () => {
             const u = UPGRADES.find(x => x.key === btn.dataset.up);
@@ -3416,6 +4013,69 @@ function renderGarage() {
             renderGarage();
         };
     });
+}
+
+/* ---- 전면 광고 ----
+   서킷을 하나 끝낼 때마다 결과 화면 앞에 끼워 넣는다.
+   AD.client / AD.slot 을 채우면 실제 애드센스 광고가 뜨고,
+   비워 두면 자리만 잡아 주는 대체 화면이 나온다.
+   앱(Capacitor)으로 감쌌을 때는 AdMob 전면 광고를 대신 띄운다. */
+const AD = {
+    client: '',           // 예: 'ca-pub-0000000000000000'
+    slot: '',             // 애드센스 광고 단위 ID
+    admobId: '',          // 예: 'ca-app-pub-.../...'  (앱 빌드용)
+    skipAfter: 5,         // 건너뛰기 버튼이 열리는 시간(초)
+    everyRaces: 1,        // 몇 판마다 띄울지
+    _count: 0
+};
+
+function showAdBreak(done) {
+    AD._count++;
+    if (AD.everyRaces > 1 && AD._count % AD.everyRaces !== 0) return done();
+
+    // 앱에서는 네이티브 전면 광고를 쓴다 (있을 때만)
+    const admob = window.admob || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob);
+    if (admob && AD.admobId) {
+        Promise.resolve()
+            .then(() => admob.prepareInterstitial({ adId: AD.admobId }))
+            .then(() => admob.showInterstitial())
+            .then(done)
+            .catch(done);                       // 광고가 실패해도 게임은 막지 않는다
+        return;
+    }
+
+    const ov = el('adBreak'), slot = el('adSlot'), skip = el('adSkip');
+    slot.innerHTML = '';
+    if (AD.client && AD.slot) {
+        const ins = document.createElement('ins');
+        ins.className = 'adsbygoogle';
+        ins.style.cssText = 'display:block;width:100%;min-height:250px';
+        ins.setAttribute('data-ad-client', AD.client);
+        ins.setAttribute('data-ad-slot', AD.slot);
+        ins.setAttribute('data-ad-format', 'auto');
+        ins.setAttribute('data-full-width-responsive', 'true');
+        slot.appendChild(ins);
+        try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+    } else {
+        slot.innerHTML = '<div>광고 자리<br><small style="opacity:.6">AD.client / AD.slot 을 채우면 실제 광고가 표시됩니다</small></div>';
+    }
+
+    ov.classList.remove('hidden');
+    let left = AD.skipAfter;
+    skip.disabled = true;
+    skip.textContent = left + '초 후 건너뛰기';
+    const tick = setInterval(() => {
+        left--;
+        if (left > 0) skip.textContent = left + '초 후 건너뛰기';
+        else { clearInterval(tick); skip.disabled = false; skip.textContent = '건너뛰기 ✕'; }
+    }, 1000);
+    skip.onclick = () => {
+        if (skip.disabled) return;
+        clearInterval(tick);
+        ov.classList.add('hidden');
+        slot.innerHTML = '';
+        done();
+    };
 }
 
 function endRace() {
@@ -3486,7 +4146,11 @@ function endRace() {
     else el('resBest').textContent = '최고 기록 ' + fmtTime(save.best[id]);
     renderGarage();
 
-    if (!SHOW_QUIZ) { renderGarage(); setTimeout(showResult, 1400); return; }
+    if (!SHOW_QUIZ) {
+        renderGarage();
+        setTimeout(() => showAdBreak(showResult), 1400);   // 광고 → 결과
+        return;
+    }
 
     const q = track.sys.quiz[Math.floor(Math.random() * track.sys.quiz.length)];
     el('quizQ').textContent = '🧠 ' + q.q;
