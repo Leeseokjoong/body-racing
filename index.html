@@ -744,6 +744,22 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const TAU = Math.PI * 2;
 const rngOf = s0 => { let s = s0 >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; };
 function angDiff(a, b) { let d = (a - b) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; }
+/* 두 색 사이를 t(0~1) 만큼 섞는다. hex 와 rgb() 문자열을 모두 받는다. */
+function toRGB(c) {
+    if (c[0] === '#') {
+        const h = c.slice(1);
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    const m = c.match(/\d+/g);
+    return [+m[0], +m[1], +m[2]];
+}
+function mixColor(a, b, t) {
+    const A = toRGB(a), B = toRGB(b);
+    return `rgb(${Math.round(A[0] + (B[0] - A[0]) * t)},` +
+           `${Math.round(A[1] + (B[1] - A[1]) * t)},` +
+           `${Math.round(A[2] + (B[2] - A[2]) * t)})`;
+}
+
 function shade(hex, amt) {
     const c = hex.replace('#', '');
     const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
@@ -773,7 +789,7 @@ const SYSTEMS = {
             { name: '우심방', at: [1620, 2500], color: '#6fa8dc', role: '혈액 받기', blob: 0,
               chamber: { w: 340, h: 300, wall: 26, tint: '#8fc4ea' },
               info: '온몸을 돌고 온, 산소가 적은 혈액이 대정맥을 타고 들어오는 방입니다.',
-              seg: { name: '삼첨판', color: '#4b7fb0', wMul: .56, tunnel: true,
+              seg: { name: '삼첨판', color: '#4b7fb0', wMul: .56, tunnel: true, valve: true,
                      desc: '우심방과 우심실 사이의 좁은 문. 피가 거꾸로 흐르지 않게 막아요' },
               via: [[1650, 2730]] },
 
@@ -796,7 +812,7 @@ const SYSTEMS = {
             { name: '좌심방', at: [2180, 2500], color: '#f08a95', role: '혈액 받기', blob: 0,
               chamber: { w: 320, h: 290, wall: 30, tint: '#f6a6ae' },
               info: '폐에서 산소를 가득 채워 돌아온 혈액을 받아들이는 방입니다. 압력은 낮습니다.',
-              seg: { name: '이첨판', color: '#b8565f', wMul: .56, tunnel: true,
+              seg: { name: '이첨판', color: '#b8565f', wMul: .56, tunnel: true, valve: true,
                      desc: '좌심방과 좌심실 사이의 좁은 문' },
               via: [[2160, 2730]] },
 
@@ -1420,7 +1436,9 @@ function buildTrack(sys) {
         fill.closePath();
         s.fillPath = fill; s.leftPath = le; s.rightPath = re;
         s.tunnel = !!(s.node.seg && s.node.seg.tunnel);
+        s.valve  = !!(s.node.seg && s.node.seg.valve);
     });
+
     const fullPath = new Path2D();
     fullPath.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < N; i++) fullPath.lineTo(pts[i].x, pts[i].y);
@@ -2321,7 +2339,9 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     g.translate(-cam.x, -cam.y);
 
     const viewR = Math.hypot(VW, VH) / zoom / 2 + 300;
-    const inView = (x, y) => Math.abs(x - cam.x) < viewR && Math.abs(y - cam.y) < viewR;
+    // pad : 그림이 큰 것은 중심이 화면 밖이어도 일부가 보일 수 있으므로 여유를 준다
+    const inView = (x, y, pad = 0) =>
+        Math.abs(x - cam.x) < viewR + pad && Math.abs(y - cam.y) < viewR + pad;
 
     // 층 분리 : 지상 도로 → 지상 카트 → 다리 → 다리 위 카트
     const ground = track.secs.filter(s => !s.elevated);
@@ -2526,7 +2546,9 @@ function drawLandmarks(g, inView) {
     const t = performance.now() / 1000;
 
     lms.forEach((lm, i) => {
-        if (!inView(lm.at[0], lm.at[1])) return;
+        // 중심만 보고 자르면, 폐처럼 큰 기관은 절반이 화면에 걸쳐 있어도 통째로 사라진다.
+        //   반지름만큼 여유를 두고 판단한다.
+        if (!inView(lm.at[0], lm.at[1], lm.r * 1.3)) return;
         g.save(); g.translate(lm.at[0], lm.at[1]);
         const R = lm.r;
 
@@ -2653,9 +2675,8 @@ function drawChambers(g, inView) {
         const ch = cp.node.chamber;
         if (!ch) return;
         const p = track.pts[cp.si];
-        if (!inView(p.x, p.y)) return;
-
         const rw = ch.w / 2 + ch.wall, rh = ch.h / 2 + ch.wall;
+        if (!inView(p.x, p.y, Math.max(rw, rh) * 1.4)) return;
         g.save(); g.translate(p.x, p.y); g.scale(beat, beat);
 
         g.fillStyle = 'rgba(0,0,0,.24)';
@@ -2772,12 +2793,35 @@ function drawRoadLayer(g, secs, zoom, lift, alpha) {
         g.save(); g.translate(0, -6);
         g.fillStyle = s.color; g.fill(s.fillPath);
         g.restore();
-        if (s.tunnel) {                                   // 판막 = 좁고 어두운 통로
+        if (s.tunnel) {                                   // 좁고 어두운 통로
             g.fillStyle = 'rgba(20,4,8,.45)'; g.fill(s.fillPath);
             g.save(); g.clip(s.fillPath); g.setLineDash([10, 26]);
             g.strokeStyle = 'rgba(255,220,225,.35)'; g.lineWidth = 12;
             g.stroke(track.paths[s.idx]); g.restore();
         }
+    });
+
+    // --- 판막 : 색이 딱 바뀌는 자리에는 실제로 문이 있다. 그 문짝을 그린다.
+    secs.forEach(s => {
+        if (!s.valve) return;
+        [s.from, s.to].forEach(j => {
+            const p = track.pts[j];
+            if (!p || Math.abs(p.x - cam.x) > 2600 || Math.abs(p.y - cam.y) > 2600) return;
+            const hw = (p.hw || track.halfWidth);
+            // 심장이 뛰는 박자에 맞춰 문짝이 조금씩 열리고 닫힌다
+            const beat = .62 + Math.sin(performance.now() / 620 + j) * .16;
+            g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+            for (const side of [-1, 1]) {
+                g.beginPath();
+                g.moveTo(-4, hw * side);                       // 벽에 붙은 뿌리
+                g.quadraticCurveTo(hw * .34, hw * side * .74, 6, hw * side * (1 - beat));
+                g.quadraticCurveTo(-hw * .2, hw * side * .6, -4, hw * side);
+                g.closePath();
+                g.fillStyle = 'rgba(248,226,230,.9)'; g.fill();
+                g.strokeStyle = 'rgba(96,26,34,.85)'; g.lineWidth = 4; g.stroke();
+            }
+            g.restore();
+        });
     });
 
     // 점프 구간 = 하늘길. 반짝이는 점선 궤적으로.
@@ -3065,26 +3109,66 @@ function drawCheckerLine(g, p, hw, rows) {
     g.restore();
 }
 
+/* 기관으로 들어가는 문.
+   구간 색이 바뀌는 자리가 곧 기관이 바뀌는 자리다. 거기에 문을 세우면
+   색이 끊기는 게 어색하지 않고, 문에 적힌 이름이 지날 때마다 눈에 들어온다.
+   달리다 보면 저절로 순서가 외워지는 것이 이 게임의 목적이다. */
+function drawGate(g, p, cp) {
+    const hw = (p.hw || track.halfWidth);
+    const col = cp.node.color;
+    const label = cp.node.name;
+
+    g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
+
+    // 노면에 깔린 문턱 — 여기서부터 새 기관이다
+    g.fillStyle = 'rgba(0,0,0,.28)';
+    g.fillRect(-16, -hw - 10, 32, (hw + 10) * 2);
+    g.fillStyle = col;
+    g.fillRect(-11, -hw - 10, 22, (hw + 10) * 2);
+    g.fillStyle = 'rgba(255,255,255,.3)';
+    g.fillRect(-11, -hw - 10, 22, 12);
+
+    // 양옆 기둥 : 아래쪽에 두께를 줘서 서 있는 것처럼 보이게
+    for (const side of [-1, 1]) {
+        const y = (hw + 26) * side;
+        g.fillStyle = shade(col, -.5);
+        g.beginPath(); g.roundRect(-19, y - 26, 38, 52, 9); g.fill();
+        g.fillStyle = col;
+        g.beginPath(); g.roundRect(-19, y - 34, 38, 52, 9); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.34)';
+        g.beginPath(); g.roundRect(-14, y - 29, 28, 13, 6); g.fill();
+        g.strokeStyle = 'rgba(20,10,14,.7)'; g.lineWidth = 3;
+        g.beginPath(); g.roundRect(-19, y - 34, 38, 52, 9); g.stroke();
+    }
+    g.restore();
+
+    // 기관 이름 : 문 위에 크게. 달리는 방향에서 바로 읽히도록 눕히지 않는다
+    g.save(); g.translate(p.x, p.y);
+    let a = p.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
+    g.rotate(a);
+    g.font = 'bold 62px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const w = g.measureText(label).width + 62;
+    g.fillStyle = 'rgba(14,14,20,.86)';
+    g.beginPath(); g.roundRect(-w / 2, -46, w, 92, 26); g.fill();
+    g.strokeStyle = col; g.lineWidth = 7;
+    g.beginPath(); g.roundRect(-w / 2, -46, w, 92, 26); g.stroke();
+    // 번호는 이름 왼쪽에 작은 원으로
+    g.fillStyle = col;
+    g.beginPath(); g.arc(-w / 2 + 30, 0, 20, 0, TAU); g.fill();
+    g.fillStyle = '#12161e'; g.font = 'bold 26px sans-serif';
+    g.fillText(cp.num, -w / 2 + 30, 1);
+    g.fillStyle = '#fff'; g.font = 'bold 62px sans-serif';
+    g.fillText(label, 22, 2);
+    g.restore();
+}
+
 function drawGates(g, inView) {
     const startSi = track.closed ? track.checkpoints[0].si : -1;
     track.checkpoints.forEach(cp => {
         const p = track.pts[cp.si];
         if (!inView(p.x, p.y)) return;
-        const hw = (p.hw || track.halfWidth) + 12;
-        if (cp.si === startSi) { drawCheckerLine(g, p, hw, 3); return; }   // 여기만 골인선
-        // 중간 관문 : 바닥에 얇은 기관 색 띠 + 번호판
-        g.save(); g.translate(p.x, p.y); g.rotate(p.ang);
-        g.globalAlpha = .5; g.fillStyle = cp.node.color;
-        g.fillRect(-7, -hw, 14, hw * 2);
-        g.globalAlpha = .9;
-        g.fillRect(-7, -hw, 14, 26); g.fillRect(-7, hw - 26, 14, 26);
-        g.globalAlpha = 1;
-        g.rotate(-p.ang);
-        g.fillStyle = 'rgba(20,20,26,.82)'; g.beginPath(); g.arc(0, 0, 28, 0, TAU); g.fill();
-        g.strokeStyle = cp.node.color; g.lineWidth = 5; g.stroke();
-        g.fillStyle = '#fff'; g.font = 'bold 26px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText(cp.num, 0, 1);
-        g.restore();
+        if (cp.si === startSi) drawCheckerLine(g, p, (p.hw || track.halfWidth) + 12, 3);  // 여기만 골인선
+        drawGate(g, p, cp);
     });
     if (!track.closed) drawCheckerLine(g, track.pts[track.N - 2], track.halfWidth + 16, 3);
     drawLapFlags(g, inView);
@@ -3188,35 +3272,35 @@ function drawHazards(g, inView) {
     }
 }
 
+/* 노면에 새긴 혈관·기관 이름.
+   기관 이름은 게이트가 맡고, 여기서는 지나는 길의 이름을 크게 새긴다.
+   달리는 내내 발밑에 보이므로 애써 읽지 않아도 남는다. */
 function drawLabels(g, zoom) {
-    track.checkpoints.forEach(cp => {
-        const p = track.pts[cp.si];
-        const x = p.x - p.dy * (track.halfWidth + 118), y = p.y + p.dx * (track.halfWidth + 118);
-        const label = `${cp.num}. ${cp.node.name}`;
-        g.font = 'bold 34px sans-serif';
-        const w = g.measureText(label).width + 40;
-        g.save(); g.translate(x, y);
-        g.fillStyle = '#1b1b1b'; g.beginPath(); g.roundRect(-w / 2 - 5, -32, w + 10, 62, 20); g.fill();
-        g.fillStyle = cp.node.color; g.beginPath(); g.roundRect(-w / 2, -28, w, 54, 17); g.fill();
-        g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.roundRect(-w / 2 + 5, -23, w - 10, 18, 9); g.fill();
-        g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 5;
-        g.strokeText(label, 0, 1); g.fillText(label, 0, 1);
-        g.restore();
-    });
-
-    if (zoom > .2) {
-        g.font = 'bold 28px sans-serif';
-        track.secs.forEach(s => {
-            const mid = track.pts[Math.min(Math.floor((s.from + s.to) / 2), track.N - 1)];
-            g.save(); g.translate(mid.x, mid.y);
-            let a = mid.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
-            g.rotate(a); g.textAlign = 'center'; g.textBaseline = 'middle';
-            g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 6; g.strokeText(s.name, 0, 0);
-            g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(s.name, 0, 0);
+    if (zoom <= .18) return;
+    track.secs.forEach(s => {
+        if (s.jump) return;
+        const len = s.to - s.from;
+        if (len < 12) return;
+        // 긴 구간에는 이름을 여러 번 새겨 어디서든 보이게 한다
+        const times = Math.max(1, Math.min(4, Math.floor(len / 26)));
+        for (let n = 0; n < times; n++) {
+            const i = Math.min(s.from + Math.round(len * (n + .5) / times), track.N - 1);
+            const p = track.pts[i];
+            if (Math.abs(p.x - cam.x) > 3000 || Math.abs(p.y - cam.y) > 3000) continue;
+            const hw = (p.hw || track.halfWidth);
+            g.save(); g.translate(p.x, p.y);
+            let a = p.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
+            g.rotate(a);
+            // 길 폭에 맞춰 글자 크기를 정한다 — 좁은 모세혈관에서 글자가 삐져나오지 않게
+            g.font = 'bold ' + Math.round(clamp(hw * .58, 26, 74)) + 'px sans-serif';
+            g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 9;
+            g.strokeText(s.name, 0, 0);
+            g.fillStyle = 'rgba(255,255,255,.9)';
+            g.fillText(s.name, 0, 0);
             g.restore();
-        });
-    }
+        }
+    });
 }
 
 /* ---- 가짜 3D 카트 : 아랫면(섀시) 위에 윗면을 어긋나게 얹어 높이를 만든다 ----
@@ -4403,8 +4487,10 @@ function endRace() {
     renderGarage();
 
     if (!SHOW_QUIZ) {
+        // 완주한 순간의 보상(등급·기록)을 먼저 보여 준다.
+        //   광고가 그 앞을 막으면 방금 해낸 일이 묻힌다. 광고는 나갈 때 띄운다.
         renderGarage();
-        setTimeout(() => showAdBreak(showResult), 1400);   // 광고 → 결과
+        setTimeout(showResult, 1400);
         return;
     }
 
@@ -4689,8 +4775,16 @@ el('startBtn').onclick = () => {
     if (IS_TOUCH && !isFullscreen()) goFullscreen().catch(() => {});
     startRace(selectedId);
 };
-el('retryBtn').onclick = () => startRace(track.sys.id);
+el('retryBtn').onclick = () => {
+    const id = track.sys.id;
+    el('result').classList.add('hidden');
+    showAdBreak(() => startRace(id));          // 다음 판으로 넘어갈 때 광고
+};
 el('menuBtn').onclick = () => {
+    el('result').classList.add('hidden');
+    showAdBreak(backToMenu);                   // 메뉴로 나갈 때 광고
+};
+function backToMenu() {
     netCleanup();
     state = 'menu';
     el('result').classList.add('hidden'); el('hud').classList.add('hidden');
