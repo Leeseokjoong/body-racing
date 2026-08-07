@@ -825,7 +825,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0841</div>
+<div id="build">v260808.0849</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1447,7 +1447,7 @@ const SYSTEMS = {
 
             { name: '폐', at: [1900, 850], color: '#f2a0c0', role: '기체 교환', blob: 0,
               info: '폐포에서 이산화탄소를 내보내고 산소를 받아 혈액이 붉게 바뀝니다. 폐순환의 꼭짓점!',
-              seg: { name: '폐정맥', color: '#e2707a', wMul: 1,
+              seg: { name: '폐정맥', vein: true, color: '#e2707a', wMul: 1,
                      desc: '산소를 가득 실은 혈액이 심장으로 돌아오는 길' },
               via: [[2300, 1030], [2570, 1290], [2780, 1620], [2900, 1980], [2910, 2350],
                     [2820, 2640], [2480, 2600]] },
@@ -1470,7 +1470,7 @@ const SYSTEMS = {
 
             { name: '온몸 모세혈관', at: [1900, 4490], color: '#9b6fd4', role: '산소 전달', blob: 360,
               info: '머리카락보다 가는 혈관이 온몸 세포에 산소와 영양소를 전달합니다. 좁고 구불구불!',
-              seg: { name: '대정맥', color: '#4a86d8', wMul: .58,
+              seg: { name: '대정맥', vein: true, color: '#4a86d8', wMul: .58,
                      desc: '온몸을 돌고 이산화탄소를 싣고 심장으로 돌아오는 길' },
               via: [[1760, 4600], [1640, 4470], [1500, 4610], [1360, 4470], [1220, 4600],
                     [1090, 4470], [980, 4560], [880, 4400], [820, 4180], [812, 3950],
@@ -1785,14 +1785,14 @@ const SYSTEMS = {
             { name: '배출', at: [880, 3340], color: '#ee964b', role: '몸 밖으로', blob: 250,
               pump: { power: 1, label: '시원하게 배출!', desc: '노폐물을 내보내면 몸이 깨끗해집니다.' },
               info: '걸러진 노폐물이 몸 밖으로. 이제 깨끗해진 피가 다시 몸을 돕니다.',
-              seg: { name: '콩팥 정맥', color: '#4a86d8', wMul: 1.1,
+              seg: { name: '콩팥 정맥', vein: true, color: '#4a86d8', wMul: 1.1,
                      desc: '재흡수로 깨끗해진 피가 콩팥을 빠져나가 온몸으로 돌아갑니다' },
               via: [[640, 3180], [520, 2940], [640, 2700], [460, 2480], [560, 2240],
                     [420, 2020]] },
 
             { name: '깨끗한 피', at: [560, 1740], color: '#4a86d8', role: '온몸으로', blob: 260,
               info: '노폐물을 버리고 깨끗해진 혈액이 다시 온몸을 돌다가, 또 콩팥으로 옵니다.',
-              seg: { name: '온몸 순환', color: '#5b93c9', wMul: 1.05,
+              seg: { name: '온몸 순환', vein: true, color: '#5b93c9', wMul: 1.05,
                      desc: '피는 하루에도 몇 번씩 콩팥을 지나며 계속 걸러집니다' },
               via: [[520, 1440], [620, 1140], [700, 820]] }
         ],
@@ -1976,7 +1976,8 @@ function buildTrack(sys) {
         const col = node.seg ? node.seg.color : node.color;
         return { idx: i, num: i + 1, node, from, to, name: node.seg ? node.seg.name : node.name,
                  color: col, dark: shade(col, -.34), elevated: !!(node.seg && node.seg.over),
-                 reabsorb: (node.seg && node.seg.reabsorb) || 0 };
+                 reabsorb: (node.seg && node.seg.reabsorb) || 0,
+                 vein: !!(node.seg && node.seg.vein) };
     });
     // 각 샘플이 어느 구간(층)에 속하는지 표시 — 다리 위/아래 판정에 사용
     secs.forEach(s => { for (let i = s.from; i <= s.to; i++) pts[i].sec = s.idx; });
@@ -3609,6 +3610,32 @@ function drawRoadLayer(g, secs, zoom, lift, alpha) {
         });
     });
 
+    /* --- 정맥 판막 ---
+       정맥은 피를 심장 쪽으로 밀어 올려야 해서, 벽 안쪽에 역류를 막는 판막이 줄지어 있다.
+       중력을 거슬러야 하는 혈관에만 있는 구조라, 동맥과 눈으로 구별되는 표시가 된다.
+       양쪽 벽에서 안쪽으로 뻗은 반달 두 장이 진행 방향을 향해 열려 있다. */
+    secs.forEach(sc => {
+        if (!sc.vein || sc.jump) return;
+        for (let i = sc.from + 12; i < sc.to - 6; i += 26) {
+            const p = track.pts[i];
+            if (!p || Math.abs(p.x - cam.x) > 2400 || Math.abs(p.y - cam.y) > 2400) continue;
+            const hw = (p.hw || track.halfWidth);
+            // 피가 밀려갈 때마다 살짝 여닫힌다
+            const open = .52 + Math.sin(performance.now() / 700 + i * .35) * .1;
+            g.save(); g.translate(p.x, p.y - (p.up || 0)); g.rotate(p.ang);
+            for (const side of [-1, 1]) {
+                g.beginPath();
+                g.moveTo(-hw * .16, hw * side);                        // 벽에 붙은 뿌리
+                g.quadraticCurveTo(hw * .30, hw * side * .82, hw * .10, hw * side * (1 - open));
+                g.quadraticCurveTo(-hw * .10, hw * side * .66, -hw * .16, hw * side);
+                g.closePath();
+                g.fillStyle = 'rgba(236,206,212,.62)'; g.fill();
+                g.strokeStyle = 'rgba(110,32,42,.62)'; g.lineWidth = 3; g.stroke();
+            }
+            g.restore();
+        }
+    });
+
     // 점프 구간 = 하늘길. 반짝이는 점선 궤적으로.
     const jumps = secs.filter(s => s.jump);
     if (jumps.length) {
@@ -4004,6 +4031,124 @@ function drawLapFlags(g, inView) {
    납작한 사각형이 아니라, 위에서 비스듬히 내려다본 육면체로 그린다.
    윗면과 옆면 두 개를 함께 보여 주면 그것만으로 입체가 된다.
    천천히 돌면서 떠 있고, 가장자리에서 빛이 한 번씩 훑고 지나간다. */
+
+/* ---- 아이템 그림 ----
+   블렌더로 렌더한 사실적인 PNG 는 광택과 부드러운 그림자가 있어,
+   납작한 색면과 두꺼운 외곽선으로 그린 이 게임과 나란히 두면 혼자 튄다.
+   그래서 캔버스로 직접 그린다. 톤이 정확히 맞고, 어떤 크기로도 또렷하다.
+
+   drawIcon(g, key, x, y, r) : (x,y) 를 중심으로 반지름 r 만큼 그린다. */
+const ICON_ART = {
+    // 적혈구 : 가운데가 눌린 도넛
+    rbc(g, r) {
+        outlined(g, () => { g.beginPath(); g.arc(0, 0, r, 0, TAU); }, '#e0424c', '#f4737b');
+        g.fillStyle = '#b8232e';
+        g.beginPath(); g.arc(0, 0, r * .42, 0, TAU); g.fill();
+        g.strokeStyle = '#5c0d13'; g.lineWidth = r * .12; g.stroke();
+        shine(g, r, -.3, -.34, .3);
+    },
+    // 백혈구 : 울퉁불퉁한 방어 세포
+    wbc(g, r) {
+        outlined(g, () => {
+            g.beginPath();
+            for (let i = 0; i <= 14; i++) {
+                const a = i / 14 * TAU, rr = r * (i % 2 ? .86 : 1);
+                const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+                i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+            }
+            g.closePath();
+        }, '#c9d4e2', '#eef3f9');
+        g.fillStyle = '#8fa4bd';
+        g.beginPath(); g.arc(-r * .12, -r * .06, r * .38, 0, TAU); g.fill();
+        shine(g, r, -.34, -.36, .26);
+    },
+    // 이산화탄소 : 뭉게뭉게 연기
+    co2(g, r) {
+        outlined(g, () => {
+            g.beginPath();
+            g.arc(-r * .42, r * .1, r * .5, 0, TAU);
+            g.arc(r * .38, r * .16, r * .44, 0, TAU);
+            g.arc(0, -r * .3, r * .58, 0, TAU);
+        }, '#6b7885', '#9aa8b6');
+        shine(g, r, -.28, -.42, .22);
+    },
+    // 콜레스테롤 : 끈적한 노란 방울
+    chol(g, r) {
+        outlined(g, () => {
+            g.beginPath();
+            for (let i = 0; i <= 20; i++) {
+                const a = i / 20 * TAU;
+                const rr = r * (1 + Math.sin(a * 3) * .1);
+                const x = Math.cos(a) * rr, y = Math.sin(a) * rr * .92;
+                i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+            }
+            g.closePath();
+        }, '#d9a520', '#f5cf5c');
+        g.fillStyle = '#b8871a';
+        g.beginPath(); g.arc(r * .22, r * .2, r * .2, 0, TAU); g.fill();
+        g.beginPath(); g.arc(-r * .3, r * .1, r * .13, 0, TAU); g.fill();
+        shine(g, r, -.3, -.36, .27);
+    },
+    // 혈전 : 굳은 피 덩어리
+    clot(g, r) {
+        outlined(g, () => {
+            g.beginPath();
+            for (let i = 0; i <= 11; i++) {
+                const a = i / 11 * TAU;
+                const rr = r * (i % 3 === 0 ? .78 : 1);
+                const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+                i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+            }
+            g.closePath();
+        }, '#8c2a1e', '#c04a34');
+        g.fillStyle = '#5e1a11';
+        g.beginPath(); g.arc(r * .18, -r * .1, r * .22, 0, TAU); g.fill();
+        g.beginPath(); g.arc(-r * .26, r * .24, r * .15, 0, TAU); g.fill();
+        shine(g, r, -.32, -.34, .24);
+    }
+};
+
+/* 두꺼운 검은 테두리 → 어두운 바닥색 → 위쪽 밝은 면. 게임의 다른 그림과 같은 규칙. */
+function outlined(g, path, dark, light) {
+    path();
+    g.strokeStyle = '#181014'; g.lineWidth = Math.max(3, g._iconR * .17);
+    g.lineJoin = 'round'; g.stroke();
+    g.fillStyle = dark; g.fill();
+    g.save(); g.clip();
+    g.fillStyle = light;
+    g.beginPath(); g.ellipse(0, -g._iconR * .3, g._iconR * 1.2, g._iconR * .78, 0, 0, TAU); g.fill();
+    g.restore();
+}
+function shine(g, r, ox, oy, sz) {
+    g.fillStyle = 'rgba(255,255,255,.72)';
+    g.beginPath(); g.ellipse(r * ox, r * oy, r * sz, r * sz * .62, -.5, 0, TAU); g.fill();
+}
+
+function drawIcon(g, key, x, y, r) {
+    const f = ICON_ART[key];
+    if (!f) return false;
+    g.save(); g.translate(x, y);
+    g._iconR = r;
+    f(g, r);
+    g.restore();
+    return true;
+}
+
+/* HTML 안에 넣을 작은 아이콘은 캔버스로 한 번 구워 두고 재사용한다 */
+const ICON_URL = {};
+function iconURL(key, px) {
+    const id = key + '@' + px;
+    if (ICON_URL[id]) return ICON_URL[id];
+    if (!ICON_ART[key]) return null;
+    const c = document.createElement('canvas');
+    c.width = c.height = px;
+    const g2 = c.getContext('2d');
+    g2.translate(px / 2, px / 2);
+    g2._iconR = px * .42;
+    ICON_ART[key](g2, px * .42);
+    return (ICON_URL[id] = c.toDataURL());
+}
+
 function drawItems(g, inView) {
     const now = performance.now();
     for (const it of track.items) {
@@ -4304,12 +4449,10 @@ function drawKart(g, k, lift = 0) {
 
 function drawItemPops(g) {
     for (const p of itemPops) {
-        const img = ITEM_IMAGES[p.key];
-        if (!img || !img.ready) continue;
         const a = clamp(p.life, 0, 1);
-        const s = 70 * (1.25 - a * .25);        // 튀어나오듯 커졌다 사라진다
+        const r = 35 * (1.25 - a * .25);        // 튀어나오듯 커졌다 사라진다
         g.save(); g.globalAlpha = a;
-        g.drawImage(img, p.x - s / 2, p.y - s / 2 - 30, s, s);
+        drawIcon(g, p.key, p.x, p.y - 30, r);
         g.restore();
     }
     g.globalAlpha = 1;
@@ -4350,9 +4493,9 @@ function buildHudStatic() {
          <div>${T(cp.node.name)} <span style="color:#9fd0ff;font-weight:normal">· ${T(cp.node.role)}</span></div></div>`).join('');
     el('legItems').innerHTML = s.pickups.map(p => {
         const k = p.img || EFFECT_ICON[p.effect];
-        const im = k && ITEM_IMAGES[k];
-        const ic = (im && im.ready)
-            ? `<img src="${im.src}" style="width:18px;height:18px;object-fit:contain;vertical-align:middle">`
+        const url = k && iconURL(k, 40);
+        const ic = url
+            ? `<img src="${url}" style="width:20px;height:20px;object-fit:contain;vertical-align:middle">`
             : T(p.icon);
         return `<div class="row"><span class="ic">${ic}</span>${T(p.name)}</div>`;
     }).join('');
@@ -4421,12 +4564,9 @@ function updateHud() {
     for (let i = 0; i < 3; i++) {
         const it = player.slots[i];
         const key = it && (it.img || EFFECT_ICON[it.effect]);
-        const img = key && ITEM_IMAGES[key];
-        if (img && img.ready) {
-            slots[i].innerHTML = `<img src="${img.src}" style="width:100%;height:100%;object-fit:contain">`;
-        } else {
-            slots[i].textContent = it ? it.icon : '';
-        }
+        const url = key && iconURL(key, 64);
+        if (url) slots[i].innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain">`;
+        else slots[i].textContent = it ? T(it.icon) : '';
         slots[i].className = 'slot' + (it ? ' filled' : '');
     }
     drawSpeedo(); drawMinimap();
@@ -5348,10 +5488,10 @@ function endRace() {
     const byIcon = {};
     track.sys.pickups.forEach(p => { byIcon[p.icon] = p.img || EFFECT_ICON[p.effect]; });
     const items = Object.entries(player.collected).map(([ic, v]) => {
-        const im = ITEM_IMAGES[byIcon[ic]];
-        const tag = (im && im.ready)
-            ? `<img src="${im.src}" style="width:22px;height:22px;object-fit:contain;vertical-align:middle">`
-            : ic;
+        const url = iconURL(byIcon[ic], 44);
+        const tag = url
+            ? `<img src="${url}" style="width:24px;height:24px;object-fit:contain;vertical-align:middle">`
+            : T(ic);
         return `${tag} ${v}`;
     }).join('&nbsp;&nbsp;');
     el('resCollect').innerHTML = T('수집') + ' : ' + (items || T('없음'));
