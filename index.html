@@ -412,15 +412,15 @@ const SYSTEMS = {
                     [1160, 2790], [1290, 2660], [1430, 2560], [1560, 2500]] }
         ],
         pickups: [
-            { icon: '🔴', name: '적혈구 터보', color: '#e04a4a', effect: 'turbo',
+            { icon: '🔴', name: '적혈구 터보', color: '#e04a4a', effect: 'turbo', img: 'rbc',
               desc: '헤모글로빈이 산소를 가득 싣고 힘차게 가속합니다!' },
-            { icon: '⚪', name: '백혈구 포획', color: '#f2f2f2', effect: 'wbc',
+            { icon: '⚪', name: '백혈구 포획', color: '#f2f2f2', effect: 'wbc', img: 'wbc',
               desc: '세균을 잡아먹듯 가까운 카트 한 대를 붙잡아 느리게 만듭니다.' },
-            { icon: '💨', name: '이산화탄소 연막', color: '#8a9aa8', effect: 'smoke',
+            { icon: '💨', name: '이산화탄소 연막', color: '#8a9aa8', effect: 'smoke', img: 'co2',
               desc: '세포가 내놓은 노폐 기체. 뒤따라오는 카트의 시야를 가립니다.' },
-            { icon: '🟡', name: '콜레스테롤', color: '#e6c85a', effect: 'sticky',
+            { icon: '🟡', name: '콜레스테롤', color: '#e6c85a', effect: 'sticky', img: 'chol',
               desc: '혈관 벽에 눌어붙는 기름. 지나온 길을 끈적하게 만듭니다.' },
-            { icon: '🟠', name: '혈전 발사', color: '#c96a3a', effect: 'clot',
+            { icon: '🟠', name: '혈전 발사', color: '#c96a3a', effect: 'clot', img: 'clot',
               desc: '굳은 피 덩어리를 앞으로 날려 앞서가는 카트를 막습니다!' }
         ],
         hazards: [
@@ -442,69 +442,71 @@ const SYSTEMS = {
         // 소화는 일방통행이지만, 영양소는 순환한다 :
         //   소장에서 흡수 → 간문맥 → 간 → 쓸개즙 → 다시 소장.
         //   위쪽 큰 고리 = 음식의 길(입·식도·위), 아래쪽 큰 고리 = 영양소의 길(간·쓸개·대장)
+        // 소화계는 순환계와 형태가 달라야 한다 :
+        //   8자가 아니라 "위에서 아래로 흘러내리는 관". 소장은 촘촘히 접힌 미로.
+        //   대장에서 간문맥으로 한 번에 위로 복귀 → 물방울 모양 고리.
         landmarks: [
-            { type: 'stomach', at: [1900, 1420], r: 820 },
-            { type: 'liver',   at: [1900, 3560], r: 900 }
+            { type: 'stomach', at: [1560, 1130], r: 620 },
+            { type: 'liver',   at: [2780, 1620], r: 600 }
         ],
         flow: [
-            { name: '입', at: [1620, 2420], color: '#ef8f8f', role: '씹기 · 아밀레이스', blob: 0,
-              chamber: { w: 330, h: 300, wall: 28, tint: '#f4a6a6' },
+            { name: '입', at: [820, 480], color: '#ef8f8f', role: '씹기 · 아밀레이스', blob: 250,
               info: '이로 음식을 부수고, 침 속 아밀레이스가 녹말을 엿당으로 분해합니다.',
-              seg: { name: '식도', color: '#a86fce', wMul: .56, tunnel: true,
-                     desc: '꿈틀 운동으로 음식을 위까지 밀어 내리는 좁은 관' },
-              via: [[1650, 2650]] },
+              seg: { name: '식도', color: '#a86fce', wMul: .5, tunnel: true,
+                     desc: '꿈틀 운동으로 음식을 위까지 밀어 내리는 좁고 긴 관' },
+              via: [[900, 650], [960, 820]] },
 
-            { name: '식도', at: [1620, 2870], color: '#b07fd6', role: '연동 운동', blob: 0,
-              chamber: { w: 300, h: 290, wall: 34, tint: '#c08fe0' },
+            { name: '식도', at: [1000, 990], color: '#b07fd6', role: '연동 운동', blob: 0,
+              chamber: { w: 250, h: 240, wall: 40, tint: '#c08fe0' },
               pump: { power: .55, label: '연동 운동!', desc: '근육이 물결처럼 조여 음식을 밀어 내립니다.' },
               info: '근육이 물결처럼 움직이는 꿈틀 운동으로 음식물을 위까지 보냅니다.',
-              seg: { name: '위로 가는 길', color: '#e2687e', over: true, wMul: 1,
-                     desc: '위 입구(분문)를 지나 음식이 위로 들어갑니다' },
-              via: [[1420, 2990], [1150, 2880], [960, 2620], [890, 2280], [900, 1910],
-                    [1020, 1560], [1230, 1230], [1500, 980]] },
+              seg: { name: '위', color: '#e2687e', wMul: 1.3,
+                     desc: '위산과 펩신이 뿜어져 나오는 넓은 주머니' },
+              via: [[1120, 1170], [1360, 1320], [1620, 1340], [1780, 1210]] },
 
-            { name: '위', at: [1900, 800], color: '#e2687e', role: '펩신 · 위산', blob: 0,
+            { name: '위', at: [1830, 1000], color: '#e2687e', role: '펩신 · 위산', blob: 0,
               info: '위산이 세균을 없애고, 펩신이 단백질을 펩톤으로 1차 분해합니다.',
-              seg: { name: '십이지장', color: '#e79cd2', wMul: 1,
-                     desc: '위에서 내려온 죽에 쓸개즙과 이자액이 섞이는 곳' },
-              via: [[2300, 980], [2570, 1240], [2780, 1570], [2900, 1930], [2910, 2280],
-                    [2820, 2570], [2480, 2530]] },
+              seg: { name: '십이지장', color: '#e79cd2', wMul: .62,
+                     desc: '쓸개즙과 이자액이 섞여 본격적인 소화가 시작되는 곳' },
+              via: [[1930, 1230], [1870, 1460], [1660, 1580]] },
 
-            { name: '소장', at: [2180, 2420], color: '#e79cd2', role: '융모 흡수', blob: 0,
-              chamber: { w: 320, h: 290, wall: 30, tint: '#eeb0dc' },
-              info: '융모가 영양소를 빨아들여 혈관으로 보냅니다. 흡수한 영양소는 간으로 갑니다.',
-              seg: { name: '간문맥', color: '#a0566a', wMul: .56, tunnel: true,
-                     desc: '소장이 흡수한 영양소를 간으로 실어 나르는 혈관' },
-              via: [[2160, 2650]] },
+            { name: '소장', at: [1400, 1650], color: '#e79cd2', role: '융모 흡수', blob: 0,
+              chamber: { w: 240, h: 230, wall: 26, tint: '#eeb0dc' },
+              info: '6~7미터가 배 속에 접혀 있습니다. 융모가 영양소를 빨아들여 간으로 보냅니다.',
+              seg: { name: '소장', color: '#e79cd2', wMul: .52,
+                     desc: '길이 6~7미터. 안쪽 융모가 표면적을 넓혀 영양소를 흡수합니다' },
+              via: [[1140, 1720], [960, 1880], [1040, 2060], [1310, 2110], [1580, 2100],
+                    [1800, 2180], [1820, 2370], [1600, 2460], [1320, 2470], [1050, 2460],
+                    [890, 2590], [990, 2760], [1260, 2810], [1550, 2800], [1810, 2810],
+                    [1970, 2950], [1870, 3120], [1610, 3170], [1330, 3170], [1070, 3160],
+                    [890, 3280], [980, 3450], [1240, 3500], [1520, 3500], [1780, 3510]] },
 
-            { name: '간', at: [2180, 2870], color: '#8b4a55', role: '영양소 처리', blob: 0,
-              chamber: { w: 360, h: 350, wall: 88, tint: '#a35a66' },
+            { name: '대장', at: [2080, 3590], color: '#c08b52', role: '수분 흡수', blob: 300,
+              info: '남은 찌꺼기에서 물과 무기염류를 흡수하고, 장내 세균이 도와 대변을 만듭니다.',
+              seg: { name: '간문맥', color: '#a0566a', wMul: .95,
+                     desc: '소장이 흡수한 영양소를 간으로 실어 나르는 굵은 혈관. 한 번에 위로!' },
+              via: [[2420, 3520], [2700, 3340], [2880, 3080], [2960, 2780], [2950, 2470],
+                    [2890, 2180], [2830, 1930]] },
+
+            { name: '간', at: [2780, 1650], color: '#8b4a55', role: '영양소 처리', blob: 0,
+              chamber: { w: 300, h: 290, wall: 76, tint: '#a35a66' },
               pump: { power: 1, label: '간 처리 완료!', desc: '몸에서 가장 큰 장기. 영양소를 저장하고 해로운 것을 없앱니다.' },
               info: '영양소를 저장·가공하고 해독합니다. 쓸개즙도 여기서 만들어집니다.',
-              seg: { name: '쓸개관', color: '#7fae4a', wMul: 1.1,
-                     desc: '간이 만든 쓸개즙이 쓸개에 모였다가 소장으로 내려가는 길' },
-              via: [[2450, 3020], [2740, 3190], [2930, 3480], [3010, 3800], [2980, 4120],
-                    [2870, 4390], [2650, 4550], [2400, 4390], [2160, 4560]] },
-
-            { name: '대장', at: [1900, 4410], color: '#c08b52', role: '수분 흡수', blob: 360,
-              info: '남은 찌꺼기에서 물과 무기염류를 흡수하고, 장내 세균이 도와 대변을 만듭니다.',
-              seg: { name: '되돌아오는 길', color: '#c08b52', wMul: .58,
-                     desc: '몸에 흡수된 영양소는 온몸을 돌고, 우리는 다음 끼니를 위해 입으로 돌아갑니다' },
-              via: [[1760, 4520], [1640, 4390], [1500, 4530], [1360, 4390], [1220, 4520],
-                    [1090, 4390], [980, 4480], [880, 4320], [820, 4100], [812, 3870],
-                    [828, 3640], [862, 3420], [900, 3220], [960, 3040], [1050, 2870],
-                    [1160, 2710], [1290, 2580], [1430, 2480], [1560, 2420]] }
+              seg: { name: '온몸으로 · 다음 끼니', color: '#d9a34a', wMul: 1.15,
+                     desc: '간이 처리한 영양소는 온몸으로. 그리고 우리는 다음 끼니를 위해 입으로!' },
+              via: [[2760, 1320], [2640, 1010], [2420, 770], [2120, 620], [1800, 530],
+                    [1450, 480], [1120, 460]] }
         ],
         pickups: [
-            { icon: '💧', name: '아밀레이스', color: '#8fd0e8', effect: 'turbo',
+            { icon: '💧', name: '아밀레이스', color: '#8fd0e8', effect: 'turbo', img: 'rbc',
               desc: '침과 이자액 속 효소. 녹말을 엿당으로 분해하며 힘차게 가속!' },
-            { icon: '🧪', name: '펩신 포획', color: '#e2687e', effect: 'wbc',
+            { icon: '🧪', name: '펩신 포획', color: '#e2687e', effect: 'wbc', img: 'wbc',
               desc: '위에서 단백질을 쪼개는 효소. 가까운 카트 한 대를 붙잡습니다.' },
-            { icon: '💨', name: '가스 연막', color: '#8a9aa8', effect: 'smoke',
+            { icon: '💨', name: '가스 연막', color: '#8a9aa8', effect: 'smoke', img: 'co2',
               desc: '장에서 생긴 가스. 뒤따라오는 카트의 시야를 가립니다.' },
-            { icon: '🧈', name: '지방 덩어리', color: '#f3d98a', effect: 'sticky',
+            { icon: '🧈', name: '지방 덩어리', color: '#f3d98a', effect: 'sticky', img: 'chol',
               desc: '쓸개즙이 잘게 만들기 전의 기름. 지나온 길을 미끄럽고 끈적하게!' },
-            { icon: '🥔', name: '음식 덩어리', color: '#c79a5a', effect: 'clot',
+            { icon: '🥔', name: '음식 덩어리', color: '#c79a5a', effect: 'clot', img: 'clot',
               desc: '덜 씹힌 덩어리를 앞으로 날려 앞서가는 카트를 막습니다!' }
         ],
         hazards: [
@@ -691,6 +693,8 @@ const upMul = {
     boost: () => 1 + save.lv.boost * .10        // 최대 +50%
 };
 loadSave();
+
+const EFFECT_ICON = { turbo: 'rbc', wbc: 'wbc', smoke: 'co2', sticky: 'chol', clot: 'clot' };
 
 const EFFECT_DUR = {
     turbo: 3.4,      // 적혈구 터보 — 확실히 앞지를 만큼
@@ -942,6 +946,15 @@ const ORGAN_IMAGES = {};
     im.onload = () => { im.ready = true; };
     im.src = 'assets/organ_' + key + '.png';
     ORGAN_IMAGES[key] = im;
+});
+
+/* ---- 아이템 아이콘 (블렌더 렌더, 없으면 이모지로 자동 대체) ---- */
+const ITEM_IMAGES = {};
+['rbc', 'wbc', 'co2', 'chol', 'clot'].forEach(key => {
+    const im = new Image();
+    im.onload = () => { im.ready = true; };
+    im.src = 'assets/item_' + key + '.png';
+    ITEM_IMAGES[key] = im;
 });
 
 /* ---- 블렌더에서 렌더한 카트 스프라이트 (없으면 코드 그림으로 자동 대체) ---- */
@@ -1220,7 +1233,12 @@ function checkPickups(k) {
             const kind = it.box ? pool[Math.floor(Math.random() * pool.length)] : it.kind;
             k.collected[kind.icon] = (k.collected[kind.icon] || 0) + 1;
             if (k.slots.length < 3) k.slots.push(kind);
-            if (k.isPlayer) { sfxPickup(); popup(it.x, it.y, kind.icon + ' ' + kind.name, kind.color); k.earned += 5; }
+            if (k.isPlayer) {
+                sfxPickup(); k.earned += 5;
+                popup(it.x, it.y, kind.name, kind.color);
+                const ik = kind.img || EFFECT_ICON[kind.effect];
+                if (ik) itemPops.push({ x: it.x, y: it.y, key: ik, life: 1.1 });
+            }
         }
     }
 }
@@ -1404,7 +1422,12 @@ function useItemFor(k) {
                            life: 4.5, owner: k, target: tgt });
     }
 
-    if (k.isPlayer) { showToast(it.icon + ' ' + it.name, it.desc); playBeep(680, .1); popup(k.x, k.y, it.icon, '#ffe066'); }
+    if (k.isPlayer) {
+        showToast(it.icon + ' ' + it.name, it.desc);
+        playBeep(680, .1);
+        const ik = it.img || EFFECT_ICON[it.effect];
+        if (ik) itemPops.push({ x: k.x, y: k.y, key: ik, life: 1.0 });
+    }
 }
 
 function updateRanks() {
@@ -1419,7 +1442,7 @@ function updateRanks() {
    5. 이펙트
    ========================================================================== */
 const skids = [], dusts = [], popups = [], confetti = [], smokes = [];
-const smokeClouds = [], stickyPatches = [], projectiles = [], wbcShots = [];   // 스킬로 생긴 것들
+const smokeClouds = [], stickyPatches = [], projectiles = [], wbcShots = [], itemPops = [];   // 스킬로 생긴 것들
 function addSkid(k) {
     const ca = Math.cos(k.ang), sa = Math.sin(k.ang);
     // 드리프트 중에는 더 굵고 진하게, 뒷바퀴 쪽에 남는다
@@ -1467,6 +1490,10 @@ function updateEffects(dt) {
     for (let i = dusts.length - 1; i >= 0; i--) {
         const d = dusts[i]; d.x += d.vx * dt; d.y += d.vy * dt; d.r += dt * 24; d.life -= dt * 1.6;
         if (d.life <= 0) dusts.splice(i, 1);
+    }
+    for (let i = itemPops.length - 1; i >= 0; i--) {
+        itemPops[i].y -= dt * 55; itemPops[i].life -= dt * 1.1;
+        if (itemPops[i].life <= 0) itemPops.splice(i, 1);
     }
     for (let i = popups.length - 1; i >= 0; i--) { popups[i].y -= dt * 48; popups[i].life -= dt * 1.1; if (popups[i].life <= 0) popups.splice(i, 1); }
     for (let i = confetti.length - 1; i >= 0; i--) {
@@ -1561,6 +1588,7 @@ function render() {
     drawDust(g);
     drawSmoke(g);
     drawSmokeClouds(g);
+    drawItemPops(g);
     drawPopups(g);
     drawConfetti(g);
     g.restore();
@@ -2375,6 +2403,19 @@ function drawKart(g, k, lift = 0) {
     }
 }
 
+function drawItemPops(g) {
+    for (const p of itemPops) {
+        const img = ITEM_IMAGES[p.key];
+        if (!img || !img.ready) continue;
+        const a = clamp(p.life, 0, 1);
+        const s = 70 * (1.25 - a * .25);        // 튀어나오듯 커졌다 사라진다
+        g.save(); g.globalAlpha = a;
+        g.drawImage(img, p.x - s / 2, p.y - s / 2 - 30, s, s);
+        g.restore();
+    }
+    g.globalAlpha = 1;
+}
+
 function drawPopups(g) {
     g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const p of popups) {
@@ -2408,7 +2449,14 @@ function buildHudStatic() {
     el('cpRows').innerHTML = track.checkpoints.map(cp =>
         `<div class="cpRow"><div class="cpNum" style="background:${cp.node.color}">${cp.num}</div>
          <div>${cp.node.name} <span style="color:#9fd0ff;font-weight:normal">· ${cp.node.role}</span></div></div>`).join('');
-    el('legItems').innerHTML = s.pickups.map(p => `<div class="row"><span class="ic">${p.icon}</span>${p.name}</div>`).join('');
+    el('legItems').innerHTML = s.pickups.map(p => {
+        const k = p.img || EFFECT_ICON[p.effect];
+        const im = k && ITEM_IMAGES[k];
+        const ic = (im && im.ready)
+            ? `<img src="${im.src}" style="width:18px;height:18px;object-fit:contain;vertical-align:middle">`
+            : p.icon;
+        return `<div class="row"><span class="ic">${ic}</span>${p.name}</div>`;
+    }).join('');
     el('legObs').innerHTML = s.hazards.map(h => `<div class="row"><span class="ic">${h.icon}</span>${h.name}</div>`).join('');
     el('resPanel').innerHTML = s.pickups.slice(0, 4).map(p =>
         `<div class="resItem"><span class="ic">${p.icon}</span><span data-cnt="${p.icon}">00</span></div>`).join('');
@@ -2448,7 +2496,13 @@ function updateHud() {
     const slots = el('slots').children;
     for (let i = 0; i < 3; i++) {
         const it = player.slots[i];
-        slots[i].textContent = it ? it.icon : '';
+        const key = it && (it.img || EFFECT_ICON[it.effect]);
+        const img = key && ITEM_IMAGES[key];
+        if (img && img.ready) {
+            slots[i].innerHTML = `<img src="${img.src}" style="width:100%;height:100%;object-fit:contain">`;
+        } else {
+            slots[i].textContent = it ? it.icon : '';
+        }
         slots[i].className = 'slot' + (it ? ' filled' : '');
     }
     drawSpeedo(); drawMinimap();
@@ -2814,7 +2868,7 @@ function placeOnStart(k, lane) {
 function startRace(id) {
     track = buildTrack(SYSTEMS[id]);
     skids.length = dusts.length = popups.length = confetti.length = smokes.length = 0;
-    smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = 0;
+    smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = 0;
     karts = [];
     player = makeKart(true, 0, '나'); karts.push(player);
     for (let i = 0; i < 3; i++) {
@@ -2880,8 +2934,16 @@ function endRace() {
     el('resTime').textContent = fmtTime(player.finishTime);
     el('resTop').textContent = Math.round(player.topSpeed * .22);
     el('resDrift').textContent = player.driftCount;
-    const items = Object.entries(player.collected).map(([k, v]) => `${k} ${v}`).join('   ');
-    el('resCollect').textContent = '수집 : ' + (items || '없음');
+    const byIcon = {};
+    track.sys.pickups.forEach(p => { byIcon[p.icon] = p.img || EFFECT_ICON[p.effect]; });
+    const items = Object.entries(player.collected).map(([ic, v]) => {
+        const im = ITEM_IMAGES[byIcon[ic]];
+        const tag = (im && im.ready)
+            ? `<img src="${im.src}" style="width:22px;height:22px;object-fit:contain;vertical-align:middle">`
+            : ic;
+        return `${tag} ${v}`;
+    }).join('&nbsp;&nbsp;');
+    el('resCollect').innerHTML = '수집 : ' + (items || '없음');
 
     // ── 포인트 정산 : 순위 보너스 + 신기록 보너스
     const rankBonus = [120, 80, 50, 30][player.rank - 1] || 20;
