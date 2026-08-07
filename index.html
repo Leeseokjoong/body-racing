@@ -421,6 +421,18 @@
     .quiz button.no { background: #6b1f1f; border-color: #ff8a8a; }
     .quiz .ex { margin-top: 9px; font-size: 13px; color: #cfe6ff; line-height: 1.6; display: none; }
 
+    /* 레이스 중 나가기 : 폰에서는 이게 없으면 완주할 때까지 갇힌다 */
+    /* 자막과 안내가 화면 위 가운데를 쓰므로, 나가기는 왼쪽 아래 구석에 둔다 */
+    #exitRace {
+        position: absolute; left: 14px; bottom: 14px; z-index: 7;
+        padding: 6px 13px; font-size: 12px; font-weight: bold; border-radius: 9px;
+        background: rgba(20,32,48,.7); color: #9fd0ff; border: 2px solid #33526f;
+        font-family: inherit; cursor: pointer;
+    }
+    #exitRace:hover { background: rgba(30,48,70,.9); color: #fff; }
+    /* 터치에서는 왼쪽 아래가 조향 패드 자리이므로 위로 올린다 */
+    body.touchUI #exitRace { left: 14px; bottom: auto; top: 12px; }
+
     /* 역주행 경고 — 눈에 확 들어와야 하지만 길을 가리면 안 되므로 위쪽에 둔다 */
     #wrongWay {
         position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%);
@@ -465,6 +477,12 @@
 
     /* 퀴즈방 */
     #quizRoom { gap: 4px; }
+    #quizBack {
+        position: absolute; top: 12px; left: 12px; z-index: 3;
+        padding: 7px 14px; font-size: 12px; font-weight: bold; border-radius: 9px;
+        background: rgba(20,32,48,.72); color: #cfe6ff; border: 2px solid #3f6c9c;
+        font-family: inherit; cursor: pointer;
+    }
     #goRow { display: flex; gap: 12px; align-items: center; justify-content: center; }
     .qIntro { font-size: 13px; color: #9fd0ff; margin-bottom: 12px; }
     .qIntro b { color: #ffe066; font-size: 15px; }
@@ -796,6 +814,7 @@
     <div id="zoomHint">W 가속 · A/D 좌우 · S 브레이크 · <b style="color:#ffe066">SPACE 드리프트</b> · 휠 줌 · M 전체 맵</div>
     <div id="subtitle"><div class="sname"></div><div class="sdesc"></div></div>
     <div id="toast"><div class="tt"></div><div class="td"></div></div>
+    <button id="exitRace" title="메뉴로 나가기">나가기</button>
     <div id="wrongWay">반대 방향! 돌아가세요</div>
     <div id="bigMsg"></div>
 </div>
@@ -806,7 +825,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1744</div>
+<div id="build">v260807.1756</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -907,9 +926,11 @@
     <div id="quizDots"></div>
     <div id="quizStage"></div>
     <div class="resNav" id="quizNav">
-        <button class="btn small" id="quizAgain">다른 계통 풀기</button>
-        <button class="btn small" id="quizExit">나가기</button>
+        <button class="btn small" id="quizAgain">다른 단계 풀기</button>
+        <button class="btn small" id="quizExit">메뉴로</button>
     </div>
+    <!-- 문제를 푸는 중에도 언제든 나갈 수 있어야 한다 -->
+    <button id="quizBack">← 그만두기</button>
 </div>
 
 <!-- 서킷이 끝나면 결과 전에 끼어드는 전면 광고 -->
@@ -3640,37 +3661,90 @@ function drawLapFlags(g, inView) {
     g.restore();
 }
 
-/* 아이템 랜덤 박스 : 떠서 회전하는 상자. 먹어야 무엇인지 알 수 있다. */
+/* ---- 아이템 상자 ----
+   납작한 사각형이 아니라, 위에서 비스듬히 내려다본 육면체로 그린다.
+   윗면과 옆면 두 개를 함께 보여 주면 그것만으로 입체가 된다.
+   천천히 돌면서 떠 있고, 가장자리에서 빛이 한 번씩 훑고 지나간다. */
 function drawItems(g, inView) {
     const now = performance.now();
     for (const it of track.items) {
         if (!it.alive || !inView(it.x, it.y)) continue;
-        const bob = Math.sin(now / 320 + it.ph) * 7;
-        const spin = Math.sin(now / 620 + it.ph);        // 좌우로 흔들리며 회전하는 느낌
-        const R = 26, w = R * Math.abs(spin) * .55 + R * .5;
 
-        g.save(); g.translate(it.x, it.y + bob);
-        g.fillStyle = 'rgba(0,0,0,.28)';
-        g.beginPath(); g.ellipse(4, 24 - bob, w * .9, 8, 0, 0, TAU); g.fill();
+        const bob  = Math.sin(now / 430 + it.ph) * 6;
+        const spin = (now / 1500 + it.ph) % TAU;          // 계속 한 방향으로 돈다
+        const S = 25;                                     // 상자 반 크기
+        const cs = Math.cos(spin), sn = Math.sin(spin);
+        const hw = S * (.42 + Math.abs(cs) * .58);         // 돌면서 윗면 폭이 변한다
+        const H  = S * .78;                                // 옆면 높이 (내려다본 각도)
 
-        // 상자 옆면 (두께)
-        g.fillStyle = '#b06a18';
-        g.beginPath(); g.roundRect(-w, -R + 8, w * 2, R * 2 - 4, 7); g.fill();
-        // 상자 윗면
-        const grd = g.createLinearGradient(0, -R, 0, R);
-        grd.addColorStop(0, '#ffd98a'); grd.addColorStop(.5, '#f5b53c'); grd.addColorStop(1, '#d98f1e');
+        g.save(); g.translate(it.x, it.y - bob);
+
+        // 바닥 그림자 : 떠 있을수록 작고 옅게
+        g.fillStyle = `rgba(0,0,0,${.18 - bob * .008})`;
+        g.beginPath(); g.ellipse(3, S + 16 + bob, hw * .9, 7, 0, 0, TAU); g.fill();
+
+        const box = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
+
+        // ── 유리 상자 : 속이 비쳐 보이도록 옅게 채우고 테두리로 형태를 잡는다
+        // 앞 옆면 (그늘진 쪽)
+        g.fillStyle = 'rgba(150,210,255,.20)';
+        box(-hw, -S + H, hw * 2, S * 2 - H + 4, 6); g.fill();
+        // 윗면 (빛을 받는 쪽)
+        const grd = g.createLinearGradient(-hw, -S, hw, -S + H * 1.7);
+        grd.addColorStop(0, 'rgba(255,255,255,.55)');
+        grd.addColorStop(.5, 'rgba(170,225,255,.28)');
+        grd.addColorStop(1, 'rgba(120,190,240,.22)');
         g.fillStyle = grd;
-        g.beginPath(); g.roundRect(-w, -R, w * 2, R * 2, 8); g.fill();
-        g.strokeStyle = '#3a2000'; g.lineWidth = 4; g.stroke();
-        // 반짝임
-        g.fillStyle = 'rgba(255,255,255,.4)';
-        g.beginPath(); g.roundRect(-w + 5, -R + 5, w * 2 - 10, R * .5, 5); g.fill();
-        // 물음표
+        box(-hw, -S, hw * 2, H + 6, 6); g.fill();
+
+        // 뒤쪽 모서리 : 유리라 반대편 선이 비친다
+        g.strokeStyle = 'rgba(210,240,255,.34)'; g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(-hw + 5, S + 2); g.lineTo(-hw + 5, -S + H - 2);
+        g.moveTo(hw - 5, S + 2);  g.lineTo(hw - 5, -S + H - 2);
+        g.stroke();
+
+        // 바깥 테두리 : 유리 두께
+        g.strokeStyle = 'rgba(235,250,255,.85)'; g.lineWidth = 3.5;
+        box(-hw, -S, hw * 2, S * 2 + 4, 6); g.stroke();
+        g.strokeStyle = 'rgba(120,190,240,.6)'; g.lineWidth = 1.4;
+        box(-hw + 3, -S + 3, hw * 2 - 6, S * 2 - 2, 4); g.stroke();
+        // 윗면과 옆면의 경계선
+        g.strokeStyle = 'rgba(235,250,255,.55)'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(-hw, -S + H); g.lineTo(hw, -S + H); g.stroke();
+
+        // 훑고 지나가는 빛
+        const sweep = ((now / 900 + it.ph) % 1) * 2 - 1;
+        g.save();
+        box(-hw, -S, hw * 2, S * 2 + 4, 6); g.clip();
+        g.globalAlpha = .55 - Math.abs(sweep) * .45;
         g.fillStyle = '#fff';
-        g.font = `bold ${Math.max(12, R * 1.25 * Math.abs(spin) * .8 + 8)}px sans-serif`;
-        g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.strokeStyle = '#3a2000'; g.lineWidth = 5;
-        g.strokeText('?', 0, 2); g.fillText('?', 0, 2);
+        g.beginPath();
+        g.moveTo(sweep * hw * 2 - 8, -S); g.lineTo(sweep * hw * 2 + 8, -S);
+        g.lineTo(sweep * hw * 2, S + 4); g.lineTo(sweep * hw * 2 - 16, S + 4);
+        g.closePath(); g.fill();
+        g.restore();
+
+        // 모서리에 맺힌 하이라이트
+        g.fillStyle = 'rgba(255,255,255,.9)';
+        g.beginPath(); g.ellipse(-hw + 8, -S + 7, 4.5, 2.6, -.4, 0, TAU); g.fill();
+        g.globalAlpha = .5;
+        g.beginPath(); g.ellipse(hw - 9, S - 4, 3.2, 1.8, -.4, 0, TAU); g.fill();
+        g.globalAlpha = 1;
+
+        // 물음표 : 유리 속에 떠 있는 것처럼
+        const q = Math.abs(cs);
+        if (q > .12) {
+            g.save();
+            g.translate(0, -S + H * .5 + 4);
+            g.scale(q, 1);
+            g.font = 'bold 34px sans-serif';
+            g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.lineWidth = 6; g.strokeStyle = 'rgba(30,70,110,.75)';
+            g.strokeText('?', 0, 0);
+            g.fillStyle = 'rgba(255,255,255,.95)'; g.fillText('?', 0, 0);
+            g.restore();
+        }
         g.restore();
     }
 }
@@ -5366,15 +5440,90 @@ el('backPage1').onclick = () => resPage(1);
    맵을 새로 만들어도 문제를 따로 쓸 필요가 없다.
 
    단계가 올라갈수록 보기가 늘고, 묻는 방식이 어려워지고, 포인트가 커진다. */
+
+/* ---- 교과 지식 문제 ----
+   중학교 과학 '동물과 에너지', '자극과 반응' 단원에서 자주 다루는 사실들.
+   경로(순서) 문제만으로는 윗단계가 심심해서, 3단계부터 섞어 낸다. */
+const KNOW_QS = {
+    circulatory: [
+        { q: '심장에서 벽이 가장 두꺼운 곳은?', a: '좌심실',
+          w: ['우심실', '좌심방', '우심방'], ex: '온몸으로 피를 보내야 해서 압력이 가장 셉니다.' },
+        { q: '피가 거꾸로 흐르지 못하게 막는 것은?', a: '판막',
+          w: ['융털', '폐포', '사구체'], ex: '심방과 심실 사이, 심실과 동맥 사이에 있습니다.' },
+        { q: '동맥인데 정맥혈이 흐르는 혈관은?', a: '폐동맥',
+          w: ['폐정맥', '대동맥', '대정맥'], ex: '우심실에서 폐로 가는 피는 산소가 적습니다.' },
+        { q: '벽이 가장 얇아 물질이 오가는 혈관은?', a: '모세혈관',
+          w: ['동맥', '정맥', '대동맥'], ex: '세포 한 겹이라 산소와 영양소가 드나듭니다.' },
+        { q: '산소를 운반하는 혈액 성분은?', a: '적혈구',
+          w: ['백혈구', '혈소판', '혈장'], ex: '헤모글로빈이 산소와 결합합니다.' },
+        { q: '출혈을 멎게 하는 혈액 성분은?', a: '혈소판',
+          w: ['적혈구', '백혈구', '혈장'], ex: '상처에서 피를 굳혀 줍니다.' }
+    ],
+    digestive: [
+        { q: '녹말을 분해하는 소화 효소는?', a: '아밀레이스',
+          w: ['펩신', '라이페이스', '쓸개즙'], ex: '침과 이자액에 들어 있습니다.' },
+        { q: '위에서 단백질을 분해하는 효소는?', a: '펩신',
+          w: ['아밀레이스', '라이페이스', '쓸개즙'], ex: '강한 산성에서만 작동합니다.' },
+        { q: '지방을 분해하는 소화 효소는?', a: '라이페이스',
+          w: ['펩신', '아밀레이스', '이자액'], ex: '지방을 지방산과 모노글리세리드로 나눕니다.' },
+        { q: '영양소를 흡수하는 소장 벽의 돌기는?', a: '융털',
+          w: ['폐포', '판막', '사구체'], ex: '표면적을 넓혀 흡수를 빠르게 합니다.' },
+        { q: '쓸개즙이 하는 일은?', a: '지방을 잘게 쪼갬',
+          w: ['녹말 분해', '단백질 분해', '물 흡수'], ex: '효소가 아니라 지방 덩어리를 작게 만듭니다.' },
+        { q: '대장이 주로 하는 일은?', a: '물 흡수',
+          w: ['단백질 분해', '지방 분해', '산소 교환'], ex: '남은 물을 빨아들이고 나머지를 내보냅니다.' }
+    ],
+    respiratory: [
+        { q: '산소와 이산화탄소가 교환되는 곳은?', a: '폐포',
+          w: ['기관', '코', '기관지'], ex: '표면적이 아주 넓어 기체 교환에 유리합니다.' },
+        { q: '들숨을 쉴 때 가로막은?', a: '내려간다',
+          w: ['올라간다', '가만히 있다', '옆으로 움직인다'], ex: '가슴 속 공간이 넓어져 공기가 들어옵니다.' },
+        { q: '날숨을 쉴 때 갈비뼈는?', a: '내려간다',
+          w: ['올라간다', '가만히 있다', '앞으로 나온다'], ex: '가슴이 좁아져 공기가 밀려 나갑니다.' },
+        { q: '기관에 연골 고리가 있는 이유는?', a: '길이 눌리지 않게',
+          w: ['소리를 내려고', '산소를 만들려고', '먼지를 거르려고'], ex: '공기 통로를 늘 열어 둡니다.' },
+        { q: '기체가 저절로 이동하는 원리는?', a: '농도가 높은 곳에서 낮은 곳으로',
+          w: ['압력이 낮은 곳에서 높은 곳으로', '무거운 것이 아래로', '따뜻한 것이 위로'],
+          ex: '에너지를 쓰지 않고 저절로 퍼집니다(확산).' }
+    ],
+    nervous: [
+        { q: '자극에서 반응까지 올바른 순서는?', a: '감각기관 → 감각신경 → 중추 → 운동신경 → 근육',
+          w: ['근육 → 뇌 → 감각기관', '중추 → 감각기관 → 근육', '감각신경 → 근육 → 중추'],
+          ex: '중추가 판단하고 명령을 내려보냅니다.' },
+        { q: '몸의 균형과 정교한 운동을 맡는 곳은?', a: '소뇌',
+          w: ['대뇌', '연수', '척수'], ex: '자전거를 탈 때 균형을 잡아 줍니다.' },
+        { q: '생각·판단·기억을 맡는 곳은?', a: '대뇌',
+          w: ['소뇌', '척수', '연수'], ex: '가장 크고 주름이 많은 부분입니다.' },
+        { q: '뜨거운 것을 만졌을 때 손을 빼는 반사의 중추는?', a: '척수',
+          w: ['대뇌', '소뇌', '간뇌'], ex: '뇌를 거치지 않아 아주 빠릅니다.' },
+        { q: '눈에서 빛을 받아들이는 곳은?', a: '망막',
+          w: ['수정체', '각막', '홍채'], ex: '시각 세포가 모여 있습니다.' }
+    ],
+    urinary: [
+        { q: '오줌을 만드는 기관은?', a: '콩팥',
+          w: ['방광', '오줌관', '요도'], ex: '혈액 속 노폐물을 걸러 냅니다.' },
+        { q: '혈액이 걸러지는 곳은?', a: '사구체',
+          w: ['세뇨관', '방광', '집합관'], ex: '높은 압력으로 물과 노폐물을 밀어냅니다.' },
+        { q: '포도당이 다시 혈액으로 돌아가는 과정은?', a: '재흡수',
+          w: ['여과', '분비', '배설'], ex: '그래서 건강하면 오줌에 포도당이 없습니다.' },
+        { q: '재흡수가 일어나는 곳은?', a: '세뇨관',
+          w: ['사구체', '방광', '요도'], ex: '필요한 물과 영양소를 되찾아 갑니다.' },
+        { q: '단백질이 분해될 때 생기는 노폐물은?', a: '암모니아',
+          w: ['포도당', '이산화탄소', '무기염류'], ex: '간에서 독성이 약한 요소로 바뀝니다.' },
+        { q: '암모니아를 요소로 바꾸는 기관은?', a: '간',
+          w: ['콩팥', '방광', '심장'], ex: '요소는 콩팥에서 걸러져 오줌으로 나갑니다.' }
+    ]
+};
+
 const QUIZ_LEVELS = [
     { lv: 1, name: '기초',   color: '#7ee081', choices: 3, count: 3, reward: 30,
       desc: '다음에 어디로 가는지 맞혀 보세요' },
     { lv: 2, name: '보통',   color: '#7fd4ff', choices: 4, count: 4, reward: 60,
       desc: '앞뒤를 모두 물어봅니다' },
     { lv: 3, name: '어려움', color: '#ffd166', choices: 5, count: 5, reward: 110,
-      desc: '몇 번째로 지나는 곳인지도 물어봅니다' },
+      desc: '순서에 교과 지식이 섞여 나옵니다', know: .5 },
     { lv: 4, name: '전문가', color: '#ff8a3c', choices: 5, count: 6, reward: 200,
-      desc: '다섯 계통이 섞여 나옵니다' }
+      desc: '다섯 계통 · 교과 지식까지 모두', know: .6, mix: true }
 ];
 let quizQs = [], quizAt = 0, quizGot = 0, quizLv = QUIZ_LEVELS[0], quizSys = null;
 
@@ -5416,20 +5565,46 @@ function makeQ(sys, i, kind, nChoices, pool) {
     return { ask, answer, choices, order: chain(ansIdx), sysName: sys.name };
 }
 
+/* 교과 지식 문제 하나 만들기 */
+function makeKnowQ(sysId, nChoices) {
+    const bank = KNOW_QS[sysId];
+    if (!bank || !bank.length) return null;
+    const k = bank[Math.floor(Math.random() * bank.length)];
+
+    // 오답이 세 개뿐이라 보기 다섯 개를 요구하는 단계에서는 모자란다.
+    //   같은 계통 다른 문제의 답과 기관 이름으로 채운다.
+    let wrong = shuffle(k.w.slice());
+    if (wrong.length < nChoices - 1) {
+        const extra = bank.filter(x => x !== k).map(x => x.a)
+            .concat(SYSTEMS[sysId].flow.map(f => f.name));
+        shuffle(extra);
+        for (const e of extra) {
+            if (wrong.length >= nChoices - 1) break;
+            if (e !== k.a && !wrong.includes(e)) wrong.push(e);
+        }
+    }
+    const choices = shuffle([k.a].concat(wrong.slice(0, nChoices - 1)));
+    return { ask: k.q, answer: k.a, choices, order: k.ex,
+             sysName: SYSTEMS[sysId].name, know: true };
+}
+
 function buildRouteQuiz(lv, sys) {
     const all = Object.values(SYSTEMS);
-    const pool = lv.lv >= 4 ? all.flatMap(x => x.flow.map(f => f.name)) : null;
+    const pool = lv.mix ? all.flatMap(x => x.flow.map(f => f.name)) : null;
     const kinds = lv.lv === 1 ? ['next']
                 : lv.lv === 2 ? ['next', 'prev']
                 : ['next', 'prev', 'nth'];
 
     const qs = [];
     for (let q = 0; q < lv.count; q++) {
-        const target = lv.lv >= 4 ? all[Math.floor(Math.random() * all.length)] : sys;
-        const n = target.flow.length;
-        const i = Math.floor(Math.random() * n);
-        const kind = kinds[q % kinds.length];
-        qs.push(makeQ(target, i, kind, lv.choices, pool));
+        const target = lv.mix ? all[Math.floor(Math.random() * all.length)] : sys;
+        // 단계가 올라가면 교과 지식 문제를 섞는다
+        if (lv.know && Math.random() < lv.know) {
+            const kq = makeKnowQ(target.id, lv.choices);
+            if (kq) { qs.push(kq); continue; }
+        }
+        const i = Math.floor(Math.random() * target.flow.length);
+        qs.push(makeQ(target, i, kinds[q % kinds.length], lv.choices, pool));
     }
     return qs;
 }
@@ -5536,10 +5711,28 @@ function finishRouteQuiz() {
 
 el('quizBtn').onclick = openQuizRoom;
 el('quizAgain').onclick = openQuizRoom;
-el('quizExit').onclick = () => {
+const leaveQuiz = () => {
     el('quizRoom').classList.add('hidden');
     el('menu').classList.remove('hidden');
     renderCarPick();                    // 벌어온 포인트를 바로 쓸 수 있게
+};
+el('quizExit').onclick = leaveQuiz;
+// 문제를 푸는 중이면 단계 고르기로, 거기서 또 누르면 메뉴로
+el('quizBack').onclick = () => {
+    if (quizQs.length && quizAt < quizQs.length) openQuizRoom();
+    else leaveQuiz();
+};
+
+/* 레이스 중 나가기. 폰에서는 이게 없으면 완주할 때까지 갇힌다. */
+el('exitRace').onclick = () => {
+    if (state !== 'race' && state !== 'countdown') return;
+    netCleanup();
+    state = 'menu';
+    el('hud').classList.add('hidden');
+    el('touch').classList.remove('on'); document.body.classList.remove('touchUI');
+    el('result').classList.add('hidden');
+    el('menu').classList.remove('hidden');
+    renderCarPick();
 };
 
 el('retryBtn').onclick = () => {
