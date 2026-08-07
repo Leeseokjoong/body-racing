@@ -441,6 +441,28 @@
     #inAppHow em { font-style: normal; color: #ffe066; font-weight: bold; }
     .inAppRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
+    /* 로비 : 누가 들어와 있고 누가 준비됐는지 한눈에 */
+    .lbCode { font-size: 13px; color: #9fd0ff; margin-bottom: 8px; }
+    .lbCode b { font-size: 22px; color: #ffe066; letter-spacing: 5px; margin-left: 6px; }
+    .lbList { display: flex; flex-direction: column; gap: 5px; margin-bottom: 9px;
+              min-width: 300px; max-width: 420px; margin-left: auto; margin-right: auto; }
+    .lbRow { display: flex; justify-content: space-between; align-items: center;
+             background: rgba(0,0,0,.28); border: 2px solid #2a4a70; border-radius: 9px;
+             padding: 6px 11px; font-size: 13px; }
+    .lbRow.me { border-color: #ffd166; }
+    .lbName { font-weight: bold; }
+    .lbReady { font-size: 11px; font-weight: bold; color: #8fa4bd;
+               background: rgba(255,255,255,.08); border-radius: 6px; padding: 3px 8px; }
+    .lbReady.on { color: #12200f; background: #7ee081; }
+    .lbHint { font-size: 12px; color: #9fd0ff; }
+    .lbBtns { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .lbBtns .btn:disabled { opacity: .4; cursor: default; }
+    @media (max-height: 500px) {
+        .lbList { min-width: 260px; gap: 3px; margin-bottom: 6px; }
+        .lbRow { padding: 4px 9px; font-size: 12px; }
+        .lbCode b { font-size: 18px; }
+    }
+
     /* 결과 화면 : 두 장으로 나누고, 각 장은 스크롤 없이 한 화면에 담는다 */
     .resCols { display: flex; gap: 16px; justify-content: center; align-items: flex-start;
                margin-top: 10px; flex-wrap: wrap; }
@@ -715,7 +737,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1545</div>
+<div id="build">v260807.1606</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -4283,6 +4305,7 @@ const net = {
     roomId: null,
     myId: null,
     myName: '1P',         // 상대 화면에 뜰 내 이름
+    hostId: null,         // 누가 방장인가
     isHost: false,
     mapId: 'circulatory',
     peers: {},            // 상대 카트들 { id: {kart, target} }
@@ -4317,6 +4340,7 @@ async function createRoom() {
     net.roomId = code;
     net.myId = 'p' + Math.random().toString(36).slice(2, 9);
     net.isHost = true;
+    net.hostId = net.myId;
     net.mapId = selectedId;
     net.myName = '1P';
 
@@ -4325,9 +4349,13 @@ async function createRoom() {
         createdAt: FB.serverTimestamp(),
         mapId: selectedId,
         state: 'lobby',
-        players: { [net.myId]: { name: '1P', color: 0, ready: true, joinedAt: FB.serverTimestamp() } }
+        hostId: net.myId,
+        players: { [net.myId]: { name: '1P', color: 0, ready: false, joinedAt: FB.serverTimestamp() } }
     });
-    FB.onDisconnect(FB.ref(FB.db, `rooms/${code}`)).remove();
+    // 로비에서 방장이 나가면 방을 닫는다. 출발한 뒤에는 이 예약을 취소하고
+    //   내 자리만 지우게 바꾼다 (안 그러면 방장이 끊길 때 남은 사람의 레이스가 사라진다)
+    net.roomKill = FB.onDisconnect(FB.ref(FB.db, `rooms/${code}`));
+    net.roomKill.remove();
     watchRoom(code);
     startWaitTimer();
     renderRoomStatus({ [net.myId]: { name: '1P' } });
@@ -4352,8 +4380,9 @@ async function joinRoom() {
     selectedId = net.mapId;
     net.myName = (count + 1) + 'P';
 
+    net.hostId = room.hostId || null;
     await FB.set(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`),
-        { name: (count + 1) + 'P', color: count, ready: true, joinedAt: FB.serverTimestamp() });
+        { name: (count + 1) + 'P', color: count, ready: false, joinedAt: FB.serverTimestamp() });
     FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`)).remove();
     watchRoom(code);
     startWaitTimer();
@@ -4378,52 +4407,64 @@ function startWaitTimer() {
     }, 1000);
 }
 
-// 대기 화면을 한곳에서 그린다 (인원 + 남은 시간)
+/* ---- 로비 ----
+   들어온 사람들이 저마다 '준비'를 누르고, 다 되면 방장이 시작한다.
+   자동으로 출발해 버리면 아직 화면도 못 본 사람이 생긴다. */
 function renderRoomStatus(players) {
     if (net.on || state !== 'menu') return;
     if (players) net.lastPlayers = players;
     const ps = net.lastPlayers || {};
-    const names = Object.entries(ps).map(([id, p]) =>
-        id === net.myId ? `<span class="who">${p.name}(나)</span>` : p.name);
-    const codeHtml = net.roomId ? `<span class="code">${net.roomId}</span><br>` : '';
+    const ids = Object.keys(ps);
+    const meReady = !!(ps[net.myId] && ps[net.myId].ready);
+    const allReady = ids.length >= 2 && ids.every(id => ps[id].ready);
+
+    const rows = ids.map(id => {
+        const p = ps[id], me = id === net.myId;
+        return `<div class="lbRow${me ? ' me' : ''}">
+            <span class="lbName">${p.name}${me ? ' (나)' : ''}${id === net.hostId ? ' · 방장' : ''}</span>
+            <span class="lbReady${p.ready ? ' on' : ''}">${p.ready ? '준비 완료' : '대기 중'}</span>
+        </div>`;
+    }).join('');
+
     const m = Math.floor(Math.max(0, net.waitLeft) / 60);
     const sec = String(Math.max(0, net.waitLeft) % 60).padStart(2, '0');
-    const low = net.waitLeft <= 60;
-    const timer = net.waitLeft > 0
-        ? `<br><span style="color:${low ? '#ff8a8a' : '#9fd0ff'}">남은 대기 시간 ${m}:${sec}</span>`
-        : '';
-    // 친구를 못 기다리겠으면 바로 출발할 수 있다. 빈자리는 AI 가 채운다.
-    //   방은 그대로 열려 있으니, 늦게 온 친구는 다음 판에 합류하면 된다.
-    const soloBtn = names.length < 2
-        ? '<br><button class="btn small" id="soloStartBtn" style="margin-top:9px">기다리지 않고 출발</button>'
-        : '';
-    netStatus(`${codeHtml}참가자 ${names.length}명 : ${names.join(', ')}` +
-        (names.length >= 2 ? '<br>곧 출발합니다!' : '<br>친구를 기다리는 중...' + timer + soloBtn));
+    const timer = net.waitLeft > 0 && ids.length < 2
+        ? `<div class="lbHint">친구를 기다리는 중 · ${m}:${sec}</div>` : '';
 
-    const b = el('soloStartBtn');
-    if (b) b.onclick = () => {
-        if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
+    netStatus(
+        (net.roomId ? `<div class="lbCode">방 코드 <b>${net.roomId}</b></div>` : '') +
+        `<div class="lbList">${rows}</div>` + timer +
+        `<div class="lbBtns">
+            <button class="btn small" id="readyBtn">${meReady ? '준비 취소' : '준비'}</button>` +
+        (net.isHost
+            ? `<button class="btn small" id="hostStartBtn" ${allReady ? '' : 'disabled'}>${
+                 ids.length < 2 ? '친구를 기다리는 중' : allReady ? '레이스 시작' : '모두 준비하면 시작'}</button>`
+            : `<span class="lbHint">${allReady ? '방장이 시작하기를 기다립니다' : '준비를 눌러 주세요'}</span>`) +
+        `<button class="btn small" id="soloStartBtn">혼자 하기</button>
+        </div>`);
+
+    el('readyBtn').onclick = () => {
+        FB.set(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}/ready`), !meReady).catch(() => {});
+        playBeep(meReady ? 700 : 1200, .08);
+    };
+    const hb = el('hostStartBtn');
+    if (hb) hb.onclick = () => {
+        if (!allReady) return;
+        FB.update(FB.ref(FB.db, `rooms/${net.roomId}`),
+            { state: 'racing', startAt: Date.now() + 1600 }).catch(() => {});
+    };
+    el('soloStartBtn').onclick = () => {
         const code = net.roomId;
-        if (window.FB && code) { try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {} }
-        netCleanup();
-        netStatus('');
-        startRace(selectedId);                 // 혼자 + AI 로 바로 시작
+        if (net.isHost && window.FB && code) { try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {} }
+        netCleanup(); netStatus('');
+        startRace(selectedId);                 // 혼자 + AI 로
     };
 }
 
 function watchRoom(code) {
-    // 방 인원 변화
+    // 방 인원·준비 상태 변화. 시작은 방장이 직접 누른다.
     const pRef = FB.ref(FB.db, `rooms/${code}/players`);
-    net.unsub.push(FB.onValue(pRef, snap => {
-        const players = snap.val() || {};
-        renderRoomStatus(players);
-        // 방장이 2명 이상 모이면 시작 신호를 보낸다
-        if (net.isHost && Object.keys(players).length >= 2 && state === 'menu') {
-            setTimeout(() => {
-                FB.update(FB.ref(FB.db, `rooms/${code}`), { state: 'racing', startAt: Date.now() + 1500 });
-            }, 1200);
-        }
-    }));
+    net.unsub.push(FB.onValue(pRef, snap => renderRoomStatus(snap.val() || {})));
 
     // 시작 신호 : 방장이 정한 출발 시각(startAt)을 함께 받아 같은 순간에 달린다
     net.unsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}`), snap => {
@@ -4434,6 +4475,12 @@ function watchRoom(code) {
 
 function startOnlineRace(startAt) {
     if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
+    // 출발했으니 '방 통째로 지우기' 예약을 거두고, 내 자리만 지우게 한다
+    if (net.roomKill) { try { net.roomKill.cancel(); } catch (e) {} net.roomKill = null; }
+    if (window.FB && net.roomId && net.myId) {
+        FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}`)).remove();
+        FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`)).remove();
+    }
     net.on = true;
     startRace(net.mapId);
     // 늦게 신호를 받은 쪽은 카운트다운을 그만큼 줄여, 모두 같은 순간에 출발한다
@@ -4442,6 +4489,23 @@ function startOnlineRace(startAt) {
     const gRef = FB.ref(FB.db, `rooms/${net.roomId}/ghosts`);
     net.unsub.push(FB.onValue(gRef, snap => {
         const all = snap.val() || {};
+
+        // 사라진 사람 = 나갔거나 연결이 끊긴 사람. 그 자리를 AI 가 이어받는다.
+        //   카트를 없애 버리면 순위가 흔들리고 혼자 남은 사람이 심심해진다.
+        Object.keys(net.peers).forEach(id => {
+            if (all[id]) return;
+            const peer = net.peers[id];
+            delete net.peers[id];
+            const k = peer.kart;
+            if (!k || k.takenOver) return;
+            k.takenOver = true;
+            k.aiOff = false; k.isGhost = false;        // 이제부터 스스로 달린다
+            k.name = k.name + ' (AI)';
+            k.maxMul = .96; k.aiOffset = 0;
+            k.si = nearestSample(k.x, k.y);            // 어디쯤인지 다시 잡아 준다
+            if (state === 'race') popup(k.x, k.y, k.name + ' 이(가) 나갔습니다', '#9fd0ff');
+        });
+
         Object.entries(all).forEach(([id, g]) => {
             if (id === net.myId) return;
             let peer = net.peers[id];
@@ -4471,6 +4535,16 @@ function netSend() {
         a: +player.ang.toFixed(2), lap: player.lap,
         prog: Math.round(player.progress), name: net.myName || '친구'
     }).catch(e => { if (!netSend.warned) { netSend.warned = true; showDiag('위치 전송 실패\n' + (e && e.message)); } });
+}
+
+/* 좌표로 트랙 위 위치를 되찾는다 (AI 로 넘겨줄 때 필요) */
+function nearestSample(x, y) {
+    let best = 0, bd = 1e18;
+    for (let i = 0; i < track.N; i += 2) {
+        const p = track.pts[i], d = (p.x - x) ** 2 + (p.y - y) ** 2;
+        if (d < bd) { bd = d; best = i; }
+    }
+    return best;
 }
 
 // 받은 위치로 상대 카트를 부드럽게 이동시킨다 (네트워크 지연 보정)
