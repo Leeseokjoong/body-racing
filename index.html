@@ -715,7 +715,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260807.1541</div>
+<div id="build">v260807.1545</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -4507,7 +4507,7 @@ function startRace(id) {
     smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = reabsorbSparks.length = 0;
     reabsorbHint = 0;
     karts = [];
-    player = makeKart(true, 0, '1P'); player.pad = input; karts.push(player);
+    player = makeKart(true, 0, net.on ? net.myName : '1P'); player.pad = input; karts.push(player);
     // 온라인에서는 사람만 달린다. AI 는 각자 컴퓨터에서 따로 돌아
     //   서로 다른 자리에 있게 되므로, 같이 달리는 느낌을 오히려 망친다.
     if (!net.on) {
