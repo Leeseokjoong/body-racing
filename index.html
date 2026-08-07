@@ -352,7 +352,9 @@
         <div id="lapBox"></div>
         <div class="line" id="resPoints" style="margin-top:8px"></div>
         <div id="garage"></div>
-        <div class="quiz" id="quizBox">
+        <!-- 퀴즈는 잠시 꺼둔다. 나중에 '맞히면 포인트' 방식으로 되살릴 예정.
+             데이터(SYSTEMS[*].quiz)와 표시 코드는 그대로 두었다. -->
+        <div class="quiz" id="quizBox" style="display:none">
             <div class="q" id="quizQ"></div><div id="quizA"></div><div class="ex" id="quizEx"></div>
         </div>
         <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
@@ -744,6 +746,10 @@ const EFFECT_DUR = {
 
 /* 프로토타입 단계에서는 주행에만 집중한다.
    아이템·장애물 데이터는 그대로 두고 배치만 끈다 (true 로 바꾸면 즉시 되살아남). */
+// 퀴즈는 잠시 꺼 둔다. 코스 자체가 지식이라 지금은 중복이고,
+// 나중에 '맞히면 포인트' 방식으로 되살릴 예정이다.
+const SHOW_QUIZ = false;
+
 const SPAWN_ITEMS = true;
 const SPAWN_HAZARDS = false;
 
@@ -3216,6 +3222,8 @@ function endRace() {
     else el('resBest').textContent = '최고 기록 ' + fmtTime(save.best[id]);
     renderGarage();
 
+    if (!SHOW_QUIZ) { renderGarage(); setTimeout(showResult, 1400); return; }
+
     const q = track.sys.quiz[Math.floor(Math.random() * track.sys.quiz.length)];
     el('quizQ').textContent = '🧠 ' + q.q;
     el('quizEx').style.display = 'none'; el('quizEx').textContent = q.ex;
@@ -3234,7 +3242,13 @@ function endRace() {
         el('quizA').appendChild(b);
     });
 
-    setTimeout(() => { el('result').classList.remove('hidden'); el('hud').classList.add('hidden'); el('touch').classList.remove('on'); }, 1400);
+    setTimeout(showResult, 1400);
+}
+
+function showResult() {
+    el('result').classList.remove('hidden');
+    el('hud').classList.add('hidden');
+    el('touch').classList.remove('on');
 }
 
 let last = performance.now();
