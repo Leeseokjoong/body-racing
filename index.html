@@ -626,7 +626,7 @@
     <div id="bigMsg"></div>
 </div>
 
-<div id="build">v260807.1438</div>
+<div id="build">v260807.1441</div>
 
 <div id="touch">
     <!-- 왼손 : 달리는 일 -->
@@ -798,6 +798,37 @@ function mixColor(a, b, t) {
            `${Math.round(A[1] + (B[1] - A[1]) * t)},` +
            `${Math.round(A[2] + (B[2] - A[2]) * t)})`;
 }
+
+/* ---- roundRect 폴리필 ----
+   둥근 사각형은 크롬 99 부터 들어왔다. 그 아래 WebView(카톡 인앱 브라우저 등)에는 없고,
+   없는 채로 부르면 그리기가 통째로 멈춘다. 없으면 직접 그려 준다. */
+(function polyfillRoundRect() {
+    function rr(x, y, w, h, r) {
+        // r 은 숫자 하나 또는 배열. 이 게임은 숫자만 쓰지만 둘 다 받아 둔다.
+        let a = Array.isArray(r) ? r : [r, r, r, r];
+        if (a.length === 1) a = [a[0], a[0], a[0], a[0]];
+        if (a.length === 2) a = [a[0], a[1], a[0], a[1]];
+        if (a.length === 3) a = [a[0], a[1], a[2], a[1]];
+        const lim = Math.min(Math.abs(w), Math.abs(h)) / 2;
+        a = a.map(v => Math.min(Math.max(+v || 0, 0), lim));
+        const [tl, tr, br, bl] = a;
+        this.moveTo(x + tl, y);
+        this.lineTo(x + w - tr, y);
+        this.arcTo(x + w, y, x + w, y + tr, tr);
+        this.lineTo(x + w, y + h - br);
+        this.arcTo(x + w, y + h, x + w - br, y + h, br);
+        this.lineTo(x + bl, y + h);
+        this.arcTo(x, y + h, x, y + h - bl, bl);
+        this.lineTo(x, y + tl);
+        this.arcTo(x, y, x + tl, y, tl);
+        this.closePath();
+        return this;
+    }
+    if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect)
+        CanvasRenderingContext2D.prototype.roundRect = rr;
+    if (typeof Path2D !== 'undefined' && !Path2D.prototype.roundRect)
+        Path2D.prototype.roundRect = rr;
+})();
 
 function shade(hex, amt) {
     const c = hex.replace('#', '');
@@ -4590,12 +4621,18 @@ function loop(now) {
     if (state !== 'menu') { updateEffects(dt); updateSkills(dt); updateSubtitle(dt); stickyHint -= dt; }
     if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) el('toast').classList.remove('show'); }
 
-    render();
-    updateEngine();
-    if (player && state === 'race')
-        sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
-    else sfxSkid(0);
-    if (state !== 'menu') updateHud();
+    // 그리기나 소리에서 한 번 예외가 나도 다음 프레임은 반드시 예약되어야 한다.
+    //   (예약을 못 하면 화면이 영영 멈춘다 — 기기마다 없는 기능이 있어 실제로 일어난다)
+    try {
+        render();
+        updateEngine();
+        if (player && state === 'race')
+            sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
+        else sfxSkid(0);
+        if (state !== 'menu') updateHud();
+    } catch (e) {
+        if (!loop.warned) { loop.warned = true; console.error('[그리기 오류]', e); }
+    }
     requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
