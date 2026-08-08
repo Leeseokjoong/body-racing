@@ -900,7 +900,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1555</div>
+<div id="build">v260808.1621</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -984,7 +984,7 @@
     <div id="modePick">
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
         <button class="modeBtn" data-mode="3">타임 어택</button>
-        <button class="modeBtn" data-mode="2">친구와 온라인</button>
+        <button class="modeBtn" data-mode="2" id="modeOnline">친구와 온라인</button>
     </div>
     <!-- 타임 어택 설명 : 무엇을 겨루는 판인지 한 줄로 -->
     <div id="taBox" style="display:none">
@@ -1082,12 +1082,29 @@
     </div>
 </div>
 
+<script>
+/* ---- 온라인 스위치 ----
+   여기 하나만 true 로 바꾸면 온라인이 통째로 돌아온다. 코드는 그대로 남겨 두었다.
+
+   false 로 두면 —
+     · 파이어베이스 SDK 를 아예 내려받지 않는다 (첫 화면이 250KB 만큼 빨라진다)
+     · 서버에 연결하지 않으므로 요금이 한 푼도 나가지 않는다
+     · 메뉴에서 '친구와 온라인' 이 사라진다
+   혼자 하기와 타임 어택은 원래 서버를 쓰지 않으므로 아무 영향이 없다. */
+window.ONLINE_ON = false;
+</script>
+
 <script type="module">
 // Firebase : 온라인 멀티플레이용. 실패해도 게임은 그대로 돌아간다.
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp,
-         runTransaction, onChildAdded, onChildChanged, onChildRemoved }
-    from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+// 잠겨 있을 때는 내려받지도 않는다 — 그래서 정적 import 가 아니라 필요할 때 부른다.
+window.FB = null;
+if (window.ONLINE_ON) Promise.all([
+    import("https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js")
+]).then(([A, D]) => {
+const { initializeApp } = A;
+const { getDatabase, ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp,
+        runTransaction, onChildAdded, onChildChanged, onChildRemoved } = D;
 
 const firebaseConfig = {
     apiKey: "AIzaSyB1wLITGu0wxG8QNGI-oxyELvoWCLolfJI",
@@ -1103,6 +1120,7 @@ try {
     window.FB = { db: getDatabase(fbApp), ref, set, get, update, onValue, onDisconnect, remove,
                   serverTimestamp, runTransaction, onChildAdded, onChildChanged, onChildRemoved };
 } catch (e) { window.FB = null; }
+}).catch(() => { window.FB = null; });
 </script>
 
 <script>
@@ -7494,6 +7512,17 @@ function renderTaRecords() {
         const b = taBestOf(id);
         return `<span class="taRec">${T(SYSTEMS[id].name)}<b>${b ? fmtTime(b) : '--:--.--'}</b></span>`;
     }).join('');
+}
+
+/* 잠겨 있으면 '친구와 온라인' 을 화면에서 뺀다.
+   흐릿하게 눌리지 않는 버튼으로 두면 "안 된다" 는 후기가 달린다.
+   아예 없으면 아무도 아쉬워하지 않는다. */
+if (!window.ONLINE_ON) {
+    const b = el('modeOnline');
+    if (b) { b.remove(); }
+    el('onlineBox').style.display = 'none';
+    const first = document.querySelector('.modeBtn');
+    if (first) document.querySelectorAll('.modeBtn').forEach(x => x.classList.toggle('sel', x === first));
 }
 
 document.querySelectorAll('.modeBtn').forEach(b => {
