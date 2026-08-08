@@ -9,9 +9,6 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-512.png">
-<meta name="theme-color" content="#08111d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a1420">
 <title>오장육부 레이싱 · Organ Racing</title>
@@ -761,12 +758,37 @@
         #toast { bottom: auto; top: 12px; padding: 8px 14px; }
         #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
     }
+
+/* ---- 타임 어택 ---- */
+#taBox { margin: 6px auto 0; max-width: 620px; text-align: center; }
+.taLine { font-size: 13px; color: #cfe3ff; line-height: 1.7; }
+.taLine.dim { color: #8fa6c4; font-size: 12px; }
+#taRecords { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 9px; }
+.taRec { background: rgba(20,32,54,.72); border: 1px solid rgba(120,170,240,.28);
+         border-radius: 8px; padding: 4px 10px; font-size: 12px; color: #9fd0ff; }
+.taRec b { color: #fff; font-weight: 700; margin-left: 6px; font-variant-numeric: tabular-nums; }
+
+#taCard { top: 14px; left: 50%; transform: translateX(-50%); min-width: 190px; text-align: center; }
+.taRow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.taK { font-size: 11px; letter-spacing: .06em; color: #8fa6c4; }
+.taV { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
+#taCard .taRow + .taRow .taV { font-size: 14px; color: #9fd0ff; }
+#taDelta { margin-top: 5px; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums;
+           color: #8fa6c4; min-height: 24px; }
+#taDelta.up { color: #7ee081; }        /* 앞서는 중 */
+#taDelta.down { color: #ff7a6e; }      /* 뒤처지는 중 */
+@media (max-width: 780px) {
+    #taCard { min-width: 0; padding: 6px 10px; }
+    .taV { font-size: 15px; } #taDelta { font-size: 16px; }
+}
 </style>
 <!-- 애드센스 : 아래 client 를 본인 계정 ID 로 바꾸고 주석을 풀면 실제 광고가 나갑니다.
      스크립트 주소의 client 와 body-racing.html 안의 AD.client 를 같은 값으로 맞춰 주세요.
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
         crossorigin="anonymous"></script>
 -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -778,6 +800,13 @@
         <div class="lbl">LAP</div>
         <div class="lap"><span id="lapNow">1</span>/<span id="lapTot">3</span></div>
         <div class="time"> <span id="timeTxt">00:00.00</span></div>
+    </div>
+
+    <!-- 타임 어택 : 지금 랩 · 최고 랩 · 유령과의 차이 -->
+    <div class="panel hidden" id="taCard">
+        <div class="taRow"><span class="taK">이번 랩</span><span class="taV" id="taNow">00:00.00</span></div>
+        <div class="taRow"><span class="taK">최고 랩</span><span class="taV" id="taBest">--:--.--</span></div>
+        <div id="taDelta">&nbsp;</div>
     </div>
 
     <div class="panel" id="cpList"><div class="t">CHECKPOINTS</div><div id="cpRows"></div></div>
@@ -827,7 +856,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1002</div>
+<div id="build">v260808.1033</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -906,8 +935,16 @@
     </div>
     <div id="modePick">
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
+        <button class="modeBtn" data-mode="3">타임 어택</button>
         <button class="modeBtn" data-mode="2">친구와 온라인</button>
     </div>
+    <!-- 타임 어택 설명 : 무엇을 겨루는 판인지 한 줄로 -->
+    <div id="taBox" style="display:none">
+        <div class="taLine">아무도 방해하지 않습니다. 아이템도 없습니다. 오직 한 바퀴를 얼마나 빨리 도느냐.</div>
+        <div class="taLine dim">최고 기록은 유령 카트가 되어 다음 판에 함께 달립니다.</div>
+        <div id="taRecords"></div>
+    </div>
+
     <div id="onlineBox" style="display:none">
         <div class="obRow">
             <button class="btn small" id="createRoom">방 만들기</button>
@@ -1170,6 +1207,17 @@ const EN = {
 // ── 광고 · 안내
 '광고': 'Ad', '5초 후 건너뛰기': 'Skip in 5s', '초 후 건너뛰기': 's until skip',
 '건너뛰기': 'Skip', '광고 자리': 'Ad slot',
+
+// 타임 어택
+'타임 어택': 'Time Attack', '기록 도전': 'SET A TIME',
+'이번 랩': 'This lap', '최고 랩': 'Best lap', '랩 신기록': 'New best lap',
+'신기록!': 'NEW RECORD!',
+'유령 카트가 함께 달립니다': 'your ghost is on the track with you',
+'첫 바퀴가 곧 기준 기록이 됩니다': 'Your first lap becomes the time to beat.',
+'아무도 방해하지 않습니다. 아이템도 없습니다. 오직 한 바퀴를 얼마나 빨리 도느냐.':
+    'Nobody in your way. No items. Just how fast you can go round once.',
+'최고 기록은 유령 카트가 되어 다음 판에 함께 달립니다.':
+    'Your best lap comes back as a ghost kart and races you next time.',
 '광고 수익으로 게임이 지속적으로 발전합니다': 'Ad revenue keeps this game growing',
 '앱 안에서 열렸습니다': 'Opened inside an app',
 '여기서는 전체 화면이 안 되고 화면이 예전 것으로 남기 쉽습니다.':
@@ -1197,6 +1245,12 @@ Object.assign(EN, {
 '입': 'Mouth', '식도': 'Esophagus', '위': 'Stomach', '소장': 'Small Intestine',
 '대장': 'Large Intestine', '직장 · 항문': 'Rectum · Anus', '직장': 'Rectum',
 '십이지장': 'Duodenum', '다음 끼니로 점프!': 'Jump to the next meal!',
+'식탁': 'Dinner Table', '착지 · 다시 한 끼': 'Landing · One More Meal',
+'착지 활주로': 'Landing Strip',
+'하늘길에서 내려앉아 다시 입으로 들어가는 길': 'Touch down from the sky and roll back into the mouth',
+'소화는 한 번으로 끝나지 않습니다. 밥을 먹을 때마다 입에서 항문까지 같은 길을 다시 지나갑니다.':
+    'Digestion never really ends. Every meal runs the same road from mouth to anus all over again.',
+'완벽!': 'PERFECT!',
 
 // 호흡계
 '코 · 입': 'Nose · Mouth', '기관': 'Trachea', '기관지': 'Bronchi', '폐포': 'Alveoli',
@@ -1562,7 +1616,16 @@ const SYSTEMS = {
               seg: { name: '다음 끼니로 점프!', color: '#7fc4e8', wMul: 1.0, jump: true,
                      desc: '소화가 끝나면 또 밥을 먹지요. 하늘을 날아 입으로 돌아갑니다!' },
               via: [[3060, 2640], [3010, 2260], [2900, 1900], [2740, 1560], [2520, 1240],
-                    [2240, 940], [1900, 700], [1520, 540], [1150, 470]] }
+                    [2240, 940], [1900, 700]] },
+
+            /* 하늘길이 출발선에 그대로 맞닿아 있으면, 출발하자마자 벽 없는 구간이 보여
+               어디로 가야 할지 헷갈린다. 그래서 착지 지점을 조금 앞에 두고
+               입까지는 벽이 있는 활주로로 잇는다. 날아와서 → 내려앉아 → 들어간다. */
+            { name: '식탁', at: [1520, 540], color: '#8fd0e8', role: '착지 · 다시 한 끼', blob: 0,
+              info: '소화는 한 번으로 끝나지 않습니다. 밥을 먹을 때마다 입에서 항문까지 같은 길을 다시 지나갑니다.',
+              seg: { name: '착지 활주로', color: '#8fd0e8', wMul: 1.0,
+                     desc: '하늘길에서 내려앉아 다시 입으로 들어가는 길' },
+              via: [[1150, 470]] }
         ],
         pickups: [
             { icon: '아밀', name: '아밀레이스', color: '#8fd0e8', effect: 'turbo', img: 'rbc',
@@ -2150,7 +2213,8 @@ function buildTrack(sys) {
     sys.flow.forEach((node, i) => {
         if (!node.launch) return;
         const si = Math.min(nodeIdx[i] * SEG_SAMPLES + 3, N - 1);
-        pads.push(on(pts[si], 0, { ang: pts[si].ang, power: 1, launch: node.launch, node }));
+        // si 를 함께 남긴다 — 발사대는 원이 아니라 도로를 가로지르는 '문'이어야 한다
+        pads.push(on(pts[si], 0, { si, ang: pts[si].ang, power: 1, launch: node.launch, node }));
     });
     sys.flow.forEach((node, i) => {
         if (!node.pump) return;
@@ -2209,7 +2273,8 @@ function buildTrack(sys) {
 
     const checkpoints = sys.flow.map((node, i) => ({ si: Math.min(nodeIdx[i] * SEG_SAMPLES, N - 1), node, num: i + 1 }));
 
-    return { sys, pts, N, total, closed, halfWidth: hw, secs, paths, fullPath, bounds, items, hazards, pads, decor, stands, checkpoints };
+    return { sys, laps: sys.laps, pts, N, total, closed, halfWidth: hw, secs, paths,
+             fullPath, bounds, items, hazards, pads, decor, stands, checkpoints };
 }
 
 /* ============================================================================
@@ -2274,6 +2339,8 @@ function fireTurbo(k) {
     // 최고 속도가 나는 구간은 짧게. 터지는 순간만 시원하고, 곧 다룰 수 있는 속도로 내려온다
     //   (계속 최고 속도면 그대로 벽으로 날아간다)
     k.turboTime = Math.max(k.turboTime, .26 + q * .34);
+    k.turboFiredAt = raceTime;                           // 발사대 타이밍 판정에 쓰인다
+    if (k.air > 0) { boostJump(k); return; }             // 하늘에서는 그대로 추진력이 된다
     if (k.isPlayer) {
         sfxBoost(); buzz(22 + q * 42);
         cam.shake = 6 + q * 10; cam.kick = .7 + q * .9;
@@ -2538,13 +2605,25 @@ function updateKart(k, dt) {
         guideAir(k, dt);                        // 하늘길을 벗어나지 않게 붙잡아 준다
         if (k.air <= 0) {                       // 착지
             k.air = 0; k.spin = 0;
-            k.boostTime = Math.max(k.boostTime, 1.2);
+            // 어떤 일이 있어도 길 위에 내려놓는다 (하늘길 밖으로 떨어지지 않게)
+            k.si = nearestSample(k.x, k.y);
+            const lp = track.pts[k.si];
+            const lim = (lp.hw || track.halfWidth) * .55;
+            let ox = k.x - lp.x, oy = k.y - lp.y;
+            const od = Math.hypot(ox, oy);
+            if (od > lim) { k.x = lp.x + ox / od * lim; k.y = lp.y + oy / od * lim; }
+            // 착지 순간에는 길을 따라 달리게 방향을 맞춰 준다
+            const sp = Math.min(Math.hypot(k.vx, k.vy), 640);
+            k.ang = lp.ang;
+            k.vx = Math.cos(lp.ang) * sp; k.vy = Math.sin(lp.ang) * sp;
+            k.boostTime = Math.max(k.boostTime, k.jumpFast ? 1.9 : 1.2);
             if (k.isPlayer) {
                 cam.shake = 16; cam.flash = .6;
                 sfxCrash(.45);
                 popup(k.x, k.y, '냠! 다시 출발!', '#ffe066');
                 for (let i = 0; i < 14; i++) addDust(k);
             }
+            k.jumpFast = false;
         }
     } else { applyReabsorb(k, dt); applyBarrier(k); }   // 공중에서는 벽이 없다
     checkSkillZones(k);
@@ -2588,6 +2667,63 @@ function addReabsorbSpark(k, nx, ny, t) {
     reabsorbSparks.push({ x: k.x - nx * s, y: k.y - ny * s, nx, ny, life: .45, max: .45, t });
 }
 
+/* 이번 프레임에 그 지점을 지나쳤는가. 도로 폭 어디로 지나가든 걸린다. */
+function passedSample(k, si) {
+    const N = track.N;
+    const step = ((k.si - k.prevSi) % N + N) % N;         // 이번에 나아간 샘플 수
+    if (step === 0 || step > 30) return false;            // 멈춰 있거나, 순간이동(재배치)
+    const rel = ((si - k.prevSi) % N + N) % N;
+    return rel > 0 && rel <= step;
+}
+
+/* ---- 발사대 ----
+   하늘길은 벽이 없다. 그러니 '어디쯤에서 떨어질지'를 물리에 맡기면 안 된다.
+   남은 하늘길 길이를 재서, 정확히 그 끝에 내려앉도록 속도와 체공 시간을 정한다.
+   길이가 길면 더 빨리 날 뿐, 도중에 떨어지는 일은 없다.
+
+   여기에 숨은 것이 하나 있다 — 터보를 들고 발사대를 밟으면 훨씬 빨리 날아간다.
+   설명하지 않는다. 우연히 한 번 겪어 보고 "어?" 하는 것이 이 장치의 전부다. */
+const JUMP_AIR = 2.2, JUMP_AIR_FAST = 1.45;   // 보통 / 잘 맞췄을 때 체공 시간(초)
+
+function launchKart(k, pad) {
+    const sec = track.secs[track.pts[pad.si].sec];
+    const spacing = track.total / track.N;
+    const span = Math.max(spacing * 8, (sec.to - pad.si) * spacing);   // 남은 하늘길 길이
+
+    // 발사 직전에 터보를 썼다면 잘 맞춘 것으로 친다
+    k.jumpFast = (raceTime - (k.turboFiredAt || -99)) < .55;
+    k.air = k.airMax = k.jumpFast ? JUMP_AIR_FAST : JUMP_AIR;
+
+    const p = track.pts[k.si];
+    const sp = span / k.air;
+    k.vx = Math.cos(p.ang) * sp; k.vy = Math.sin(p.ang) * sp;
+    k.spin = 0;
+    k.boostTime = Math.max(k.boostTime, 2.4);
+
+    if (k.isPlayer) {
+        cam.shake = k.jumpFast ? 26 : 18; cam.kick = k.jumpFast ? 2.6 : 1.8;
+        cam.flash = k.jumpFast ? 1 : .9;
+        sfxBoost();
+        if (k.jumpFast) { sfxPickup(); popup(k.x, k.y, '완벽!', '#ffd45a'); }
+        else popup(k.x, k.y, pad.launch.label, '#7fc4e8');
+        showToast(pad.launch.label, pad.launch.desc);
+    }
+}
+
+/* 이미 하늘에 떠 있을 때 터보를 쓰면 남은 거리를 그대로 둔 채 더 빨리 간다.
+   (속도를 올린 만큼 체공 시간을 줄이므로 착지 지점은 변하지 않는다) */
+function boostJump(k) {
+    if (k.jumpFast) return;
+    k.jumpFast = true;
+    const mul = JUMP_AIR / JUMP_AIR_FAST;
+    k.vx *= mul; k.vy *= mul;
+    k.air /= mul; k.airMax /= mul;
+    if (k.isPlayer) {
+        cam.shake = 20; cam.kick = 2.2; cam.flash = 1;
+        sfxPickup(); popup(k.x, k.y, '완벽!', '#ffd45a');
+    }
+}
+
 /* 공중에서는 벽이 없다. 그대로 두면 조금만 방향이 틀어져도 엉뚱한 데 떨어진다.
    그래서 하늘길 위를 따라가도록 부드럽게 끌어 준다 — 점프는 레일 위의 연출이지
    실력을 시험하는 구간이 아니다. 착지 직전일수록 세게 잡아, 길 위에 내려놓는다. */
@@ -2621,8 +2757,11 @@ function guideAir(k, dt) {
 // 붉은 혈관벽 — 관대한 반응. 스치면 벽을 따라 미끄러지고, 정면으로 박아야 크게 손해.
 function applyBarrier(k) {
     // 위아래로 갈라진 다리는 서로 간섭하지 않으므로, 두 도로 모두 벽을 그대로 유지한다
+    /* 하늘길에도 '땅에 있는 동안에는' 난간이 있다.
+       공중일 때는 이 함수가 아예 불리지 않으므로 나는 느낌은 그대로다.
+       예전에는 하늘길 전체에 벽이 없어서, 발사에 실패하거나 출발선 옆으로
+       빠지면 지도 밖을 하염없이 달릴 수 있었다. */
     const p = track.pts[k.si];
-    if (p.jump) return;                          // 하늘길에는 벽이 없다
     const limit = (p.hw || track.halfWidth) - 4;
     if (k.centerDist <= limit) return;
 
@@ -2721,12 +2860,14 @@ function updateProgress(k) {
 
     if (track.closed) {
         if (k.prevSi > N * .75 && k.si < N * .25 && k.cpDone >= cps.length) {
-            k.lapTimes.push(raceTime - k.lastLapAt);
+            const lapTime = raceTime - k.lastLapAt;
+            k.lapTimes.push(lapTime);
             k.lastLapAt = raceTime;
+            if (TA.on && k.isPlayer) taFinishLap(lapTime, raceTime);
             k.lap++; k.cpIndex = 1; k.cpDone = 1;   // 출발선 = 1번 체크포인트 통과
-            if (k.lap > track.sys.laps) finishKart(k);
+            if (k.lap > track.laps) finishKart(k);
             else if (k.isPlayer) {
-                const last = k.lap >= track.sys.laps;
+                const last = k.lap >= track.laps;
                 playBeep(last ? 1600 : 1250, last ? .22 : .14);
                 flashBig(last ? T('마지막 바퀴!') : 'LAP ' + k.lap);
                 cam.flash = 1; k.earned += 25;
@@ -2734,6 +2875,11 @@ function updateProgress(k) {
         }
     } else if (k.si >= N - 3) finishKart(k);
 
+    if (TA.on && k.isPlayer && state === 'race') {
+        const lapTime = raceTime - TA.lapStart;
+        taRecord(k, lapTime);
+        TA.delta = taDeltaAt(k, lapTime);
+    }
     k.progress = (k.lap - 1) * track.total + track.pts[k.si].dist;
 }
 
@@ -2870,24 +3016,18 @@ function updateSkills(dt) {
 
 function checkPads(k) {
     for (const p of track.pads) {
+        /* 발사대는 도로를 가로지르는 문이다.
+           예전에는 반지름 58 짜리 원이었는데, 도로 폭은 그 세 배가 넘는다.
+           그래서 바깥쪽으로 지나가면 발사되지 않고 그대로 하늘길로 굴러 들어가
+           벽 없는 곳을 헤매게 됐다. 이제는 그 지점을 '지나쳤는가'로만 본다. */
+        if (p.launch) {
+            if (k.air <= 0 && passedSample(k, p.si)) launchKart(k, p);
+            continue;
+        }
         if ((p.x - k.x) ** 2 + (p.y - k.y) ** 2 > 58 * 58) continue;
         const dur = .55 + p.power * 1.5;
         if (k.boostTime >= dur) continue;
         k.boostTime = dur;
-        // 심실 수축은 실제로 뒤에서 확 밀어낸다
-        if (p.launch) {
-            if (k.air <= 0) {
-                k.air = k.airMax = 2.1;
-                k.boostTime = Math.max(k.boostTime, 2.4);
-                if (k.isPlayer) {
-                    cam.shake = 18; cam.kick = 1.8; cam.flash = .9;
-                    sfxBoost();
-                    popup(k.x, k.y, p.launch.label, '#7fc4e8');
-                    showToast(p.launch.label, p.launch.desc);
-                }
-            }
-            continue;
-        }
         if (p.pump) {
             if (k.isPlayer) cam.kick = Math.max(cam.kick, .7 + p.power * .5);
             const push = 210 * p.power;
@@ -3137,6 +3277,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     drawItems(g, inView);
     drawHazards(g, inView);
     drawLabels(g, zoom);
+    drawGhost(g);
     for (const k of karts) if (layerOf(k) === 0 && !k.isPlayer) drawKart(g, k);
     if (player && layerOf(player) === 0) drawKart(g, player);
 
@@ -3838,7 +3979,22 @@ function drawRoadLayer(g, secs, zoom, lift, alpha) {
     });
 
     // 점프 구간 = 하늘길. 반짝이는 점선 궤적으로.
+    /* 하늘길 난간 — 도로 벽처럼 꽉 막지 않고, 흘러가는 빛 선으로 경계만 알려 준다.
+       "여기는 길이 아니라 하늘이다" 라는 느낌은 남기되,
+       어디까지가 하늘길인지는 분명히 보이게 한다. */
     const jumps = secs.filter(s => s.jump);
+    if (jumps.length) {
+        g.save();
+        g.setLineDash([26, 20]);
+        g.lineDashOffset = -performance.now() / 26;       // 앞으로 흘러간다
+        g.lineCap = 'round';
+        g.strokeStyle = `rgba(150,215,255,${.34 * alpha})`; g.lineWidth = 9;
+        jumps.forEach(s => { g.stroke(s.leftPath); g.stroke(s.rightPath); });
+        g.strokeStyle = `rgba(225,245,255,${.85 * alpha})`; g.lineWidth = 3;
+        jumps.forEach(s => { g.stroke(s.leftPath); g.stroke(s.rightPath); });
+        g.restore();
+    }
+
     if (jumps.length) {
         const t = performance.now() / 90;
         g.save();
@@ -4195,7 +4351,7 @@ function drawGates(g, inView) {
 
 /* 마지막 바퀴 : 골인선 양옆에서 체커기를 흔든다 */
 function drawLapFlags(g, inView) {
-    const lastLap = player.lap >= track.sys.laps && !player.finished;
+    const lastLap = player.lap >= track.laps && !player.finished;
     if (!lastLap) return;
     const p = track.pts[track.closed ? track.checkpoints[0].si : track.N - 2];
     if (!inView(p.x, p.y)) return;
@@ -4708,16 +4864,31 @@ function buildHudStatic() {
         `<div class="resItem"><span class="ic">${T(p.icon)}</span><span data-cnt="${p.icon}">00</span></div>`).join('');
 
     // 아이템을 끈 상태에서는 관련 패널을 숨겨 화면을 비운다
-    ['resPanel', 'slotPanel', 'legend'].forEach(id => el(id).style.display = SPAWN_ITEMS ? '' : 'none');
-    el('gaugeWrap').style.top = SPAWN_ITEMS ? '' : '14px';
+    // 타임 어택에는 아이템이 없다. 관련된 것은 화면에서 전부 치운다.
+    const showItems = SPAWN_ITEMS && !TA.on;
+    ['resPanel', 'slotPanel', 'legend', 'tItem'].forEach(id => {
+        const e = el(id); if (e) e.style.display = showItems ? '' : 'none';
+    });
+    el('gaugeWrap').style.top = showItems ? '' : '14px';
 }
 
 function updateHud() {
     if (!player || !track) return;
-    el('lapNow').textContent = Math.min(player.lap, track.sys.laps);
+    el('lapNow').textContent = Math.min(player.lap, track.laps);
     el('timeTxt').textContent = fmtTime(raceTime);
     el('rankBadge').textContent = LANG === 'en'
         ? (['1st','2nd','3rd','4th'][player.rank - 1] || player.rank) : player.rank + ' 위';
+    if (TA.on) {
+        el('taNow').textContent = fmtTime(Math.max(0, raceTime - TA.lapStart));
+        el('taBest').textContent = TA.prevBest ? fmtTime(TA.prevBest) : '--:--.--';
+        const d = TA.delta, dv = el('taDelta');
+        // 유령이 없으면 비교할 것이 없다. 숫자를 억지로 만들지 않는다.
+        if (d === null || d === undefined || state !== 'race') { dv.textContent = '\u00a0'; dv.className = ''; }
+        else {
+            dv.textContent = (d < 0 ? '-' : '+') + Math.abs(d).toFixed(2);
+            dv.className = d < 0 ? 'up' : 'down';
+        }
+    }
     el('kmh').textContent = Math.round(Math.abs(player.speed) * .22);
 
     // 브레이크 버튼은 후진 페달이기도 하다.
@@ -4756,7 +4927,7 @@ function updateHud() {
         gLabel.style.color = stuck ? '#7ee081' : '';
     }
     const prog = track.closed
-        ? clamp(((player.lap - 1) + track.pts[player.si].t) / track.sys.laps, 0, 1)
+        ? clamp(((player.lap - 1) + track.pts[player.si].t) / track.laps, 0, 1)
         : clamp(track.pts[player.si].t, 0, 1);
     el('progBar').firstElementChild.style.width = prog * 100 + '%';
     el('progTxt').textContent = Math.round(prog * 100) + '%';
@@ -5581,8 +5752,16 @@ function placeOnStart(k, lane) {
     k.cpIndex = 1; k.cpDone = 1;
 }
 
-function startRace(id) {
+function startRace(id, timeAttack) {
+    // 모드는 시작할 때 한 번만 정한다. 도중에 바뀌면 기록의 뜻이 흐려진다.
+    TA.on = timeAttack !== undefined ? !!timeAttack
+          : (!net.on && document.querySelector('.modeBtn.sel').dataset.mode === '3');
     track = buildTrack(SYSTEMS[id]);
+    if (TA.on) {
+        track.laps = TA.laps;
+        track.items.length = 0;        // 아이템 없음 — 순수하게 주행만 겨룬다
+        taReset();
+    }
     skids.length = dusts.length = popups.length = confetti.length = smokes.length = 0;
     smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = reabsorbSparks.length = 0;
     reabsorbHint = 0;
@@ -5590,7 +5769,7 @@ function startRace(id) {
     player = makeKart(true, 0, net.on ? net.myName : '1P'); player.pad = input; karts.push(player);
     // 온라인에서는 사람만 달린다. AI 는 각자 컴퓨터에서 따로 돌아
     //   서로 다른 자리에 있게 되므로, 같이 달리는 느낌을 오히려 망친다.
-    if (!net.on) {
+    if (!net.on && !TA.on) {
         for (let i = 0; i < 3; i++) {
             const ai = makeKart(false, i + 1, AI_NAMES[i]);
             ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
@@ -5606,18 +5785,205 @@ function startRace(id) {
     subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
 
     buildHudStatic();
+    el('taCard').classList.toggle('hidden', !TA.on);
+    el('rankBadge').style.display = TA.on ? 'none' : '';
     el('hud').classList.remove('hidden');
     el('menu').classList.add('hidden');
     el('result').classList.add('hidden');
     el('touch').classList.toggle('on', IS_TOUCH);
     document.body.classList.toggle('touchUI', IS_TOUCH);
     if (IS_TOUCH) el('driftLabel').textContent = '드리프트 게이지';
-    showToast(track.sys.name, track.sys.flow.map(f => T(f.name)).join(' → '));
+    if (TA.on) showToast(T('타임 어택'), TA.prevBest
+        ? T('최고 기록') + ' ' + fmtTime(TA.prevBest) + ' — ' + T('유령 카트가 함께 달립니다')
+        : T('첫 바퀴가 곧 기준 기록이 됩니다'));
+    else showToast(track.sys.name, track.sys.flow.map(f => T(f.name)).join(' → '));
+}
+
+/* ============================================================================
+   타임 어택
+   ----------------------------------------------------------------------------
+   AI 도 아이템도 없다. 겨루는 상대는 어제의 나 하나뿐이다.
+
+   최고 랩을 달렸을 때의 궤적을 통째로 저장해 두고, 다음 판에서 유령 카트로
+   같이 달리게 한다. 화면에는 지금 그 유령보다 몇 초 앞섰는지가 계속 뜬다.
+   "여기서 0.3초를 잃었구나" 를 몸으로 알게 하는 것이 이 모드의 전부다.
+
+   기록은 샘플 번호를 기준으로 남긴다 (시간이 아니라 '어디까지 왔는가').
+   그래야 코스 위 같은 지점끼리 곧바로 비교된다. */
+const TA = {
+    on: false,
+    laps: 3,                 // 세 바퀴면 감을 잡기에 충분하다
+    ghost: null,             // 이전 최고 랩의 궤적
+    rec: null,               // 지금 기록 중인 랩
+    lapStart: 0,
+    best: null,              // 이번 판에서 세운 최고 랩
+    prevBest: null,          // 들어올 때 가지고 있던 기록
+    fresh: false,            // 이번 판에 기록을 깼는가
+    delta: null,             // 유령과의 차이(초)
+    gi: 0                    // 유령 재생 커서
+};
+const GH_STEP = 4;           // 샘플 네 칸마다 한 점씩 남긴다 (파일 크기와 정밀도의 절충)
+
+function taSlots() { return Math.ceil(track.N / GH_STEP); }
+
+function taReset() {
+    ghostKart = null;                              // 자동차를 바꿨을 수 있다
+    TA.ghost = taLoadGhost(track.sys.id);
+    TA.prevBest = TA.ghost ? TA.ghost.lap : null;
+    TA.best = null; TA.fresh = false; TA.delta = null; TA.gi = 0;
+    taNewLap(0);
+}
+
+function taNewLap(at) {
+    TA.lapStart = at;
+    const n = taSlots();
+    TA.rec = { t: new Array(n).fill(-1), x: new Array(n), y: new Array(n), a: new Array(n) };
+    TA.gi = 0;
+}
+
+/* 매 프레임, 지금 서 있는 샘플에 '처음 도착한 시각'을 적는다. */
+function taRecord(k, lapTime) {
+    if (!TA.rec) return;
+    const gi = Math.floor(k.si / GH_STEP);
+    if (gi < 0 || gi >= TA.rec.t.length) return;
+    if (TA.rec.t[gi] >= 0) return;                 // 이미 지나온 곳
+    TA.rec.t[gi] = lapTime;
+    TA.rec.x[gi] = k.x; TA.rec.y[gi] = k.y; TA.rec.a[gi] = k.ang;
+}
+
+/* 빠르게 지나가 비어 버린 칸을 앞뒤로 이어 메운다. */
+function taSeal(rec) {
+    const n = rec.t.length;
+    let first = -1;
+    for (let i = 0; i < n; i++) if (rec.t[i] >= 0) { first = i; break; }
+    if (first < 0) return null;
+    for (let i = 0; i < first; i++) { rec.t[i] = rec.t[first]; rec.x[i] = rec.x[first]; rec.y[i] = rec.y[first]; rec.a[i] = rec.a[first]; }
+    for (let i = first + 1; i < n; i++) {
+        if (rec.t[i] >= 0) continue;
+        let j = i + 1;
+        while (j < n && rec.t[j] < 0) j++;
+        if (j >= n) {                              // 끝까지 비었으면 마지막 값으로 채운다
+            for (let m = i; m < n; m++) { rec.t[m] = rec.t[i - 1]; rec.x[m] = rec.x[i - 1]; rec.y[m] = rec.y[i - 1]; rec.a[m] = rec.a[i - 1]; }
+            break;
+        }
+        for (let m = i; m < j; m++) {              // 사이를 곧게 이어 준다
+            const u = (m - i + 1) / (j - i + 1);
+            rec.t[m] = rec.t[i - 1] + (rec.t[j] - rec.t[i - 1]) * u;
+            rec.x[m] = rec.x[i - 1] + (rec.x[j] - rec.x[i - 1]) * u;
+            rec.y[m] = rec.y[i - 1] + (rec.y[j] - rec.y[i - 1]) * u;
+            rec.a[m] = rec.a[i - 1] + angDiff(rec.a[j], rec.a[i - 1]) * u;
+        }
+        i = j;
+    }
+    /* 코스를 따라 앞으로 갈수록 시각은 반드시 커진다.
+       벽에 부딪혀 잠깐 뒤로 밀리거나 출발선 부근에서 샘플 번호가 되감기면
+       이 순서가 깨질 수 있는데, 그러면 '유령과의 차이' 가 수십 초씩 튄다.
+       여기서 한 번 훑어 바로잡아 둔다 — 재생도 비교도 이 순서를 믿고 돌아간다. */
+    for (let i = 1; i < n; i++) if (rec.t[i] < rec.t[i - 1]) rec.t[i] = rec.t[i - 1];
+    return rec;
+}
+
+/* 한 바퀴가 끝났다. 최고 기록이면 궤적째로 남긴다. */
+function taFinishLap(lapTime, at) {
+    if (TA.rec && (TA.best === null || lapTime < TA.best)) TA.best = lapTime;
+    const beat = TA.prevBest === null || lapTime < TA.prevBest;
+    if (TA.rec && beat && taSeal(TA.rec)) {
+        TA.rec.lap = lapTime;
+        TA.ghost = TA.rec;
+        TA.prevBest = lapTime;
+        TA.fresh = true;
+        taSaveGhost(track.sys.id, TA.rec);
+        flashBig(T('신기록!'));
+        sfxPickup();
+    }
+    taNewLap(at);
+}
+
+/* ---- 기록 저장 : 기기 안에만 둔다 (계정도 서버도 쓰지 않는다) ---- */
+function taKey(id) { return 'br_ghost_' + id; }
+
+function taSaveGhost(id, rec) {
+    try {
+        // 소수점을 잘라 크기를 줄인다 — 화면에서는 차이를 느낄 수 없다
+        localStorage.setItem(taKey(id), JSON.stringify({
+            v: 1, lap: +rec.lap.toFixed(3), n: rec.t.length,
+            t: rec.t.map(v => +v.toFixed(2)),
+            x: rec.x.map(v => Math.round(v)),
+            y: rec.y.map(v => Math.round(v)),
+            a: rec.a.map(v => +v.toFixed(2))
+        }));
+    } catch (e) {}                                  // 저장 공간이 없어도 게임은 계속된다
+}
+
+function taLoadGhost(id) {
+    try {
+        const raw = localStorage.getItem(taKey(id));
+        if (!raw) return null;
+        const g = JSON.parse(raw);
+        if (!g || g.v !== 1 || !g.t || !g.t.length) return null;
+        return g;
+    } catch (e) { return null; }
+}
+
+function taBestOf(id) { const g = taLoadGhost(id); return g ? g.lap : null; }
+
+/* ---- 유령 : 최고 랩을 그대로 다시 달린다 ---- */
+function taGhostAt(lapTime) {
+    const g = TA.ghost;
+    if (!g) return null;
+    const n = g.t.length;
+    // 앞으로만 나아가는 커서. 매 프레임 조금씩만 옮기므로 되짚지 않는다.
+    while (TA.gi < n - 1 && g.t[TA.gi + 1] <= lapTime) TA.gi++;
+    const i = TA.gi, j = Math.min(i + 1, n - 1);
+    if (i >= n - 1) return { x: g.x[n - 1], y: g.y[n - 1], a: g.a[n - 1], done: true };
+    const span = g.t[j] - g.t[i];
+    const u = span > .0001 ? clamp((lapTime - g.t[i]) / span, 0, 1) : 0;
+    return {
+        x: g.x[i] + (g.x[j] - g.x[i]) * u,
+        y: g.y[i] + (g.y[j] - g.y[i]) * u,
+        a: g.a[i] + angDiff(g.a[j], g.a[i]) * u,
+        done: false
+    };
+}
+
+/* 지금 서 있는 지점에서, 유령보다 몇 초 앞섰는가. */
+function taDeltaAt(k, lapTime) {
+    const g = TA.ghost;
+    if (!g) return null;
+    const gi = Math.floor(k.si / GH_STEP);
+    if (gi < 0 || gi >= g.t.length) return null;
+    return lapTime - g.t[gi];
+}
+
+/* 유령은 진짜 카트를 하나 만들어 두고 자리만 옮긴다.
+   손으로 필요한 값을 나열하면, 나중에 카트에 항목이 하나 늘 때마다 여기서 깨진다. */
+let ghostKart = null;
+function taMakeGhostKart() {
+    ghostKart = makeKart(false, 0, '');
+    ghostKart.isPlayer = false;
+    ghostKart.sprite = player ? player.sprite : ghostKart.sprite;
+    ghostKart.motif = player ? player.motif : ghostKart.motif;
+    ghostKart.color = '#9fd0ff';
+    ghostKart.name = '';
+}
+
+function drawGhost(g) {
+    if (!TA.on || !TA.ghost || state !== 'race' || !player) return;
+    const gp = taGhostAt(raceTime - TA.lapStart);
+    if (!gp || gp.done) return;
+    if (!ghostKart) taMakeGhostKart();
+    const k = ghostKart;
+    k.x = gp.x; k.y = gp.y; k.ang = gp.a;
+    k.wobble += .06;
+    g.save();
+    g.globalAlpha = .38;
+    drawKart(g, k);
+    g.restore();
 }
 
 /* ---- 주행 등급 : 드리프트 · 가속 유지 · 무사고 세 가지로 평가한다 ---- */
 function gradeRace(k) {
-    const laps = track.sys.laps;
+    const laps = track.laps;
 
     // 1. 드리프트 : 랩당 4회를 만점으로
     const driftScore = clamp(k.driftCount / (laps * 4), 0, 1);
@@ -5720,27 +6086,49 @@ function renderGarage() {
    AD.client / AD.slot 을 채우면 실제 애드센스 광고가 뜨고,
    비워 두면 자리만 잡아 주는 대체 화면이 나온다.
    앱(Capacitor)으로 감쌌을 때는 AdMob 전면 광고를 대신 띄운다. */
+/* ---- 전면 광고 ----
+   한 판이 끝나고 다음으로 넘어갈 때 한 번. 게임 중에는 절대 끼어들지 않는다.
+
+   켜려면 아래 세 줄만 채우면 된다.
+     client / slot   웹(애드센스).  <head> 의 스크립트 주석도 함께 풀어야 한다
+     admobId         앱(AdMob).     비워 두면 구글 테스트 광고로 돈다 */
 const AD = {
     client: '',           // 예: 'ca-pub-0000000000000000'
     slot: '',             // 애드센스 광고 단위 ID
     admobId: '',          // 예: 'ca-app-pub-.../...'  (앱 빌드용)
-    skipAfter: 5,         // 건너뛰기 버튼이 열리는 시간(초)
+
+    skipAfter: 5,         // 건너뛰기가 열리기까지(초)
     everyRaces: 1,        // 몇 판마다 띄울지
-    _count: 0
+    minGap: 45,           // 이 시간(초) 안에는 다시 띄우지 않는다
+    firstFree: 1,         // 처음 몇 판은 광고 없이 (첫인상을 지킨다)
+    maxWait: 4,           // 광고가 이 시간 안에 안 뜨면 그냥 넘어간다
+    _count: 0, _last: 0
 };
 
 function showAdBreak(done) {
+    // 한 번만 부르도록 감싼다 — 두 번 불리면 화면이 멈춘다
+    let called = false;
+    const finish = () => { if (called) return; called = true; done(); };
+
     AD._count++;
-    if (AD.everyRaces > 1 && AD._count % AD.everyRaces !== 0) return done();
+    const now = Date.now();
+    // 처음 몇 판은 그냥 보내 준다. 첫인상이 광고면 두 번째 실행이 없다.
+    if (AD._count <= AD.firstFree) return finish();
+    if (AD.everyRaces > 1 && AD._count % AD.everyRaces !== 0) return finish();
+    // 너무 자주 뜨지 않게 (짧게 끊고 다시 시작하는 경우)
+    if (AD._last && now - AD._last < AD.minGap * 1000) return finish();
+    AD._last = now;
 
     // 앱에서는 네이티브 전면 광고를 쓴다 (있을 때만)
     const admob = window.admob || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob);
     if (admob && AD.admobId) {
+        // 광고가 안 뜨거나 응답이 없어도 게임이 멈추면 안 된다
+        const bail = setTimeout(finish, AD.maxWait * 1000);
         Promise.resolve()
             .then(() => admob.prepareInterstitial({ adId: AD.admobId }))
             .then(() => admob.showInterstitial())
-            .then(done)
-            .catch(done);                       // 광고가 실패해도 게임은 막지 않는다
+            .then(() => { clearTimeout(bail); finish(); })
+            .catch(() => { clearTimeout(bail); finish(); });
         return;
     }
 
@@ -5757,24 +6145,26 @@ function showAdBreak(done) {
         slot.appendChild(ins);
         try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
     } else {
-        slot.innerHTML = '<div>광고 자리<br><small style="opacity:.6">AD.client / AD.slot 을 채우면 실제 광고가 표시됩니다</small></div>';
+        slot.innerHTML = '<div>' + T('광고 자리') +
+            '<br><small style="opacity:.6">AD.client / AD.slot</small></div>';
     }
 
     ov.classList.remove('hidden');
     let left = AD.skipAfter;
     skip.disabled = true;
-    skip.textContent = left + '초 후 건너뛰기';
+    const waitTxt = n => LANG === 'en' ? ('Skip in ' + n + 's') : (n + '초 후 건너뛰기');
+    skip.textContent = waitTxt(left);
     const tick = setInterval(() => {
         left--;
-        if (left > 0) skip.textContent = left + '초 후 건너뛰기';
-        else { clearInterval(tick); skip.disabled = false; skip.textContent = '건너뛰기'; }
+        if (left > 0) skip.textContent = waitTxt(left);
+        else { clearInterval(tick); skip.disabled = false; skip.textContent = T('건너뛰기'); }
     }, 1000);
     skip.onclick = () => {
         if (skip.disabled) return;
         clearInterval(tick);
         ov.classList.add('hidden');
         slot.innerHTML = '';
-        done();
+        finish();
     };
 }
 
@@ -6138,23 +6528,38 @@ function endRace() {
             `${fmtTime(save.bestLap[track.sys.id])}${newLapRecord ? ' ' + T('신기록') : ''}</td></tr></table>`;
     } else el('lapBox').innerHTML = '';
 
-    // ── 포인트 정산 : 순위 보너스 + 신기록 보너스
-    const rankBonus = [120, 80, 50, 30][player.rank - 1] || 20;
+    /* ── 포인트 정산
+       타임 어택은 혼자 달리므로 순위가 늘 1등이다. 여기에 순위 보너스를 주면
+       그냥 포인트 자판기가 된다. 대신 자기 기록을 깼을 때만 값을 쳐 준다.
+       바퀴 수도 다르므로(3바퀴) 총 기록 칸에도 손대지 않는다 — 5바퀴 기록과
+       섞이면 둘 다 뜻을 잃는다. */
     const id = track.sys.id;
-    const isBest = !save.best[id] || player.finishTime < save.best[id];
-    const bestBonus = isBest ? 100 : 0;
-    if (isBest) save.best[id] = player.finishTime;
+    const rankBonus = TA.on ? 0 : ([120, 80, 50, 30][player.rank - 1] || 20);
+    let isBest, bestBonus;
+    if (TA.on) {
+        isBest = TA.fresh;
+        bestBonus = TA.fresh ? 150 : 0;
+    } else {
+        isBest = !save.best[id] || player.finishTime < save.best[id];
+        bestBonus = isBest ? 100 : 0;
+        if (isBest) save.best[id] = player.finishTime;
+    }
     const gradeBonus = { S: 150, A: 100, B: 60, C: 30, D: 10 }[G.grade];
     const total = player.earned + rankBonus + bestBonus + gradeBonus;
     save.points += total;
     writeSave();
 
     el('resPoints').innerHTML =
-        `${T('주행')} <b>${player.earned}</b> + ${T('순위')} <b>${rankBonus}</b>` +
+        `${T('주행')} <b>${player.earned}</b>` +
+        (TA.on ? '' : ` + ${T('순위')} <b>${rankBonus}</b>`) +
         ` + <b style="color:${G.color}">${G.grade} ${gradeBonus}</b>` +
         (bestBonus ? ` + <b style="color:#7ee081">${T('신기록')} ${bestBonus}</b>` : '') +
         ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>`;
-    if (isBest) el('resBest').textContent = T('신기록') + ' ' + fmtTime(player.finishTime);
+    if (TA.on) {
+        const b = TA.prevBest;
+        el('resBest').textContent = (TA.fresh ? T('랩 신기록') : T('최고 랩')) +
+            (b ? ' ' + fmtTime(b) : '');
+    } else if (isBest) el('resBest').textContent = T('신기록') + ' ' + fmtTime(player.finishTime);
     else el('resBest').textContent = T('최고 기록') + ' ' + fmtTime(save.best[id]);
     renderGarage();
 
@@ -6212,7 +6617,7 @@ function loop(now) {
         karts.forEach(k => updateKart(k, dt));
         netInterp(dt); netSend();
         kartCollisions(); updateRanks();
-        karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.sys.laps) finishKart(k); });
+        karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.laps) finishKart(k); });
     } else if (state === 'finish') {
         if (victory) updateVictory(dt);          // 무대 연출 중에는 트랙을 돌리지 않는다
         else karts.forEach(k => updateKart(k, dt));
@@ -6516,11 +6921,23 @@ function drawPreview(cv, sys) {
 }
 
 function refreshModeUI() {
-    const online = document.querySelector('.modeBtn.sel').dataset.mode === '2';
+    const mode = document.querySelector('.modeBtn.sel').dataset.mode;
+    const online = mode === '2', time = mode === '3';
     el('onlineBox').style.display = online ? 'block' : 'none';
+    el('taBox').style.display = time ? 'block' : 'none';
     el('startBtn').style.display = online ? 'none' : '';
+    el('startBtn').textContent = T(time ? '기록 도전' : '레이스 시작');
     if (!online) { netCleanup(); netStatus(''); }
+    if (time) renderTaRecords();
     syncKeys();
+}
+
+// 메뉴에서 코스별 최고 랩을 한눈에 보여 준다 — 아직 없는 코스가 곧 할 일이 된다
+function renderTaRecords() {
+    el('taRecords').innerHTML = Object.keys(SYSTEMS).map(id => {
+        const b = taBestOf(id);
+        return `<span class="taRec">${T(SYSTEMS[id].name)}<b>${b ? fmtTime(b) : '--:--.--'}</b></span>`;
+    }).join('');
 }
 
 document.querySelectorAll('.modeBtn').forEach(b => {
@@ -6909,7 +7326,8 @@ el('exitRace').onclick = () => {
 el('retryBtn').onclick = () => {
     const id = track.sys.id;
     el('result').classList.add('hidden');
-    showAdBreak(() => startRace(id));          // 다음 판으로 넘어갈 때 광고
+    const again = TA.on;                       // 같은 모드로 다시 달린다
+    showAdBreak(() => startRace(id, again));    // 다음 판으로 넘어갈 때 광고
 };
 el('menuBtn').onclick = () => {
     el('result').classList.add('hidden');
