@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0923</div>
+<div id="build">v260808.0932</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5606,6 +5606,105 @@ function showAdBreak(done) {
     };
 }
 
+
+/* ---- 옆모습 카트 ----
+   위에서 내려다본 카트와 '같은 차'로 보여야 한다.
+   그래서 부품과 색을 그대로 가져온다 —
+   둥근 차체 · 짙은 앞코와 뒷날개 · 작은 콕핏 · 차체 색 헬멧 · 노출된 바퀴.
+   원점은 바퀴가 닿는 땅이고 오른쪽(+x)이 앞이다.
+   (뒤집어 그리면 왼쪽으로 달린다) */
+function drawKartSide(g, k, spin, bounce) {
+    const C = k.color;
+    const DK = shade(C, -.35);                       // 앞코 · 뒷날개 (위에서 본 것과 같은 값)
+    const WR = 16;
+    g.save();
+    g.translate(0, -WR + bounce);
+
+    // 땅 그림자
+    g.save(); g.translate(0, WR - bounce);
+    g.fillStyle = 'rgba(0,0,0,.3)';
+    g.beginPath(); g.ellipse(0, 5, 50, 7, 0, 0, TAU); g.fill();
+    g.restore();
+
+    const wheel = (x, r) => {
+        g.save(); g.translate(x, WR - r);
+        g.fillStyle = '#121418';
+        g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+        g.strokeStyle = '#0b0c0f'; g.lineWidth = 2.5; g.stroke();
+        g.rotate(spin);
+        g.fillStyle = '#d3dae2';
+        g.beginPath(); g.arc(0, 0, r * .46, 0, TAU); g.fill();
+        g.strokeStyle = '#8d97a3'; g.lineWidth = 1.8;
+        for (let i = 0; i < 3; i++) {
+            const a = i / 3 * Math.PI;
+            g.beginPath();
+            g.moveTo(Math.cos(a) * r * .4, Math.sin(a) * r * .4);
+            g.lineTo(-Math.cos(a) * r * .4, -Math.sin(a) * r * .4);
+            g.stroke();
+        }
+        g.restore();
+    };
+
+    wheel(-27, WR);                                   // 뒷바퀴 (조금 크다)
+
+    // 뒷날개 : 위에서 본 것과 같은 짙은 색
+    g.fillStyle = DK;
+    g.fillRect(-40, -30, 4, 16);
+    g.beginPath(); g.roundRect(-48, -34, 20, 5, 2.5); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 2;
+    g.beginPath(); g.roundRect(-48, -34, 20, 5, 2.5); g.stroke();
+
+    // 차체 : 위에서 본 것처럼 앞뒤가 둥글고 가운데가 두툼하다
+    const body = g.createLinearGradient(0, -24, 0, 0);
+    body.addColorStop(0, shade(C, .34)); body.addColorStop(.5, C); body.addColorStop(1, shade(C, -.24));
+    g.fillStyle = body;
+    g.beginPath();
+    g.moveTo(-38, -6);
+    g.quadraticCurveTo(-40, -18, -28, -19);           // 엔진 쪽 어깨
+    g.lineTo(-6, -21);
+    g.quadraticCurveTo(10, -22, 22, -17);             // 앞으로 낮아지는 선
+    g.lineTo(36, -11);
+    g.quadraticCurveTo(42, -9, 42, -5);
+    g.quadraticCurveTo(42, -1, 36, -1);
+    g.lineTo(-34, -1);
+    g.quadraticCurveTo(-38, -1, -38, -6);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 3.4; g.lineJoin = 'round'; g.stroke();
+
+    // 윗면 반사광 (위에서 본 것과 같은 흰 띠)
+    g.fillStyle = 'rgba(255,255,255,.32)';
+    g.beginPath(); g.roundRect(-30, -17, 46, 5, 2.5); g.fill();
+
+    // 콕핏 : 작게 파인 자리
+    g.fillStyle = '#262b34';
+    g.beginPath(); g.roundRect(-16, -22, 22, 9, 4); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 2; g.stroke();
+    // 드라이버 : 살굿빛 얼굴에 차체 색 헬멧
+    g.fillStyle = '#f6c9a0';
+    g.beginPath(); g.arc(-4, -24, 6, 0, TAU); g.fill();
+    g.fillStyle = shade(C, .2);
+    g.beginPath(); g.arc(-4, -24.4, 6, Math.PI, TAU); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 1.8; g.stroke();
+
+    // 앞코
+    g.fillStyle = DK;
+    g.beginPath(); g.roundRect(38, -9, 10, 7, 3); g.fill();
+    g.strokeStyle = '#0e0e0e'; g.lineWidth = 2; g.stroke();
+
+    // 카트 표식 (위에서 본 카트도 앞코에 붙어 있다)
+    if (k.motif) {
+        g.save(); g.scale(-1, 1);                     // 뒤집힌 화면에서도 글자는 바로 읽히게
+        g.fillStyle = 'rgba(255,255,255,.92)';
+        g.font = 'bold 11px sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(k.motif, -26, -12);
+        g.restore();
+    }
+
+    wheel(27, WR * .88);                              // 앞바퀴 (조금 작다)
+    g.restore();
+}
+
 /* ---- 완주 무대 ----
    골인하자마자 결과창이 뜨면 장난감 멈추듯 뚝 끊긴다.
    그래서 따로 무대를 하나 만든다 — 카트가 옆으로 달려가고,
@@ -5624,7 +5723,7 @@ function updateVictory(dt) {
     if (!victory) return;
     victory.t += dt;
     victory.scroll += dt * 420;                   // 배경이 흘러가는 속도
-    if (victory.t > 5.2) { victory = null; showResult(); }
+    if (victory.t > 4.4) { victory = null; showResult(); }
 }
 
 /* 왼쪽 성적표에 올라올 줄들. 시간이 지나며 하나씩 나타난다. */
@@ -5632,15 +5731,15 @@ function victoryRows(G) {
     const lt = player.lapTimes;
     const best = lt.length ? Math.min(...lt) : 0;
     return [
-        { at: .5,  label: T('순위'),      value: LANG === 'en'
+        { at: .55, label: T('순위'),      value: LANG === 'en'
             ? (['1st','2nd','3rd','4th'][player.rank - 1] || player.rank) : player.rank + '위',
           big: true },
-        { at: .9,  label: T('기록'),      value: fmtTime(player.finishTime) },
-        { at: 1.2, label: T('베스트랩'),  value: fmtTime(best) },
-        { at: 1.5, label: T('최고 속도'), value: Math.round(player.topSpeed * .22) + ' km/h' },
-        { at: 1.8, label: T('드리프트'),  value: G.driftCount + T('회'), bar: G.drift },
-        { at: 2.1, label: T('가속 유지'), value: G.throttle + '%',       bar: G.throttle },
-        { at: 2.4, label: T('무사고'),    value: T('충돌') + ' ' + G.wallHits, bar: G.crash }
+        { at: .70, label: T('기록'),      value: fmtTime(player.finishTime) },
+        { at: .85, label: T('베스트랩'),  value: fmtTime(best) },
+        { at: 1.00, label: T('최고 속도'), value: Math.round(player.topSpeed * .22) + ' km/h' },
+        { at: 1.15, label: T('드리프트'),  value: G.driftCount + T('회'), bar: G.drift },
+        { at: 1.30, label: T('가속 유지'), value: G.throttle + '%',       bar: G.throttle },
+        { at: 1.45, label: T('무사고'),    value: T('충돌') + ' ' + G.wallHits, bar: G.crash }
     ];
 }
 
@@ -5659,7 +5758,7 @@ function drawVictory(g) {
     g.save();
     g.globalAlpha = .16; g.fillStyle = '#fff';
     for (let i = -1; i < VW / 120 + 2; i++) {
-        const x = ((i * 120 - sc * .35) % (VW + 240) + VW + 240) % (VW + 240) - 120;
+        const x = ((i * 120 + sc * .35) % (VW + 240) + VW + 240) % (VW + 240) - 120;
         g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 44, 0); g.lineTo(x - 16, VH); g.lineTo(x - 60, VH);
         g.closePath(); g.fill();
     }
@@ -5677,77 +5776,106 @@ function drawVictory(g) {
     // 흐르는 중앙선
     g.save();
     g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 6;
-    g.setLineDash([46, 40]); g.lineDashOffset = sc;
+    g.setLineDash([46, 40]); g.lineDashOffset = -sc;
     g.beginPath(); g.moveTo(0, roadY + roadH / 2); g.lineTo(VW, roadY + roadH / 2); g.stroke();
     // 가장자리 발광 라인
-    g.setLineDash([26, 64]); g.lineDashOffset = -sc * 1.4;
+    g.setLineDash([26, 64]); g.lineDashOffset = sc * 1.4;
     g.strokeStyle = '#eaf6ff'; g.lineWidth = 4;
     g.beginPath(); g.moveTo(0, roadY + 6); g.lineTo(VW, roadY + 6);
     g.moveTo(0, roadY + roadH - 14); g.lineTo(VW, roadY + roadH - 14); g.stroke();
     g.restore();
 
-    // ── 카트 : 오른쪽에서 미끄러져 들어와 자리를 잡는다
+    // ── 카트 : 왼쪽을 향해 달린다. 오른쪽 밖에서 들어와 오른쪽 편에 자리를 잡는다.
     const inX = clamp(t / .7, 0, 1);
-    const kx = VW * (1.25 - .55 * (inX * (2 - inX)));      // 부드럽게 감속
+    const kx = VW * (1.3 - .38 * (inX * (2 - inX)));       // 부드럽게 감속
     const ky = roadY + roadH / 2 + Math.sin(t * 6) * 3;
     g.save();
-    g.translate(kx, ky);
-    g.scale(1.5, 1.5);
-    const bak = { x: player.x, y: player.y, ang: player.ang };
-    player.x = 0; player.y = 0; player.ang = 0;
-    drawKart(g, player);
-    player.x = bak.x; player.y = bak.y; player.ang = bak.ang;
+    g.translate(kx, roadY + roadH * .62);
+    const sc2 = Math.min(1.7, VH / 420);
+    g.scale(-sc2, sc2);                                    // 좌우를 뒤집어 왼쪽을 보게 한다
+    drawKartSide(g, player, -sc * .05, Math.sin(t * 9) * 1.6);
     g.restore();
 
-    // ── 왼쪽 성적표
-    const PX = 42, PW = Math.min(360, VW * .42);
-    g.save();
-    g.globalAlpha = clamp(t / .35, 0, 1);
-    g.fillStyle = 'rgba(8,14,22,.78)';
-    g.beginPath(); g.roundRect(PX - 16, VH * .10, PW, VH * .52, 18); g.fill();
-    g.strokeStyle = G.color; g.lineWidth = 3;
-    g.beginPath(); g.roundRect(PX - 16, VH * .10, PW, VH * .52, 18); g.stroke();
-    g.restore();
+    /* ── 성적표 : 왼쪽에서 띠가 하나씩 슥 밀려 들어온다.
+       상자를 먼저 띄우고 그 안을 채우는 대신, 띠 자체가 화면 밖에서 날아온다.
+       마지막 띠가 자리를 잡으면 등급이 그 위에 찍힌다. */
+    const rows = victoryRows(G);
+    const BH = 34, BX = 26, BW = Math.min(340, VW * .44);
+    const top = VH * .13;
 
     // 등급 도장
-    if (t > .15) {
-        const a = clamp((t - .15) / .25, 0, 1);
-        const pop = t - .15 < .25 ? 2.2 - a * 1.2 : 1;
+    if (t > .2) {
+        const a = clamp((t - .2) / .24, 0, 1);
+        const pop = t - .2 < .24 ? 2.1 - a * 1.1 : 1;
         g.save();
         g.globalAlpha = a;
-        g.translate(PX + PW * .5 - 16, VH * .10 + 74);
+        g.translate(BX + 52, top + 6);
         g.scale(pop, pop);
-        g.font = 'bold 86px sans-serif';
+        g.font = 'bold 76px sans-serif';
         g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.lineWidth = 13; g.strokeStyle = '#0d1119'; g.lineJoin = 'round';
+        g.lineWidth = 12; g.strokeStyle = '#0d1119'; g.lineJoin = 'round';
         g.strokeText(G.grade, 0, 0);
         g.fillStyle = G.color; g.fillText(G.grade, 0, 0);
-        g.font = 'bold 19px sans-serif';
+        g.restore();
+
+        g.save(); g.globalAlpha = a;
+        g.font = 'bold 20px sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
         g.lineWidth = 7; g.strokeStyle = '#0d1119';
-        g.strokeText(T(G.word), 0, 62); g.fillStyle = '#fff'; g.fillText(T(G.word), 0, 62);
+        g.strokeText(T(G.word), BX + 104, top - 4);
+        g.fillStyle = '#fff'; g.fillText(T(G.word), BX + 104, top - 4);
+        g.font = 'bold 14px sans-serif';
+        g.lineWidth = 6; g.strokeStyle = '#0d1119';
+        g.strokeText(G.total + T('점'), BX + 104, top + 20);
+        g.fillStyle = G.color; g.fillText(G.total + T('점'), BX + 104, top + 20);
         g.restore();
     }
 
-    // 한 줄씩 올라오는 기록
-    const rows = victoryRows(G);
+    // 띠들
     g.textBaseline = 'middle';
     rows.forEach((r, i) => {
         if (t < r.at) return;
-        const a = clamp((t - r.at) / .22, 0, 1);
-        const y = VH * .10 + 176 + i * 34 + (1 - a) * 14;
-        g.save(); g.globalAlpha = a;
-        g.font = 'bold 14px sans-serif'; g.textAlign = 'left';
-        g.fillStyle = '#9fd0ff'; g.fillText(r.label, PX, y);
-        g.font = 'bold ' + (r.big ? 21 : 16) + 'px sans-serif'; g.textAlign = 'right';
-        g.fillStyle = r.big ? '#ffe066' : '#fff';
-        g.fillText(r.value, PX + PW - 44, y);
-        if (r.bar !== undefined) {                       // 막대는 이름 밑에 얇게
-            g.fillStyle = 'rgba(255,255,255,.14)';
-            g.fillRect(PX, y + 12, PW - 60, 4);
+        const p = clamp((t - r.at) / .26, 0, 1);
+        const ease = 1 - Math.pow(1 - p, 3);              // 빠르게 들어와 부드럽게 멈춘다
+        const x = BX - (BW + 60) * (1 - ease);            // 화면 밖에서 밀려 들어온다
+        const y = top + 62 + i * (BH + 5);
+
+        g.save();
+        g.translate(x, y);
+
+        // 띠 몸통 : 오른쪽 끝을 사선으로 잘라 속도감을 준다
+        const cut = 16;
+        g.beginPath();
+        g.moveTo(0, 0); g.lineTo(BW - cut, 0);
+        g.lineTo(BW, BH); g.lineTo(0, BH);
+        g.closePath();
+        g.fillStyle = 'rgba(8,14,22,.86)'; g.fill();
+        // 왼쪽 끝에 등급 색 마감
+        g.fillStyle = r.bar !== undefined ? G.color : '#3f6c9c';
+        g.fillRect(0, 0, 5, BH);
+
+        // 막대는 띠 안을 채운다 (등급을 이루는 항목)
+        if (r.bar !== undefined) {
+            g.globalAlpha = .22;
             g.fillStyle = G.color;
-            g.fillRect(PX, y + 12, (PW - 60) * (r.bar / 100) * a, 4);
+            g.fillRect(5, 0, (BW - cut - 5) * (r.bar / 100) * ease, BH);
+            g.globalAlpha = 1;
         }
+
+        g.font = 'bold 13px sans-serif'; g.textAlign = 'left';
+        g.fillStyle = '#9fd0ff'; g.fillText(r.label, 16, BH / 2);
+        g.font = 'bold ' + (r.big ? 20 : 16) + 'px sans-serif'; g.textAlign = 'right';
+        g.fillStyle = r.big ? '#ffe066' : '#fff';
+        g.fillText(r.value, BW - cut - 12, BH / 2);
         g.restore();
+
+        // 들어오는 순간 뒤로 빛 꼬리
+        if (p < 1) {
+            g.save();
+            g.globalAlpha = (1 - p) * .5;
+            g.fillStyle = G.color;
+            g.fillRect(x + BW - cut, y + 2, 120 * (1 - p), BH - 4);
+            g.restore();
+        }
     });
     g.globalAlpha = 1;
 }
