@@ -759,6 +759,29 @@
         #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
     }
 
+/* ---- 말풍선 고르는 판 ---- */
+#emotePad {
+    position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%);
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    background: rgba(12,20,36,.94); border: 1px solid rgba(120,170,240,.34);
+    border-radius: 14px; padding: 12px; z-index: 32;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
+#emotePad button {
+    background: rgba(30,48,78,.9); color: #e6f0ff; cursor: pointer;
+    border: 1px solid rgba(120,170,240,.3); border-radius: 9px;
+    padding: 11px 14px; font: inherit; font-size: 14px; font-weight: 700;
+    white-space: nowrap; min-width: 74px;
+}
+#emotePad button:active { background: #2f6ea8; }
+#emotePad button i { display: block; font-style: normal; font-size: 10px;
+                     color: #7f97b8; font-weight: 400; margin-top: 2px; }
+@media (max-width: 560px) {
+    #emotePad { grid-template-columns: repeat(2, 1fr); bottom: 120px; padding: 9px; gap: 6px; }
+    #emotePad button { font-size: 13px; padding: 9px 10px; min-width: 0; }
+}
+.obNote { font-size: 12px; color: #8fa6c4; margin: -2px 0 10px; }
+
 /* ---- 온라인 : 연결 경고 · 로비 색점 ---- */
 #netWarn {
     position: absolute; left: 50%; top: 64px; transform: translateX(-50%);
@@ -877,7 +900,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1337</div>
+<div id="build">v260808.1555</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -891,7 +914,11 @@
     <div class="tbtn" id="tTurbo">터보<i id="tTurboN"></i></div>
     <div class="tbtn" id="tItem">아이템</div>
     <div class="tbtn" id="tBrake">브레이크</div>
+    <!-- 정해진 말 한마디. 자유 입력은 없다. -->
+    <div class="tbtn" id="tTalk">말</div>
 </div>
+
+<div id="emotePad" class="hidden"></div>
 
 <!-- 카톡·인스타 같은 앱 안에서 열렸을 때 뜨는 안내.
      인앱 브라우저는 캐시를 세게 잡고 전체 화면도 안 되어 게임이 제대로 돌지 않는다. -->
@@ -967,8 +994,13 @@
     </div>
 
     <div id="onlineBox" style="display:none">
+        <!-- 코드 없이 아무나 만나기. 자리 남은 방에 붙고, 없으면 하나 열고 기다린다. -->
         <div class="obRow">
-            <button class="btn small" id="createRoom">방 만들기</button>
+            <button class="btn" id="quickBtn">빠른 대전</button>
+        </div>
+        <div class="obNote">코드 없이 지금 접속한 사람들과 바로 달립니다</div>
+        <div class="obRow">
+            <button class="btn small" id="createRoom">친구방 만들기</button>
             <span class="obOr">또는</span>
             <input id="roomInput" maxlength="6" placeholder="코드 6자리">
             <button class="btn small" id="joinRoom">참가</button>
@@ -1237,6 +1269,19 @@ const EN = {
 
 // 온라인
 '연결이 끊겼습니다 · 다시 잇는 중': 'Disconnected · reconnecting',
+'빠른 대전': 'QUICK RACE', '친구방 만들기': 'Create friend room',
+'코드 없이 지금 접속한 사람들과 바로 달립니다': 'Race whoever is online right now — no code needed',
+'같이 달릴 사람을 찾는 중…': 'Looking for someone to race…',
+'방을 열고 기다립니다…': 'Opening a room and waiting…',
+'같이 달릴 사람을 기다리는 중': 'Waiting for someone to join',
+'곧 출발합니다': 'Starting soon', '초': 's',
+'혼자 출발합니다': 'Starting on your own',
+'같이 달릴 사람이 없어 컴퓨터 카트와 달립니다.': 'Nobody showed up, so you will race computer karts.',
+'이미 출발한 방입니다.': 'That race has already started.',
+'말': 'Say',
+// 말풍선 (정해진 문구만 — 자유 입력은 없다)
+'안녕!': 'Hi!', '가자!': "Let's go!", '잘한다!': 'Nice one!', '고마워!': 'Thanks!',
+'미안!': 'Sorry!', '아깝다': 'So close', '우와!': 'Whoa!', '한 판 더!': 'One more!',
 '다시 연결됨': 'Reconnected', '로비로': 'BACK TO LOBBY',
 '방을 만드는 중…': 'Creating a room…', '방을 찾는 중…': 'Looking for the room…',
 '방을 만들지 못했습니다. 잠시 뒤 다시 시도해 주세요.': 'Could not create a room. Please try again in a moment.',
@@ -3343,6 +3388,8 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     // 기관 게이트는 맨 위에. 다리가 그 위를 덮으면 이름이 묻히고,
     //   구간이 맞물리는 자리의 어색한 이음매도 가려 주지 못한다.
     drawGates(g, inView);
+
+    drawBubbles(g);                    // 말풍선은 카트보다 위, 화면 표시보다 아래
 
     drawSticky(g);
     drawReabsorb(g, inView);
@@ -5541,8 +5588,15 @@ function playBeep(freq, dur) {
    ========================================================================== */
 const WAIT_LIMIT  = 300;   // 방에서 친구를 기다리는 최대 시간(초)
 const MAX_PLAYERS = 4;
-const SEND_EVERY  = 80;    // 내 좌표를 올리는 간격(ms) — 초당 12번쯤
+/* 좌표를 올리는 간격(ms).
+   파이어베이스 요금은 내려받은 양으로 매겨진다. 방 하나에 네 명이면 내가 한 번
+   올릴 때마다 세 사람이 내려받으므로, 이 값이 곧 요금이다.
+   자리 예측(dead reckoning)이 사이를 메워 주므로 초당 8번이면 눈에 차이가 없다. */
+const SEND_EVERY  = 125;
 const PEER_STALE  = 2.5;   // 이만큼 소식이 없으면 AI 가 대신 몬다(초)
+const PUB_STALE   = 180;   // 공개 명단에서 이만큼 지난 방은 죽은 것으로 본다(초)
+const PUB_ALONE   = 25;    // 혼자면 이만큼 기다렸다 그냥 출발(초)
+const PUB_FILL    = 8;     // 둘 이상 모이면 이만큼 뒤 자동 출발(초)
 
 const net = {
     on: false,            // 온라인 모드로 달리는 중인가
@@ -5559,6 +5613,8 @@ const net = {
     live: true,           // 지금 서버와 이어져 있는가
     lastRaceAt: 0,        // 이미 시작한 신호는 다시 받지 않는다
     swept: false,         // 빈 방을 이미 치웠는가 (두 번 치우려다 되돌지 않게)
+    pub: false,           // 빠른 대전으로 잡힌 방인가 (공개 명단에 올라간다)
+    autoAt: 0,            // 자동 출발 시각
     lobbyUnsub: [], raceUnsub: [],
     roomKill: null
 };
@@ -5611,6 +5667,7 @@ function netCleanup() {
     net.waitLeft = 0;
     netDrop(net.lobbyUnsub); netDrop(net.raceUnsub);
     if (window.FB && net.roomId && net.myId) {
+        if (net.pub && net.isHost) pubRemove();
         // 방장이 로비에서 나가면 방을 닫는다. 남은 사람이 빈 방을 보고 있을 이유가 없다.
         try {
             if (net.isHost) FB.remove(FB.ref(FB.db, `rooms/${net.roomId}`));
@@ -5623,18 +5680,69 @@ function netCleanup() {
     if (net.roomKill) { try { net.roomKill.cancel(); } catch (e) {} net.roomKill = null; }
     netResetPeers();
     net.on = false; net.roomId = null; net.myId = null; net.isHost = false;
-    net.lastRaceAt = 0; net.swept = false;
+    net.lastRaceAt = 0; net.swept = false; net.pub = false; net.autoAt = 0;
     netShowWarn();
+}
+
+/* ---- 공개 명단 ----
+   보안 규칙은 방 목록을 통째로 읽는 것을 막는다. 그래야 남의 방을 훑을 수 없다.
+   그래서 '누구나 들어와도 되는 방' 만 따로 작은 명단에 올린다.
+   코드로 만든 방은 여기 올라가지 않는다 — 친구끼리 하던 방식은 그대로다. */
+function pubPublish(n) {
+    if (!net.pub || !net.roomId || !window.FB) return;
+    FB.set(FB.ref(FB.db, `lobby/open/${net.roomId}`),
+           { n: clamp(n | 0, 0, MAX_PLAYERS), map: net.mapId, at: Date.now() }).catch(() => {});
+}
+function pubRemove(code) {
+    const c = code || net.roomId;
+    if (!c || !window.FB) return;
+    try { FB.remove(FB.ref(FB.db, `lobby/open/${c}`)); } catch (e) {}
+}
+
+/* ---- 빠른 대전 ----
+   자리가 남은 공개방이 있으면 붙고, 없으면 하나 열어 놓고 기다린다.
+   기다리다 아무도 안 오면 혼자라도 출발한다 — 눌렀는데 아무 일도 안 일어나는
+   것이 가장 나쁘다. */
+async function quickMatch() {
+    if (!window.FB) { netStatus(T('온라인 기능을 사용할 수 없습니다.')); return; }
+    netWatchInfo();
+    netCleanup();
+    netStatus(T('같이 달릴 사람을 찾는 중…'));
+
+    let open = {};
+    try {
+        const sn = await FB.get(FB.ref(FB.db, 'lobby/open'));
+        open = sn.val() || {};
+    } catch (e) {}
+
+    const now = Date.now();
+    const list = Object.keys(open).filter(c => {
+        const r = open[c];
+        // 시각에는 | 0 을 쓰면 안 된다. 32비트를 넘는 수가 잘려 엉뚱한 값이 된다.
+        return c.length === 6 && r && (r.n | 0) < MAX_PLAYERS &&
+               now - (+r.at || 0) < PUB_STALE * 1000;
+    });
+    // 다들 같은 방으로 몰리지 않게 순서를 섞는다
+    for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+    }
+
+    for (const code of list) {
+        if (await joinCode(code, true)) return;      // 붙었다
+        pubRemove(code);                             // 이미 죽은 방이면 명단에서 지운다
+    }
+    await createRoom(true);                          // 없으면 내가 연다
 }
 
 /* ---- 방 만들기 ----
    예전에는 만든 코드를 그냥 덮어썼다. 아주 드물지만 같은 코드가 두 번 나오면
    먼저 놀고 있던 친구들의 방이 소리 없이 사라졌다. 이제는 빈 자리에만 쓴다. */
-async function createRoom() {
+async function createRoom(pub) {
     if (!window.FB) { netStatus(T('온라인 기능을 사용할 수 없습니다. 인터넷 연결을 확인해 주세요.')); return; }
     netWatchInfo();
-    netCleanup();
-    netStatus(T('방을 만드는 중…'));
+    if (!pub) netCleanup();                          // 빠른 대전은 이미 치우고 들어온다
+    netStatus(T(pub ? '방을 열고 기다립니다…' : '방을 만드는 중…'));
 
     const myId = 'p' + Math.random().toString(36).slice(2, 9);
     let code = null;
@@ -5657,10 +5765,17 @@ async function createRoom() {
     net.isHost = true; net.hostId = myId;
     net.mapId = selectedId;
     net.mySeat = 0; net.myName = seatName(0);
+    net.pub = !!pub;
 
     // 로비에서 방장이 끊기면 방을 통째로 닫는다 (출발한 뒤에는 이 예약을 거둔다)
     net.roomKill = FB.onDisconnect(FB.ref(FB.db, `rooms/${code}`));
     net.roomKill.remove();
+
+    if (net.pub) {
+        pubPublish(1);
+        // 내가 사라지면 명단에서도 사라져야 한다. 안 그러면 죽은 방으로 사람이 몰린다.
+        try { FB.onDisconnect(FB.ref(FB.db, `lobby/open/${code}`)).remove(); } catch (e) {}
+    }
 
     watchLobby(code);
     startWaitTimer();
@@ -5677,10 +5792,18 @@ async function joinRoom() {
     netWatchInfo();
     netCleanup();
     netStatus(T('방을 찾는 중…'));
+    if (!(await joinCode(code, false)))
+        netStatus(T(joinCode.why || '그런 방이 없습니다. 코드를 다시 확인해 주세요.'));
+}
 
-    const snap = await FB.get(FB.ref(FB.db, `rooms/${code}`));
-    if (!snap.exists()) { netStatus(T('그런 방이 없습니다. 코드를 다시 확인해 주세요.')); return; }
+/* 코드 하나에 붙어 본다. 되면 true. 빠른 대전은 여러 방에 차례로 시도한다. */
+async function joinCode(code, pub) {
+    joinCode.why = '';
+    let snap;
+    try { snap = await FB.get(FB.ref(FB.db, `rooms/${code}`)); } catch (e) { return false; }
+    if (!snap.exists()) { joinCode.why = '그런 방이 없습니다. 코드를 다시 확인해 주세요.'; return false; }
     const room = snap.val();
+    if (room.race) { joinCode.why = '이미 출발한 방입니다.'; return false; }   // 달리는 중이면 끼어들지 않는다
 
     const myId = 'p' + Math.random().toString(36).slice(2, 9);
     let seat = -1;
@@ -5699,19 +5822,21 @@ async function joinRoom() {
             seat = r.snapshot.val()[myId].seat;
     } catch (e) {}
 
-    if (seat < 0) { netStatus(T('방이 가득 찼습니다 (최대 4명).')); return; }
+    if (seat < 0) { joinCode.why = '방이 가득 찼습니다 (최대 4명).'; return false; }
 
     net.roomId = code; net.myId = myId;
     net.isHost = false; net.hostId = room.hostId || null;
     net.mapId = room.mapId || 'circulatory';
-    selectedId = net.mapId;
+    selectedId = net.mapId;                       // 방장이 고른 코스를 따라간다
     net.mySeat = seat; net.myName = seatName(seat);
+    net.pub = !!pub;
 
     FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/players/${myId}`)).remove();
     FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/ghosts/${myId}`)).remove();
 
     watchLobby(code);
     startWaitTimer();
+    return true;
 }
 
 // 5분 안에 아무도 안 들어오면 방을 닫는다
@@ -5721,6 +5846,7 @@ function startWaitTimer() {
     net.waitTimer = setInterval(() => {
         if (net.on || state !== 'menu') { clearInterval(net.waitTimer); net.waitTimer = null; return; }
         net.waitLeft--;
+        if (net.pub && pubTick()) return;          // 공개방은 스스로 출발한다
         renderRoomStatus();
         if (net.waitLeft <= 0) {
             clearInterval(net.waitTimer); net.waitTimer = null;
@@ -5729,6 +5855,38 @@ function startWaitTimer() {
                       T('다시 만들거나, 친구에게 코드를 보내고 참가해 보세요.'));
         }
     }, 1000);
+}
+
+/* 공개방의 시간 관리. 돌아온 값이 true 면 이 판은 여기서 끝났다는 뜻이다.
+
+   모르는 사람끼리는 '준비' 가 모이지 않는다. 누가 먼저 누르길 기다리다
+   둘 다 나가 버린다. 그래서 사람이 모이면 스스로 세고 출발한다. */
+function pubTick() {
+    const n = net.lastPlayers ? Object.keys(net.lastPlayers).length : 1;
+
+    if (net.isHost) {
+        if (n >= 2) {
+            if (!net.autoAt) net.autoAt = netNow() + PUB_FILL * 1000;
+            if (n >= MAX_PLAYERS) net.autoAt = Math.min(net.autoAt, netNow() + 2500);
+        } else net.autoAt = 0;
+
+        if (net.autoAt && netNow() >= net.autoAt) {
+            pubRemove();                            // 출발한 방은 명단에서 내린다
+            FB.set(FB.ref(FB.db, `rooms/${net.roomId}/race`), { at: netNow() + 1600 }).catch(() => {});
+            return true;
+        }
+        // 아무도 안 왔다. 눌렀는데 아무 일도 안 일어나는 것이 가장 나쁘므로 혼자 달린다.
+        if (n < 2 && net.waitLeft <= WAIT_LIMIT - PUB_ALONE) {
+            pubRemove();
+            netCleanup(); netStatus('');
+            showToast(T('혼자 출발합니다'), T('같이 달릴 사람이 없어 컴퓨터 카트와 달립니다.'));
+            startRace(selectedId, false);
+            return true;
+        }
+        pubPublish(n);                              // 명단의 인원수를 갱신한다
+    }
+    renderRoomStatus();
+    return false;
 }
 
 /* ---- 로비 ----
@@ -5774,6 +5932,27 @@ function renderRoomStatus(players) {
     const sec = String(Math.max(0, net.waitLeft) % 60).padStart(2, '0');
     const timer = net.waitLeft > 0 && ids.length < 2
         ? `<div class="lbHint">${T('친구를 기다리는 중')} · ${m}:${sec}</div>` : '';
+
+    /* 공개방에는 '준비' 가 없다. 모르는 사람끼리는 아무도 먼저 누르지 않기 때문이다.
+       대신 몇 초 뒤에 출발하는지를 그대로 보여 준다. */
+    if (net.pub) {
+        const left = net.autoAt ? Math.max(0, Math.ceil((net.autoAt - netNow()) / 1000)) : 0;
+        const line = ids.length < 2
+            ? T('같이 달릴 사람을 기다리는 중') + ' · ' + Math.max(0, net.waitLeft - (WAIT_LIMIT - PUB_ALONE)) + T('초')
+            : T('곧 출발합니다') + ' · ' + left + T('초');
+        netStatus(
+            `<div class="lbCode">${T('빠른 대전')}</div>` +
+            `<div class="lbList">${rows}</div>` +
+            `<div class="lbHint">${line}</div>` +
+            `<div class="lbBtns">
+                <button class="btn small" id="soloStartBtn">${T('혼자 하기')}</button>
+             </div>`);
+        el('soloStartBtn').onclick = () => {
+            pubRemove(); netCleanup(); netStatus('');
+            startRace(selectedId, false);
+        };
+        return;
+    }
 
     netStatus(
         (net.roomId ? `<div class="lbCode">${T('방 코드')} <b>${net.roomId}</b></div>` : '') +
@@ -5841,6 +6020,8 @@ function startOnlineRace(startAt) {
         FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}`)).remove();
         FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`)).remove();
     }
+    if (net.pub && net.isHost) pubRemove();       // 달리는 방은 명단에 두지 않는다
+    net.autoAt = 0;
     net.on = true;
     netShowWarn();
     startRace(net.mapId, false);
@@ -5855,8 +6036,20 @@ function startOnlineRace(startAt) {
        움직인 한 사람 몫만 온다. */
     const gRoot = `rooms/${net.roomId}/ghosts`;
 
-    const apply = (id, g) => {
-        if (!g || id === net.myId) return;
+    /* 눌러 담은 줄을 푼다. 남이 보낸 값이므로 무엇이 와도 게임이 죽으면 안 된다.
+       숫자가 아니면 0 으로 두고, 자리 번호는 범위 안으로 자른다. */
+    const unpack = v => {
+        if (typeof v !== 'string') return null;
+        const p = v.split(',');
+        if (p.length < 6) return null;
+        const n = i => { const f = parseFloat(p[i]); return isFinite(f) ? f : 0; };
+        return { s: n(0), x: n(1), y: n(2), a: n(3), lap: n(4), prog: n(5), fin: n(6) };
+    };
+
+    const apply = (id, raw) => {
+        if (id === net.myId) return;
+        const g = unpack(raw);
+        if (!g) return;
         const seat = clamp(g.s | 0, 0, MAX_PLAYERS - 1);
         if (seat === net.mySeat) return;              // 내 자리를 흉내 내는 것은 무시
         const now = performance.now();
@@ -5884,7 +6077,7 @@ function startOnlineRace(startAt) {
             }
         }
         peer.tx = g.x; peer.ty = g.y; peer.ta = g.a; peer.last = now;
-        peer.kart.lap = g.lap || 1;
+        peer.kart.lap = clamp(g.lap | 0, 1, 99) || 1;
         peer.kart.progress = g.prog || 0;
         if (g.fin && !peer.kart.finished) { peer.kart.finished = true; peer.kart.finishTime = g.fin; }
     };
@@ -5892,8 +6085,22 @@ function startOnlineRace(startAt) {
     net.raceUnsub.push(FB.onChildAdded(FB.ref(FB.db, gRoot), sn => apply(sn.key, sn.val())));
     net.raceUnsub.push(FB.onChildChanged(FB.ref(FB.db, gRoot), sn => apply(sn.key, sn.val())));
     // 나간 사람의 카트는 없애지 않는다 — 순위가 흔들리므로 AI 가 이어 몬다
+    // 말풍선 — 자리 번호와 문구 번호만 오간다
+    const eRoot = `rooms/${net.roomId}/emote`;
+    const gotEmote = sn => {
+        if (sn.key === net.myId) return;             // 내 말은 이미 띄웠다
+        const v = String(sn.val() || '').split(',');
+        const seat = clamp(parseInt(v[0], 10) || 0, 0, MAX_PLAYERS - 1);
+        const idx = parseInt(v[1], 10);
+        if (!(idx >= 0 && idx < EMOTES.length)) return;
+        showBubble(seat, idx);
+    };
+    net.raceUnsub.push(FB.onChildAdded(FB.ref(FB.db, eRoot), gotEmote));
+    net.raceUnsub.push(FB.onChildChanged(FB.ref(FB.db, eRoot), gotEmote));
+
     net.raceUnsub.push(FB.onChildRemoved(FB.ref(FB.db, gRoot), sn => {
-        const g = sn.val() || {};
+        const g = unpack(sn.val());
+        if (!g) return;
         const peer = net.peers[clamp(g.s | 0, 0, MAX_PLAYERS - 1)];
         if (peer && peer.id === sn.key) netTakeOver(peer);
     }));
@@ -5937,6 +6144,7 @@ function netBackToLobby() {
             FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/race`));
             net.roomKill = FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}`));
             net.roomKill.remove();
+            if (net.pub) { pubPublish(1); FB.onDisconnect(FB.ref(FB.db, `lobby/open/${net.roomId}`)).remove(); }
         }
     } catch (e) {}
     watchLobby(net.roomId);
@@ -5950,15 +6158,17 @@ function netSend() {
     const now = performance.now();
     if (now - net.lastSend < SEND_EVERY) return;
     net.lastSend = now;
-    FB.set(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`), {
-        s: net.mySeat,
-        x: Math.round(player.x), y: Math.round(player.y),
-        a: +player.ang.toFixed(2), lap: player.lap,
-        prog: Math.round(player.progress),
-        // 완주 시각까지 보내야 순위가 맞는다. 안 보내면 상대가 먼저 골인해도
-        // 내 화면에서는 아무도 완주하지 않은 것이 되어 내가 1등이 된다.
-        fin: player.finished ? +player.finishTime.toFixed(2) : 0
-    }).catch(e => { if (!netSend.warned) { netSend.warned = true; showDiag('위치 전송 실패\n' + (e && e.message)); } });
+    /* 항목 이름까지 매번 실어 보내면 그것만으로 절반이 넘는다.
+       {"s":1,"x":1234,...} 60자 → "1,1234,..." 25자. 뜻은 같고 요금은 절반 이하다.
+       완주 시각도 함께 보낸다 — 안 보내면 상대가 먼저 골인해도
+       내 화면에서는 아무도 완주하지 않은 것이 되어 내가 1등이 된다. */
+    FB.set(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`), [
+        net.mySeat,
+        Math.round(player.x), Math.round(player.y),
+        player.ang.toFixed(2), player.lap,
+        Math.round(player.progress),
+        player.finished ? player.finishTime.toFixed(2) : 0
+    ].join(',')).catch(e => { if (!netSend.warned) { netSend.warned = true; showDiag('위치 전송 실패\n' + (e && e.message)); } });
 }
 
 /* 좌표로 트랙 위 위치를 되찾는다 (AI 로 넘겨줄 때 필요) */
@@ -5969,6 +6179,76 @@ function nearestSample(x, y) {
         if (d < bd) { bd = d; best = i; }
     }
     return best;
+}
+
+/* ---- 말풍선 ----
+   채팅은 만들지 않는다. 자유롭게 글을 쓸 수 있으면 그 순간 연락처도, 나이도,
+   사는 곳도 오갈 수 있기 때문이다. 대신 정해진 여덟 마디만 고를 수 있게 했다.
+   고를 수 있는 말이 정해져 있으면, 주고받을 수 있는 것도 정해져 있다.
+
+   서로 응원하고 미안해하는 데에는 이 정도면 넉넉하다. */
+const EMOTES = ['안녕!', '가자!', '잘한다!', '고마워!', '미안!', '아깝다', '우와!', '한 판 더!'];
+const EMOTE_COOL = 1.1;      // 도배를 막는 쉬는 시간(초)
+const EMOTE_LIFE = 2.4;      // 말풍선이 떠 있는 시간(초)
+let emoteCool = 0;
+const bubbles = {};          // 자리번호 -> { i, life }
+
+function sendEmote(i) {
+    if (i < 0 || i >= EMOTES.length || emoteCool > 0) return;
+    emoteCool = EMOTE_COOL;
+    showBubble(net.on ? net.mySeat : 0, i);
+    playBeep(760 + i * 40, .05);
+    if (!net.on || !window.FB || !net.roomId || !net.myId) return;
+    // 같은 말을 두 번 해도 바뀐 것으로 보이도록 시각을 붙인다
+    FB.set(FB.ref(FB.db, `rooms/${net.roomId}/emote/${net.myId}`),
+           net.mySeat + ',' + i + ',' + Date.now()).catch(() => {});
+}
+
+function showBubble(seat, i) { bubbles[seat] = { i, life: EMOTE_LIFE }; }
+
+function updateBubbles(dt) {
+    emoteCool = Math.max(0, emoteCool - dt);
+    for (const k in bubbles) if ((bubbles[k].life -= dt) <= 0) delete bubbles[k];
+}
+
+/* 자리 번호로 그 카트를 찾는다 (내 자리면 내 카트) */
+function kartOfSeat(seat) {
+    if (!net.on) return +seat === 0 ? player : null;
+    if (+seat === net.mySeat) return player;
+    const p = net.peers[seat];
+    return p ? p.kart : null;
+}
+
+function drawBubbles(g) {
+    for (const seat in bubbles) {
+        const b = bubbles[seat], k = kartOfSeat(seat);
+        if (!k) continue;
+        const txt = T(EMOTES[b.i]) || '';
+        // 마지막 0.3초는 스르르 사라진다
+        const a = clamp(b.life / .3, 0, 1);
+
+        g.save();
+        g.translate(k.x, k.y - 74);
+        g.globalAlpha = a;
+        g.font = '600 19px system-ui, "Malgun Gothic", sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        const w = Math.max(64, g.measureText(txt).width + 26), h = 34;
+
+        g.fillStyle = 'rgba(255,255,255,.96)';
+        g.strokeStyle = 'rgba(20,32,54,.55)'; g.lineWidth = 2.5;
+        g.beginPath();
+        g.roundRect(-w / 2, -h / 2, w, h, 12);
+        g.fill(); g.stroke();
+        g.beginPath();                                  // 아래로 뻗은 꼬리
+        g.moveTo(-8, h / 2 - 1); g.lineTo(0, h / 2 + 11); g.lineTo(8, h / 2 - 1);
+        g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(20,32,54,.55)';
+        g.beginPath(); g.moveTo(-8, h / 2); g.lineTo(0, h / 2 + 11); g.lineTo(8, h / 2); g.stroke();
+
+        g.fillStyle = '#16233a';
+        g.fillText(txt, 0, 1);
+        g.restore();
+    }
 }
 
 /* 받은 위치로 상대 카트를 옮긴다.
@@ -6033,6 +6313,8 @@ function startRace(id, timeAttack) {
     skids.length = dusts.length = popups.length = confetti.length = smokes.length = 0;
     smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = reabsorbSparks.length = 0;
     reabsorbHint = 0;
+    for (const k in bubbles) delete bubbles[k];
+    emoteCool = 0;
     karts = [];
     player = makeKart(true, 0, net.on ? net.myName : '1P'); player.pad = input; karts.push(player);
     // 온라인에서는 사람만 달린다. AI 는 각자 컴퓨터에서 따로 돌아
@@ -6054,6 +6336,7 @@ function startRace(id, timeAttack) {
 
     buildHudStatic();
     el('taCard').classList.toggle('hidden', !TA.on);
+    if (el('tTalk')) el('tTalk').style.display = net.on ? '' : 'none';   // 혼자 달릴 때는 말할 상대가 없다
     el('rankBadge').style.display = TA.on ? 'none' : '';
     el('hud').classList.remove('hidden');
     el('menu').classList.add('hidden');
@@ -6861,6 +7144,7 @@ function endRace() {
 }
 
 function showResult() {
+    toggleEmotePad(false);
     resPage(1);                                  // 언제나 기록부터 보여 준다
     // 온라인에서는 이 버튼이 '다시 겨루려면 로비로' 라는 뜻이 된다
     el('retryBtn').textContent = T(net.on ? '로비로' : '다시 도전');
@@ -6885,7 +7169,7 @@ function loop(now) {
     } else if (state === 'race') {
         raceTime += dt;
         karts.forEach(k => updateKart(k, dt));
-        netInterp(dt); netSend();
+        netInterp(dt); netSend(); updateBubbles(dt);
         kartCollisions(); updateRanks();
         karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.laps) finishKart(k); });
     } else if (state === 'finish') {
@@ -6960,6 +7244,8 @@ function syncKeys() {
 /* 한글 입력 상태에서는 e.key 가 'ㅈ','ㅁ','ㄴ','ㅇ','ㄷ' 로 들어와 WASD·E 가 먹지 않는다.
    그래서 자판의 '위치'(e.code)도 함께 기억한다. 위치는 입력기와 무관하다. */
 window.addEventListener('keydown', e => {
+    // 숫자 1~8 : 정해진 말 한마디. 달리는 중에만.
+    if (state === 'race' && net.on && e.code && /^Digit[1-8]$/.test(e.code)) sendEmote(+e.code.slice(5) - 1);
     keys[e.key] = true; if (e.code) keys[e.code] = true;
     syncKeys();
     if (e.key === ' ' || e.code === 'Space') e.preventDefault();
@@ -7221,7 +7507,34 @@ document.querySelector('#legalRow a').onclick = function () {
     this.href = 'privacy.html#' + (LANG === 'en' ? 'en' : 'ko');
 };
 
-el('createRoom').onclick = createRoom;
+el('quickBtn').onclick = quickMatch;
+el('createRoom').onclick = () => createRoom(false);
+
+/* ---- 말풍선 고르는 판 ----
+   폰에는 숫자키가 없으니 눌러서 고른다. 여덟 칸이 전부라 헤맬 것이 없다. */
+function buildEmotePad() {
+    const pad = el('emotePad');
+    pad.innerHTML = EMOTES.map((t, i) =>
+        `<button data-e="${i}">${T(t)}<i>${i + 1}</i></button>`).join('');
+    pad.querySelectorAll('button').forEach(b => {
+        b.onclick = ev => { ev.stopPropagation(); sendEmote(+b.dataset.e); toggleEmotePad(false); };
+    });
+}
+function toggleEmotePad(on) {
+    const pad = el('emotePad');
+    const show = on === undefined ? pad.classList.contains('hidden') : on;
+    if (show) buildEmotePad();
+    pad.classList.toggle('hidden', !show);
+}
+buildEmotePad();
+if (el('tTalk')) el('tTalk').onclick = () => toggleEmotePad();
+// 판이 열려 있을 때 딴 곳을 누르면 닫힌다
+document.addEventListener('pointerdown', e => {
+    const pad = el('emotePad');
+    if (pad.classList.contains('hidden')) return;
+    if (pad.contains(e.target) || (el('tTalk') && el('tTalk').contains(e.target))) return;
+    toggleEmotePad(false);
+}, true);
 el('joinRoom').onclick = joinRoom;
 el('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
@@ -7613,6 +7926,7 @@ el('menuBtn').onclick = () => {
 };
 /* 화면만 메뉴로 되돌린다. 방에 남아 있는 채로 로비로 갈 때도 쓴다. */
 function showMenu() {
+    toggleEmotePad(false);
     state = 'menu';
     el('result').classList.add('hidden'); el('hud').classList.add('hidden');
     el('touch').classList.remove('on'); document.body.classList.remove('touchUI'); el('menu').classList.remove('hidden');
