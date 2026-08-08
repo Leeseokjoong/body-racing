@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0932</div>
+<div id="build">v260808.0939</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5712,18 +5712,57 @@ function drawKartSide(g, k, spin, bounce) {
    카메라나 물리를 건드리지 않는다. */
 let victory = null;
 
+/* 골인선을 넘자마자 화면이 뚝 바뀌면 어색하다.
+   그래서 세 마디로 나눈다 —
+     달리던 화면 그대로 잠깐 (HOLD)  →  속도선이 화면을 쓸고 (WIPE)  →  완주 무대
+   쓸고 지나가는 동안 앞뒤가 가려지므로, 그 안에서 화면을 바꾼다. */
+const VIC_HOLD = .9, VIC_WIPE = .6;
 function startVictoryLap(G) {
-    victory = { t: 0, grade: G, scroll: 0 };
-    el('hud').classList.add('hidden');
+    victory = { t: 0, grade: G, scroll: 0, staged: false };
     el('touch').classList.remove('on');
     sfxWin(player.rank === 1);
+    cam.targetZoom = .95;                       // 살짝 다가서며 마무리
 }
 
 function updateVictory(dt) {
     if (!victory) return;
     victory.t += dt;
-    victory.scroll += dt * 420;                   // 배경이 흘러가는 속도
-    if (victory.t > 4.4) { victory = null; showResult(); }
+
+    // 아직 트랙 위 : 카트가 힘을 빼고 굴러간다
+    if (victory.t < VIC_HOLD + VIC_WIPE * .5) {
+        karts.forEach(k => updateKart(k, dt));
+        if (player) { player.aiThrottle = 0; player.aiDrift = false; }
+        return;
+    }
+    // 무대로 넘어온 뒤
+    if (!victory.staged) {
+        victory.staged = true;
+        el('hud').classList.add('hidden');
+    }
+    victory.st = victory.t - (VIC_HOLD + VIC_WIPE * .5);   // 무대만의 시계
+    victory.scroll += dt * 420;
+    if (victory.st > 4.0) { victory = null; showResult(); }
+}
+
+/* 화면을 쓸고 지나가는 속도선. p 는 0(안 가림) → 1(다 가림) → 0(다시 걷힘) */
+function drawWipe(g, p) {
+    if (p <= 0) return;
+    const N = 9, hgt = VH / N;
+    g.save();
+    for (let i = 0; i < N; i++) {
+        const dir = i % 2 ? 1 : -1;                       // 줄마다 반대로 쓸린다
+        const w = VW * 1.35 * p;
+        const x = dir > 0 ? -VW * .35 + w - VW * 1.35 + VW * 1.35 * p : VW * 1.35 - w;
+        g.fillStyle = i % 2 ? '#0d1119' : '#131a26';
+        g.beginPath();
+        const x0 = dir > 0 ? VW - w : 0;
+        g.moveTo(x0 + (dir > 0 ? 0 : 0), i * hgt);
+        g.lineTo(x0 + w, i * hgt);
+        g.lineTo(x0 + w - 28, (i + 1) * hgt);
+        g.lineTo(x0 - 28, (i + 1) * hgt);
+        g.closePath(); g.fill();
+    }
+    g.restore();
 }
 
 /* 왼쪽 성적표에 올라올 줄들. 시간이 지나며 하나씩 나타난다. */
@@ -5745,7 +5784,7 @@ function victoryRows(G) {
 
 function drawVictory(g) {
     if (!victory) return;
-    const G = victory.grade, t = victory.t;
+    const G = victory.grade, t = victory.st || 0;
     g.setTransform(DPR, 0, 0, DPR, 0, 0);
 
     // ── 무대 배경 : 계통 색으로 깔고 옆으로 흐르는 줄무늬
@@ -6013,12 +6052,22 @@ function loop(now) {
     // 그리기나 소리에서 한 번 예외가 나도 다음 프레임은 반드시 예약되어야 한다.
     //   (예약을 못 하면 화면이 영영 멈춘다 — 기기마다 없는 기능이 있어 실제로 일어난다)
     try {
-        if (victory) drawVictory(ctx); else render();
+        if (victory) {
+            const t = victory.t;
+            if (t < VIC_HOLD + VIC_WIPE * .5) render();    // 아직 트랙
+            else drawVictory(ctx);                          // 무대
+            // 쓸고 지나가는 띠 (한가운데에서 화면이 바뀐다)
+            if (t > VIC_HOLD && t < VIC_HOLD + VIC_WIPE) {
+                const u = (t - VIC_HOLD) / VIC_WIPE;
+                ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+                drawWipe(ctx, u < .5 ? u * 2 : (1 - u) * 2);
+            }
+        } else render();
         updateEngine();
         if (player && state === 'race')
             sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
         else sfxSkid(0);
-        if (state !== 'menu' && !victory) updateHud();
+        if (state !== 'menu' && !(victory && victory.staged)) updateHud();
     } catch (e) {
         if (!loop.warned) {                     // 같은 오류로 화면을 도배하지 않는다
             loop.warned = true;
