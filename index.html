@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0910</div>
+<div id="build">v260808.0923</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5606,85 +5606,149 @@ function showAdBreak(done) {
     };
 }
 
-/* ---- 승리 주행 ----
-   골인한 뒤 카트가 스스로 한동안 달린다. 카메라가 가까이 붙고,
-   관중이 일어서고, 등급이 화면 한가운데에 쿵 하고 찍힌다.
-   그동안 아무것도 누를 필요가 없다 — 방금 해낸 것을 눈으로 보는 시간이다. */
+/* ---- 완주 무대 ----
+   골인하자마자 결과창이 뜨면 장난감 멈추듯 뚝 끊긴다.
+   그래서 따로 무대를 하나 만든다 — 카트가 옆으로 달려가고,
+   왼쪽에 성적표가 한 줄씩 올라온다. 트랙 위가 아니라 별도의 화면이라
+   카메라나 물리를 건드리지 않는다. */
 let victory = null;
 
 function startVictoryLap(G) {
-    victory = { t: 0, grade: G, stamped: false };
-    cam.targetZoom = 1.05;                       // 가까이 붙어 카트를 크게
-    player.turbo = [];                            // 남은 터보는 접는다
+    victory = { t: 0, grade: G, scroll: 0 };
+    el('hud').classList.add('hidden');
+    el('touch').classList.remove('on');
+    sfxWin(player.rank === 1);
 }
 
 function updateVictory(dt) {
     if (!victory) return;
     victory.t += dt;
-
-    // 카트가 스스로 달린다 (사람 손을 떠난 상태)
-    if (player && !player.aiOff) {
-        aiControl(player, dt);
-        player.aiThrottle = .62;                 // 여유 있게
-        player.aiDrift = false;
-    }
-
-    // 1.1초에 등급을 찍는다
-    if (!victory.stamped && victory.t > 1.1) {
-        victory.stamped = true;
-        cam.flash = .7; cam.shake = 10;
-        sfxBoost();
-        burstConfetti(player.x, player.y);
-    }
-    // 3.4초 뒤 결과로
-    if (victory.t > 3.4) { const g = victory; victory = null; cam.targetZoom = .74; showResult(); }
+    victory.scroll += dt * 420;                   // 배경이 흘러가는 속도
+    if (victory.t > 5.2) { victory = null; showResult(); }
 }
 
-/* 화면 한가운데에 크게 찍히는 등급 도장 */
+/* 왼쪽 성적표에 올라올 줄들. 시간이 지나며 하나씩 나타난다. */
+function victoryRows(G) {
+    const lt = player.lapTimes;
+    const best = lt.length ? Math.min(...lt) : 0;
+    return [
+        { at: .5,  label: T('순위'),      value: LANG === 'en'
+            ? (['1st','2nd','3rd','4th'][player.rank - 1] || player.rank) : player.rank + '위',
+          big: true },
+        { at: .9,  label: T('기록'),      value: fmtTime(player.finishTime) },
+        { at: 1.2, label: T('베스트랩'),  value: fmtTime(best) },
+        { at: 1.5, label: T('최고 속도'), value: Math.round(player.topSpeed * .22) + ' km/h' },
+        { at: 1.8, label: T('드리프트'),  value: G.driftCount + T('회'), bar: G.drift },
+        { at: 2.1, label: T('가속 유지'), value: G.throttle + '%',       bar: G.throttle },
+        { at: 2.4, label: T('무사고'),    value: T('충돌') + ' ' + G.wallHits, bar: G.crash }
+    ];
+}
+
 function drawVictory(g) {
     if (!victory) return;
-    const G = victory.grade;
+    const G = victory.grade, t = victory.t;
     g.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-    // 위아래 검은 띠 — 연출 중이라는 신호
-    const bar = clamp(victory.t / .35, 0, 1) * 58;
-    g.fillStyle = 'rgba(6,10,16,.82)';
-    g.fillRect(0, 0, VW, bar); g.fillRect(0, VH - bar, VW, bar);
+    // ── 무대 배경 : 계통 색으로 깔고 옆으로 흐르는 줄무늬
+    const grd = g.createLinearGradient(0, 0, 0, VH);
+    grd.addColorStop(0, shade(track.sys.grass[0], -.25));
+    grd.addColorStop(1, shade(track.sys.grass[1], -.5));
+    g.fillStyle = grd; g.fillRect(0, 0, VW, VH);
 
-    if (!victory.stamped) return;
-    const a = clamp((victory.t - 1.1) / .22, 0, 1);
-    const pop = victory.t - 1.1 < .22 ? 2.4 - a * 1.4 : 1 + Math.sin((victory.t - 1.32) * 5) * .015;
-
+    const sc = victory.scroll;
     g.save();
-    g.translate(VW / 2, VH * .42);
-    g.globalAlpha = a;
-    g.scale(pop, pop);
-
-    // 등급 글자
-    g.font = 'bold 132px sans-serif';
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineWidth = 16; g.strokeStyle = '#12161f'; g.lineJoin = 'round';
-    g.strokeText(G.grade, 0, 0);
-    g.fillStyle = G.color; g.fillText(G.grade, 0, 0);
-
-    // 한 줄 평
-    g.font = 'bold 27px sans-serif';
-    g.lineWidth = 8; g.strokeStyle = '#12161f';
-    g.strokeText(T(G.word), 0, 92);
-    g.fillStyle = '#fff'; g.fillText(T(G.word), 0, 92);
+    g.globalAlpha = .16; g.fillStyle = '#fff';
+    for (let i = -1; i < VW / 120 + 2; i++) {
+        const x = ((i * 120 - sc * .35) % (VW + 240) + VW + 240) % (VW + 240) - 120;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 44, 0); g.lineTo(x - 16, VH); g.lineTo(x - 60, VH);
+        g.closePath(); g.fill();
+    }
     g.restore();
 
-    // 순위
+    // ── 달리는 노면 : 화면 아래쪽을 가로지른다
+    const roadY = VH * .70, roadH = VH * .22;
+    g.fillStyle = shade(track.secs[0].color, -.4);
+    g.fillRect(0, roadY, VW, roadH);
+    g.fillStyle = track.secs[0].color;
+    g.fillRect(0, roadY, VW, roadH - 8);
+    // 위아래 붉은 벽
+    g.fillStyle = '#9e2e37';
+    g.fillRect(0, roadY - 10, VW, 10); g.fillRect(0, roadY + roadH - 8, VW, 10);
+    // 흐르는 중앙선
     g.save();
-    g.globalAlpha = a;
-    g.translate(VW / 2, VH * .42 - 118);
-    g.font = 'bold 34px sans-serif';
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    const rk = LANG === 'en' ? (['1st', '2nd', '3rd', '4th'][player.rank - 1] || player.rank)
-                             : player.rank + '위';
-    g.lineWidth = 9; g.strokeStyle = '#12161f'; g.strokeText(rk, 0, 0);
-    g.fillStyle = '#ffe066'; g.fillText(rk, 0, 0);
+    g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 6;
+    g.setLineDash([46, 40]); g.lineDashOffset = sc;
+    g.beginPath(); g.moveTo(0, roadY + roadH / 2); g.lineTo(VW, roadY + roadH / 2); g.stroke();
+    // 가장자리 발광 라인
+    g.setLineDash([26, 64]); g.lineDashOffset = -sc * 1.4;
+    g.strokeStyle = '#eaf6ff'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(0, roadY + 6); g.lineTo(VW, roadY + 6);
+    g.moveTo(0, roadY + roadH - 14); g.lineTo(VW, roadY + roadH - 14); g.stroke();
     g.restore();
+
+    // ── 카트 : 오른쪽에서 미끄러져 들어와 자리를 잡는다
+    const inX = clamp(t / .7, 0, 1);
+    const kx = VW * (1.25 - .55 * (inX * (2 - inX)));      // 부드럽게 감속
+    const ky = roadY + roadH / 2 + Math.sin(t * 6) * 3;
+    g.save();
+    g.translate(kx, ky);
+    g.scale(1.5, 1.5);
+    const bak = { x: player.x, y: player.y, ang: player.ang };
+    player.x = 0; player.y = 0; player.ang = 0;
+    drawKart(g, player);
+    player.x = bak.x; player.y = bak.y; player.ang = bak.ang;
+    g.restore();
+
+    // ── 왼쪽 성적표
+    const PX = 42, PW = Math.min(360, VW * .42);
+    g.save();
+    g.globalAlpha = clamp(t / .35, 0, 1);
+    g.fillStyle = 'rgba(8,14,22,.78)';
+    g.beginPath(); g.roundRect(PX - 16, VH * .10, PW, VH * .52, 18); g.fill();
+    g.strokeStyle = G.color; g.lineWidth = 3;
+    g.beginPath(); g.roundRect(PX - 16, VH * .10, PW, VH * .52, 18); g.stroke();
+    g.restore();
+
+    // 등급 도장
+    if (t > .15) {
+        const a = clamp((t - .15) / .25, 0, 1);
+        const pop = t - .15 < .25 ? 2.2 - a * 1.2 : 1;
+        g.save();
+        g.globalAlpha = a;
+        g.translate(PX + PW * .5 - 16, VH * .10 + 74);
+        g.scale(pop, pop);
+        g.font = 'bold 86px sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.lineWidth = 13; g.strokeStyle = '#0d1119'; g.lineJoin = 'round';
+        g.strokeText(G.grade, 0, 0);
+        g.fillStyle = G.color; g.fillText(G.grade, 0, 0);
+        g.font = 'bold 19px sans-serif';
+        g.lineWidth = 7; g.strokeStyle = '#0d1119';
+        g.strokeText(T(G.word), 0, 62); g.fillStyle = '#fff'; g.fillText(T(G.word), 0, 62);
+        g.restore();
+    }
+
+    // 한 줄씩 올라오는 기록
+    const rows = victoryRows(G);
+    g.textBaseline = 'middle';
+    rows.forEach((r, i) => {
+        if (t < r.at) return;
+        const a = clamp((t - r.at) / .22, 0, 1);
+        const y = VH * .10 + 176 + i * 34 + (1 - a) * 14;
+        g.save(); g.globalAlpha = a;
+        g.font = 'bold 14px sans-serif'; g.textAlign = 'left';
+        g.fillStyle = '#9fd0ff'; g.fillText(r.label, PX, y);
+        g.font = 'bold ' + (r.big ? 21 : 16) + 'px sans-serif'; g.textAlign = 'right';
+        g.fillStyle = r.big ? '#ffe066' : '#fff';
+        g.fillText(r.value, PX + PW - 44, y);
+        if (r.bar !== undefined) {                       // 막대는 이름 밑에 얇게
+            g.fillStyle = 'rgba(255,255,255,.14)';
+            g.fillRect(PX, y + 12, PW - 60, 4);
+            g.fillStyle = G.color;
+            g.fillRect(PX, y + 12, (PW - 60) * (r.bar / 100) * a, 4);
+        }
+        g.restore();
+    });
     g.globalAlpha = 1;
 }
 
@@ -5811,8 +5875,8 @@ function loop(now) {
         kartCollisions(); updateRanks();
         karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.sys.laps) finishKart(k); });
     } else if (state === 'finish') {
-        karts.forEach(k => updateKart(k, dt));
-        updateVictory(dt);
+        if (victory) updateVictory(dt);          // 무대 연출 중에는 트랙을 돌리지 않는다
+        else karts.forEach(k => updateKart(k, dt));
     }
 
     if (state !== 'menu') { updateEffects(dt); updateSkills(dt); updateSubtitle(dt); stickyHint -= dt; }
@@ -5821,13 +5885,12 @@ function loop(now) {
     // 그리기나 소리에서 한 번 예외가 나도 다음 프레임은 반드시 예약되어야 한다.
     //   (예약을 못 하면 화면이 영영 멈춘다 — 기기마다 없는 기능이 있어 실제로 일어난다)
     try {
-        render();
+        if (victory) drawVictory(ctx); else render();
         updateEngine();
         if (player && state === 'race')
             sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
         else sfxSkid(0);
-        drawVictory(ctx);
-        if (state !== 'menu') updateHud();
+        if (state !== 'menu' && !victory) updateHud();
     } catch (e) {
         if (!loop.warned) {                     // 같은 오류로 화면을 도배하지 않는다
             loop.warned = true;
