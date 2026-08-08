@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0939</div>
+<div id="build">v260808.0945</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -4905,7 +4905,11 @@ function updateEngine() {
      sfx_boost.mp3   부스터
      sfx_engine.mp3  엔진 (반복 재생 — 일정한 rpm 으로 녹음)
    ========================================================================== */
-const SFX_NAMES = ['crash', 'skid', 'pickup', 'boost', 'engine', 'engine_low', 'engine_high', 'count', 'go', 'win'];
+/* 녹음 파일을 쓰는 소리는 엔진음뿐이다.
+   나머지(충돌·획득·부스터·카운트·출발)는 예전에 만들어 둔 파일이 기계음처럼 들려서,
+   코드로 합성한 소리를 쓴다. 목록에서 빼면 playSfx 가 false 를 돌려주고
+   각 함수의 합성 경로가 실행된다. 파일은 지우지 않고 남겨 둔다. */
+const SFX_NAMES = ['engine', 'engine_low', 'engine_high'];
 const SFX = {};
 
 // file:// 에서는 fetch 가 막히므로 <audio> 요소로 불러온다.
@@ -5011,117 +5015,155 @@ function setVolume(v) {
     writeSave();
 }
 
+/* ---- 효과음 ----
+   사인파 하나로 삐 하고 마는 소리는 기계음으로 들린다.
+   실제 소리는 셋이 겹쳐서 난다 —
+     몸통(낮고 짧게 떨어지는 음) · 결(잡음을 걸러 만든 질감) · 시작점(딱 하는 순간).
+   여기서는 그 셋을 매번 쌓아 만든다. 파일이 필요 없고 크기도 자유롭게 조절된다. */
+
+/* 잡음 한 덩이를 걸러서 낸다. 충돌 · 바람 · 타이어에 쓰인다. */
+function noiseHit(dur, vol, type, f0, f1, q) {
+    const t = audioCtx.currentTime;
+    const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer(dur + .05);
+    const f = audioCtx.createBiquadFilter();
+    f.type = type; f.Q.value = q || 1;
+    f.frequency.setValueAtTime(f0, t);
+    f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+    src.connect(f); f.connect(g); g.connect(masterOut());
+    src.start(); src.stop(t + dur + .05);
+}
+
+/* 음 하나. 배음을 살짝 어긋나게 얹으면 종처럼 맑아진다. */
+function tone(freq, dur, vol, type, at, bend) {
+    const t = audioCtx.currentTime + (at || 0);
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type || 'triangle';
+    o.frequency.setValueAtTime(freq, t);
+    if (bend) o.frequency.exponentialRampToValueAtTime(Math.max(30, bend), t + dur);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + .008);
+    g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+    o.connect(g); g.connect(masterOut());
+    o.start(t); o.stop(t + dur + .02);
+}
+
+/* 종소리 : 어긋난 배음 셋을 겹친다 (2.76 · 5.4 는 실제 종의 비율에 가깝다) */
+function bell(freq, dur, vol, at) {
+    tone(freq, dur, vol, 'sine', at);
+    tone(freq * 2.76, dur * .55, vol * .42, 'sine', at);
+    tone(freq * 5.4, dur * .3, vol * .18, 'sine', at);
+}
+
+// 충돌 : 둔탁한 쿵 + 긁히는 결 + 딱 하는 시작점
 function sfxCrash(power = 1) {
     if (!audioCtx) return;
     if (playSfx('crash', .55 * power, .9 + Math.random() * .2)) return;
-    const t = audioCtx.currentTime;
-    const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer(0.35);
-    const f = audioCtx.createBiquadFilter(); f.type = 'lowpass';
-    f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(180, t + .3);
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(.16 * power, t); g.gain.exponentialRampToValueAtTime(.001, t + .32);
-    src.connect(f); f.connect(g); g.connect(masterOut()); src.start(); src.stop(t + .35);
-
-    const o = audioCtx.createOscillator(), og = audioCtx.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + .22);
-    og.gain.setValueAtTime(.22 * power, t); og.gain.exponentialRampToValueAtTime(.001, t + .26);
-    o.connect(og); og.connect(masterOut()); o.start(); o.stop(t + .28);
+    const p = clamp(power, .2, 1);
+    tone(160, .26, .26 * p, 'sine', 0, 44);                       // 몸통
+    noiseHit(.09, .16 * p, 'highpass', 2600, 1400);               // 딱
+    noiseHit(.3, .13 * p, 'lowpass', 1500, 200);                  // 긁힘
+    if (p > .55) noiseHit(.22, .07 * p, 'bandpass', 3200, 900, 6); // 금속성
 }
 
 // 타이어 마찰음 : 드리프트/브레이크 중 계속 울린다
-let skidSrc = null, skidGain = null;
+let skidSrc = null, skidGain = null, skidF = null;
 function sfxSkid(amount) {
     if (!audioCtx) return;
     if (loopSfx('skid', clamp(amount, 0, 1) * .38, 1.05)) return;
     if (!skidSrc) {
         skidSrc = audioCtx.createBufferSource();
         skidSrc.buffer = noiseBuffer(2); skidSrc.loop = true;
-        const f = audioCtx.createBiquadFilter();
-        f.type = 'bandpass'; f.frequency.value = 2100; f.Q.value = 5.5;
+        skidF = audioCtx.createBiquadFilter();
+        skidF.type = 'bandpass'; skidF.frequency.value = 1900; skidF.Q.value = 7;
+        const low = audioCtx.createBiquadFilter();                // 고무가 눌리는 저음
+        low.type = 'lowshelf'; low.frequency.value = 300; low.gain.value = 5;
         skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
-        skidSrc.connect(f); f.connect(skidGain); skidGain.connect(masterOut());
+        skidSrc.connect(skidF); skidF.connect(low); low.connect(skidGain);
+        skidGain.connect(masterOut());
         skidSrc.start();
     }
-    skidGain.gain.setTargetAtTime(clamp(amount, 0, 1) * .10, audioCtx.currentTime, .06);
+    const a = clamp(amount, 0, 1);
+    // 세게 미끄러질수록 높아진다 — 타이어가 비명을 지르는 느낌
+    skidF.frequency.setTargetAtTime(1500 + a * 1400, audioCtx.currentTime, .08);
+    skidGain.gain.setTargetAtTime(a * .10, audioCtx.currentTime, .06);
 }
 
-// 아이템 획득 : 밝게 튀는 두 음
+// 아이템 획득 : 맑은 종 두 음
 function sfxPickup() {
     if (!audioCtx) return;
     if (playSfx('pickup', .5)) return;
-    const t = audioCtx.currentTime;
-    [880, 1320].forEach((fr, i) => {
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = 'triangle'; o.frequency.value = fr;
-        g.gain.setValueAtTime(0, t + i * .07);
-        g.gain.linearRampToValueAtTime(.09, t + i * .07 + .01);
-        g.gain.exponentialRampToValueAtTime(.001, t + i * .07 + .16);
-        o.connect(g); g.connect(masterOut());
-        o.start(t + i * .07); o.stop(t + i * .07 + .18);
-    });
+    bell(784, .34, .075, 0);
+    bell(1175, .42, .06, .07);
+    noiseHit(.05, .03, 'highpass', 5000, 3000);                   // 반짝임
 }
 
-// 부스터 : 쉭 하고 뻗는 소리
+// 부스터 : 쉬익 하고 터지는 바람
 function sfxBoost() {
     if (!audioCtx) return;
     if (playSfx('boost', .55)) return;
-    const t = audioCtx.currentTime;
-    const src = audioCtx.createBufferSource(); src.buffer = noiseBuffer(.6);
-    const f = audioCtx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2.2;
-    f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(3200, t + .45);
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .5);
-    src.connect(f); f.connect(g); g.connect(masterOut());
-    src.start(); src.stop(t + .55);
+    noiseHit(.42, .12, 'bandpass', 320, 3400, 1.6);               // 위로 뻗는 바람
+    noiseHit(.5, .07, 'lowpass', 900, 260);                       // 아래를 받치는 소리
+    tone(120, .3, .12, 'sawtooth', 0, 320);                       // 밀려 나가는 힘
 }
 
-// 완주 팡파레 — 1등이면 더 화려하게
+/* 완주 팡파레 — 나팔에 가깝게. 배음을 여러 겹 쌓고 끝을 길게 남긴다. */
 function sfxWin(first) {
     if (!audioCtx) return;
     if (playSfx('win', first ? .7 : .5)) return;
-    const t = audioCtx.currentTime;
-    const notes = first ? [523, 659, 784, 1047] : [523, 659, 784];
-    notes.forEach((fr, i) => {
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = 'triangle'; o.frequency.value = fr;
-        const st = t + i * .13;
-        g.gain.setValueAtTime(0, st);
-        g.gain.linearRampToValueAtTime(.11, st + .02);
-        g.gain.exponentialRampToValueAtTime(.001, st + .45);
-        o.connect(g); g.connect(masterOut());
-        o.start(st); o.stop(st + .5);
+    // 1등은 완전한 화음, 아니면 짧게
+    const line = first ? [[523, 0], [659, .12], [784, .24], [1047, .38]]
+                       : [[440, 0], [554, .12], [659, .26]];
+    line.forEach(([fr, at], i) => {
+        const last = i === line.length - 1;
+        const d = last ? 1.1 : .42;
+        tone(fr, d, .085, 'triangle', at);                        // 몸통
+        tone(fr * 2, d * .8, .04, 'sine', at);                    // 배음
+        tone(fr * 3, d * .5, .02, 'sine', at);
+        tone(fr / 2, d, .05, 'sine', at);                         // 아래를 받치는 저음
     });
+    // 마지막 음에 얹는 반짝임
+    if (first) { bell(1568, .9, .045, .38); bell(2093, .8, .03, .46); }
+    noiseHit(.6, .035, 'highpass', 4000, 1200);                   // 환호 같은 결
 }
 
-// 카운트다운 3·2·1 과 GO!
+// 카운트다운 : 낮은 북 세 번, 출발은 밝게 열린다
 function sfxCount() {
     if (!audioCtx) return;
     if (playSfx('count', .6)) return;
-    playBeep(660, .16);
+    tone(180, .22, .18, 'sine', 0, 90);                           // 북
+    noiseHit(.06, .06, 'lowpass', 1200, 300);                     // 가죽 치는 소리
 }
 function sfxGo() {
     if (!audioCtx) return;
     if (playSfx('go', .7)) return;
-    const t = audioCtx.currentTime;
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = 'square';
-    o.frequency.setValueAtTime(700, t);
-    o.frequency.exponentialRampToValueAtTime(1500, t + .18);
-    g.gain.setValueAtTime(.10, t);
-    g.gain.exponentialRampToValueAtTime(.001, t + .38);
-    o.connect(g); g.connect(masterOut());
-    o.start(); o.stop(t + .4);
+    [523, 659, 784].forEach((fr, i) => {                          // 화음이 한꺼번에 열린다
+        tone(fr, .5, .075, 'triangle', 0);
+        tone(fr * 2, .35, .03, 'sine', 0);
+    });
+    noiseHit(.3, .09, 'bandpass', 600, 4200, 1.4);                // 출발 바람
+    tone(90, .28, .14, 'sine', 0, 60);
 }
 
+/* UI 와 체크포인트에 쓰는 짧은 소리. 사인 하나면 딱딱하니 배음을 살짝 얹는다. */
 function playBeep(freq, dur) {
     try {
         if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); loadSfx(); }
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.frequency.value = freq; o.type = 'square'; g.gain.value = .05;
-        g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
-        o.connect(g); g.connect(masterOut());
-        o.start(); o.stop(audioCtx.currentTime + dur);
+        const t = audioCtx.currentTime;
+        // 사각파 하나면 삐 소리가 난다. 부드러운 몸통에 배음 한 겹만 얹어 둥글게.
+        const mk = (f, v, type) => {
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = type; o.frequency.value = f;
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(v, t + .006);
+            g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+            o.connect(g); g.connect(masterOut());
+            o.start(t); o.stop(t + dur + .02);
+        };
+        mk(freq, .05, 'triangle');
+        mk(freq * 2, .018, 'sine');
     } catch (e) {}
 }
 
