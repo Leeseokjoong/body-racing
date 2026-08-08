@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0856</div>
+<div id="build">v260808.0910</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2178,9 +2178,37 @@ function buildTrack(sys) {
             decor.push({ x, y, r: 16 + rng() * 30, kind: rng(), hue: rng(), ph: rng() * TAU });
     }
 
+    /* ---- 관중석 ----
+       코스 밖이 텅 비어 있으면 들판이지 경기장이 아니다.
+       관중이 있어야 '경기'가 된다.
+       곧게 뻗은 구간의 바깥쪽에 세운다 — 코너 안쪽에 두면 시야를 가린다.
+       서로 충분히 떨어뜨려 코스를 한 바퀴 도는 동안 몇 번만 마주치게 한다. */
+    const stands = [];
+    {
+        const WANT = 4, GAP = Math.floor(N / (WANT + 1));
+        for (let n = 0; n < WANT; n++) {
+            // 원하는 자리 근처에서 가장 곧은 지점을 고른다
+            let best = -1, bestCurve = 1e9;
+            for (let d = -GAP * .3; d < GAP * .3; d += 3) {
+                const i = (Math.floor(n * GAP + GAP * .5 + d) % N + N) % N;
+                const c = pts[i].curve || 0;
+                if (c < bestCurve) { bestCurve = c; best = i; }
+            }
+            if (best < 0 || bestCurve > .18) continue;      // 곧은 데가 없으면 거른다
+            const p = pts[best];
+            // 코스가 휘는 반대쪽(바깥)에 세운다
+            const nx = pts[(best + 6) % N], side = angDiff(nx.ang, p.ang) > 0 ? -1 : 1;
+            const off = (p.hw || hw) + 128;
+            stands.push({
+                x: p.x - p.dy * off * side, y: p.y + p.dx * off * side,
+                ang: p.ang, side, len: 330 + rng() * 190, seed: rng()
+            });
+        }
+    }
+
     const checkpoints = sys.flow.map((node, i) => ({ si: Math.min(nodeIdx[i] * SEG_SAMPLES, N - 1), node, num: i + 1 }));
 
-    return { sys, pts, N, total, closed, halfWidth: hw, secs, paths, fullPath, bounds, items, hazards, pads, decor, checkpoints };
+    return { sys, pts, N, total, closed, halfWidth: hw, secs, paths, fullPath, bounds, items, hazards, pads, decor, stands, checkpoints };
 }
 
 /* ============================================================================
@@ -3098,6 +3126,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     bridgeAlpha = lerp(bridgeAlpha, pu ? .34 : 1, .12);
 
     drawDecor(g, inView);
+    drawStands(g, inView);
     drawLandmarks(g, inView);
     drawChambers(g, inView);
     drawOrgans(g, inView);
@@ -3231,6 +3260,64 @@ function drawSpeedLines(g) {
     }
     g.restore();
     g.globalAlpha = 1;
+}
+
+/* ---- 관중석 ----
+   계단식 스탠드 세 단과 그 위에서 응원하는 세포들.
+   관중은 혈관 밖의 세포다 — 이 게임에서는 그게 맞고, 동그라미라 그리기도 쉽다.
+   달리는 카트를 따라 고개를 돌리고, 가까이 지날 때 더 크게 들썩인다. */
+function drawStands(g, inView) {
+    if (!track.stands) return;
+    const t = performance.now() / 1000;
+    for (const st of track.stands) {
+        if (!inView(st.x, st.y, st.len)) continue;
+        const L = st.len, D = 92;                       // 길이 / 깊이(단 세 개)
+        g.save(); g.translate(st.x, st.y); g.rotate(st.ang);
+
+        // 뒤쪽 벽
+        g.fillStyle = '#2b3442';
+        g.beginPath(); g.roundRect(-L / 2, -D * st.side, L, D, 10); g.fill();
+        g.strokeStyle = '#151b24'; g.lineWidth = 4; g.stroke();
+
+        // 계단 세 단 : 코스에서 멀수록 높다
+        for (let row = 0; row < 3; row++) {
+            const y0 = (-D + row * (D / 3)) * st.side;
+            g.fillStyle = row % 2 ? '#3a4658' : '#44536a';
+            g.fillRect(-L / 2 + 6, Math.min(y0, y0 + (D / 3) * st.side), L - 12, D / 3);
+        }
+
+        // 관중 : 줄지어 앉은 세포들
+        const cols = Math.floor(L / 26);
+        for (let row = 0; row < 3; row++) {
+            for (let c = 0; c < cols; c++) {
+                const seed = st.seed * 97 + row * 13 + c * 7;
+                if ((seed * 9301 % 233) / 233 < .12) continue;      // 빈자리
+                const x = -L / 2 + 16 + c * ((L - 32) / (cols - 1 || 1));
+                const y = (-D + (row + .5) * (D / 3)) * st.side;
+                // 카트가 가까울수록 크게 들썩인다
+                const near = player ? clamp(1 - Math.hypot(player.x - st.x, player.y - st.y) / 1400, 0, 1) : .3;
+                const jump = Math.abs(Math.sin(t * (3 + near * 5) + seed)) * (2 + near * 7);
+                const hue = (seed * 53) % 360;
+                g.fillStyle = 'rgba(0,0,0,.3)';
+                g.beginPath(); g.ellipse(x, y + 5, 7, 3.5, 0, 0, TAU); g.fill();
+                g.fillStyle = `hsl(${hue},52%,${58 + (seed % 5) * 4}%)`;
+                g.beginPath(); g.arc(x, y - jump, 7.5, 0, TAU); g.fill();
+                g.strokeStyle = 'rgba(20,14,20,.65)'; g.lineWidth = 2; g.stroke();
+                // 눈 두 개 — 카트 쪽을 본다
+                if (near > .25) {
+                    g.fillStyle = '#1b1420';
+                    const look = clamp((player.x - st.x) / 700, -1, 1) * 1.6;
+                    g.beginPath(); g.arc(x - 2.4 + look, y - jump - 1, 1.5, 0, TAU); g.fill();
+                    g.beginPath(); g.arc(x + 2.4 + look, y - jump - 1, 1.5, 0, TAU); g.fill();
+                }
+            }
+        }
+
+        // 코스 쪽 난간
+        g.strokeStyle = '#8fa4bd'; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(-L / 2 + 4, 0); g.lineTo(L / 2 - 4, 0); g.stroke();
+        g.restore();
+    }
 }
 
 /* ---- 도로 밖 = 서킷 바깥 ----
@@ -3588,6 +3675,33 @@ function drawRoadLayer(g, secs, zoom, lift, alpha) {
             g.stroke(track.paths[s.idx]); g.restore();
         }
     });
+
+    /* --- 노면 발광 라인 ---
+       도로 양 가장자리를 따라 빛이 흐른다. 코스의 윤곽이 또렷해져서
+       멀리서도 길이 어디로 휘는지 바로 읽힌다.
+       흐르는 방향이 곧 진행 방향이라, 역주행하면 빛이 거꾸로 다가온다. */
+    {
+        const t = performance.now() / 1000;
+        g.save();
+        g.lineCap = 'round';
+        for (const sc of secs) {
+            if (sc.jump) continue;
+            const col = sc.color;
+            // 바닥에 깔린 은은한 띠
+            g.globalAlpha = alpha * .5;
+            g.strokeStyle = shade(col, .55); g.lineWidth = 7;
+            g.setLineDash([]);
+            g.stroke(sc.leftPath); g.stroke(sc.rightPath);
+            // 그 위를 흐르는 밝은 마디
+            g.globalAlpha = alpha * .95;
+            g.strokeStyle = '#eaf6ff'; g.lineWidth = 4;
+            g.setLineDash([26, 64]);
+            g.lineDashOffset = -t * 260;
+            g.stroke(sc.leftPath); g.stroke(sc.rightPath);
+        }
+        g.setLineDash([]); g.globalAlpha = alpha;
+        g.restore();
+    }
 
     // --- 판막 : 색이 딱 바뀌는 자리에는 실제로 문이 있다. 그 문짝을 그린다.
     secs.forEach(s => {
@@ -5315,6 +5429,7 @@ function startRace(id) {
 
     cam.x = player.x; cam.y = player.y;
     cam.targetZoom = .74; cam.zoom = .4;
+    victory = null;
     raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; countShown = -1; stickyHint = 0;
     subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
 
@@ -5491,6 +5606,88 @@ function showAdBreak(done) {
     };
 }
 
+/* ---- 승리 주행 ----
+   골인한 뒤 카트가 스스로 한동안 달린다. 카메라가 가까이 붙고,
+   관중이 일어서고, 등급이 화면 한가운데에 쿵 하고 찍힌다.
+   그동안 아무것도 누를 필요가 없다 — 방금 해낸 것을 눈으로 보는 시간이다. */
+let victory = null;
+
+function startVictoryLap(G) {
+    victory = { t: 0, grade: G, stamped: false };
+    cam.targetZoom = 1.05;                       // 가까이 붙어 카트를 크게
+    player.turbo = [];                            // 남은 터보는 접는다
+}
+
+function updateVictory(dt) {
+    if (!victory) return;
+    victory.t += dt;
+
+    // 카트가 스스로 달린다 (사람 손을 떠난 상태)
+    if (player && !player.aiOff) {
+        aiControl(player, dt);
+        player.aiThrottle = .62;                 // 여유 있게
+        player.aiDrift = false;
+    }
+
+    // 1.1초에 등급을 찍는다
+    if (!victory.stamped && victory.t > 1.1) {
+        victory.stamped = true;
+        cam.flash = .7; cam.shake = 10;
+        sfxBoost();
+        burstConfetti(player.x, player.y);
+    }
+    // 3.4초 뒤 결과로
+    if (victory.t > 3.4) { const g = victory; victory = null; cam.targetZoom = .74; showResult(); }
+}
+
+/* 화면 한가운데에 크게 찍히는 등급 도장 */
+function drawVictory(g) {
+    if (!victory) return;
+    const G = victory.grade;
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    // 위아래 검은 띠 — 연출 중이라는 신호
+    const bar = clamp(victory.t / .35, 0, 1) * 58;
+    g.fillStyle = 'rgba(6,10,16,.82)';
+    g.fillRect(0, 0, VW, bar); g.fillRect(0, VH - bar, VW, bar);
+
+    if (!victory.stamped) return;
+    const a = clamp((victory.t - 1.1) / .22, 0, 1);
+    const pop = victory.t - 1.1 < .22 ? 2.4 - a * 1.4 : 1 + Math.sin((victory.t - 1.32) * 5) * .015;
+
+    g.save();
+    g.translate(VW / 2, VH * .42);
+    g.globalAlpha = a;
+    g.scale(pop, pop);
+
+    // 등급 글자
+    g.font = 'bold 132px sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineWidth = 16; g.strokeStyle = '#12161f'; g.lineJoin = 'round';
+    g.strokeText(G.grade, 0, 0);
+    g.fillStyle = G.color; g.fillText(G.grade, 0, 0);
+
+    // 한 줄 평
+    g.font = 'bold 27px sans-serif';
+    g.lineWidth = 8; g.strokeStyle = '#12161f';
+    g.strokeText(T(G.word), 0, 92);
+    g.fillStyle = '#fff'; g.fillText(T(G.word), 0, 92);
+    g.restore();
+
+    // 순위
+    g.save();
+    g.globalAlpha = a;
+    g.translate(VW / 2, VH * .42 - 118);
+    g.font = 'bold 34px sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const rk = LANG === 'en' ? (['1st', '2nd', '3rd', '4th'][player.rank - 1] || player.rank)
+                             : player.rank + '위';
+    g.lineWidth = 9; g.strokeStyle = '#12161f'; g.strokeText(rk, 0, 0);
+    g.fillStyle = '#ffe066'; g.fillText(rk, 0, 0);
+    g.restore();
+    g.globalAlpha = 1;
+}
+
 function endRace() {
     state = 'finish';
     updateRanks(); burstConfetti(player.x, player.y);
@@ -5559,10 +5756,10 @@ function endRace() {
     renderGarage();
 
     if (!SHOW_QUIZ) {
-        // 완주한 순간의 보상(등급·기록)을 먼저 보여 준다.
-        //   광고가 그 앞을 막으면 방금 해낸 일이 묻힌다. 광고는 나갈 때 띄운다.
+        // 골인하자마자 창이 뜨면 장난감 멈추듯 뚝 끊긴다.
+        //   잠깐 승리 주행을 보여 주고 나서 결과로 넘어간다.
         renderGarage();
-        setTimeout(showResult, 1400);
+        startVictoryLap(G);
         return;
     }
 
@@ -5615,6 +5812,7 @@ function loop(now) {
         karts.forEach(k => { if (!k.isPlayer && !k.finished && k.lap > track.sys.laps) finishKart(k); });
     } else if (state === 'finish') {
         karts.forEach(k => updateKart(k, dt));
+        updateVictory(dt);
     }
 
     if (state !== 'menu') { updateEffects(dt); updateSkills(dt); updateSubtitle(dt); stickyHint -= dt; }
@@ -5628,6 +5826,7 @@ function loop(now) {
         if (player && state === 'race')
             sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
         else sfxSkid(0);
+        drawVictory(ctx);
         if (state !== 'menu') updateHud();
     } catch (e) {
         if (!loop.warned) {                     // 같은 오류로 화면을 도배하지 않는다
