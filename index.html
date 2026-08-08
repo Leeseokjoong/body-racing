@@ -827,7 +827,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.0945</div>
+<div id="build">v260808.0956</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2178,7 +2178,8 @@ function buildTrack(sys) {
             decor.push({ x, y, r: 16 + rng() * 30, kind: rng(), hue: rng(), ph: rng() * TAU });
     }
 
-    /* ---- 관중석 ----
+    
+/* ---- 관중석 ----
        코스 밖이 텅 비어 있으면 들판이지 경기장이 아니다.
        관중이 있어야 '경기'가 된다.
        곧게 뻗은 구간의 바깥쪽에 세운다 — 코너 안쪽에 두면 시야를 가린다.
@@ -3161,6 +3162,9 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     drawConfetti(g);
     g.restore();
 
+    // 빛 : 세상을 다 그린 뒤 어둠을 덮고 빛나는 것만 도려낸다
+    if (!fullMap) drawLighting(g, zoom);
+
     // 화면 가장자리 비네트 (입체감)
     const vg = g.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .42, VW / 2, VH / 2, Math.max(VW, VH) * .78);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.42)');
@@ -3261,6 +3265,78 @@ function drawSpeedLines(g) {
     g.restore();
     g.globalAlpha = 1;
 }
+
+/* ---- 빛 ----
+   화면 전체에 어둠을 한 겹 덮고, 빛나는 것들만 그 어둠을 도려낸다.
+   그러면 심장이 뛸 때 주변이 함께 밝아지고, 부스터를 켜면 길이 훤해진다.
+   무거운 계산 없이 'destination-out' 한 번이면 되므로 폰에서도 부담이 없다.
+
+   빛의 세기는 계통마다 다르다 — 뇌는 어둑하고, 폐는 환하다. */
+const LIGHT_DARK = { circulatory: .30, digestive: .26, respiratory: .18, nervous: .42, urinary: .28 };
+let lightCv = null, lightG = null;
+
+function drawLighting(g, zoom) {
+    const dark = LIGHT_DARK[track.sys.id];
+    if (!dark) return;
+
+    if (!lightCv) { lightCv = document.createElement('canvas'); lightG = lightCv.getContext('2d'); }
+    if (lightCv.width !== Math.ceil(VW) || lightCv.height !== Math.ceil(VH)) {
+        lightCv.width = Math.ceil(VW); lightCv.height = Math.ceil(VH);
+    }
+    const L = lightG;
+    L.setTransform(1, 0, 0, 1, 0, 0);
+    L.globalCompositeOperation = 'source-over';
+    L.clearRect(0, 0, VW, VH);
+
+    // 어둠 한 겹
+    L.fillStyle = `rgba(6,10,20,${dark})`;
+    L.fillRect(0, 0, VW, VH);
+
+    // 화면 좌표로 옮기는 붓 (카메라와 같은 변환)
+    const toS = (x, y) => [(x - cam.x) * zoom + VW / 2, (y - cam.y) * zoom + VH / 2];
+    L.globalCompositeOperation = 'destination-out';
+
+    const glow = (x, y, r, strength) => {
+        const [sx, sy] = toS(x, y);
+        const sr = r * zoom;
+        if (sx < -sr || sx > VW + sr || sy < -sr || sy > VH + sr) return;
+        const gr = L.createRadialGradient(sx, sy, 0, sx, sy, sr);
+        gr.addColorStop(0, `rgba(0,0,0,${strength})`);
+        gr.addColorStop(.55, `rgba(0,0,0,${strength * .45})`);
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        L.fillStyle = gr;
+        L.beginPath(); L.arc(sx, sy, sr, 0, TAU); L.fill();
+    };
+
+    // 기관(랜드마크)은 은은하게 늘 빛난다 — 심장은 박동에 맞춰
+    const t = performance.now() / 1000;
+    (track.sys.landmarks || []).forEach(lm => {
+        const beat = lm.type === 'heart' ? 1 + Math.pow(Math.max(0, Math.sin(t * 2.2)), 6) * .18 : 1;
+        glow(lm.at[0], lm.at[1], lm.r * .95 * beat, .5);
+    });
+
+    // 펌프(심실·들숨·여과)는 밀어낼 때마다 번쩍인다
+    for (const p of track.pads) {
+        const pulse = .35 + Math.abs(Math.sin(t * 2.4 + p.x * .01)) * .4;
+        glow(p.x, p.y, 210, pulse);
+    }
+
+    // 카트 : 앞을 비추는 불빛
+    for (const k of karts) {
+        const boosting = k.boostTime > 0 || k.starTime > 0;
+        const ahead = 60 + (boosting ? 90 : 0);
+        glow(k.x + Math.cos(k.ang) * ahead, k.y + Math.sin(k.ang) * ahead,
+             boosting ? 340 : 210, boosting ? 1 : .7);
+    }
+
+    // 아이템 알약도 살짝
+    for (const it of track.items) if (it.alive) glow(it.x, it.y, 90, .45);
+
+    L.globalCompositeOperation = 'source-over';
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    g.drawImage(lightCv, 0, 0, VW, VH);
+}
+
 
 /* ---- 관중석 ----
    계단식 스탠드 세 단과 그 위에서 응원하는 세포들.
@@ -6142,29 +6218,36 @@ function autoGas() {
 
 function syncKeys() {
     const k = key => !!keys[key];
-    input.gas   = k('w') || k('W') || k('ArrowUp') || autoGas();
-    input.brake = k('s') || k('S') || k('ArrowDown') || touchState.brake;
-    input.left  = k('a') || k('A') || k('ArrowLeft') || touchState.left;
-    input.right = k('d') || k('D') || k('ArrowRight') || touchState.right;
-    input.drift = k(' ') || k('Shift') || touchState.drift;
+    input.gas   = k('w') || k('W') || k('KeyW') || k('ArrowUp')    || autoGas();
+    input.brake = k('s') || k('S') || k('KeyS') || k('ArrowDown')  || touchState.brake;
+    input.left  = k('a') || k('A') || k('KeyA') || k('ArrowLeft')  || touchState.left;
+    input.right = k('d') || k('D') || k('KeyD') || k('ArrowRight') || touchState.right;
+    input.drift = k(' ') || k('Space') || k('Shift') || k('ShiftLeft') || k('ShiftRight')
+               || touchState.drift;
     input.axis  = touchState.axis;          // 조향 패드에서 온 아날로그 값 (-1 ~ 1)
-    input.turbo = k('e') || k('E') || touchState.turbo;
+    input.turbo = k('e') || k('E') || k('KeyE') || touchState.turbo;
 }
 
+/* 한글 입력 상태에서는 e.key 가 'ㅈ','ㅁ','ㄴ','ㅇ','ㄷ' 로 들어와 WASD·E 가 먹지 않는다.
+   그래서 자판의 '위치'(e.code)도 함께 기억한다. 위치는 입력기와 무관하다. */
 window.addEventListener('keydown', e => {
-    keys[e.key] = true; syncKeys();
-    if (e.key === ' ') e.preventDefault();
+    keys[e.key] = true; if (e.code) keys[e.code] = true;
+    syncKeys();
+    if (e.key === ' ' || e.code === 'Space') e.preventDefault();
     if (e.key === 'Enter') {
         e.preventDefault();
         if (state === 'race') useItemFor(player);
         else if (state === 'menu') startRace(selectedId);
     }
-    if (e.key === 'm' || e.key === 'M') fullMap = !fullMap;
+    if (e.key === 'm' || e.key === 'M' || e.code === 'KeyM') fullMap = !fullMap;
     if (e.key === '+' || e.key === '=') zoomBy(1.18);
     if (e.key === '-' || e.key === '_') zoomBy(.85);
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
 });
-window.addEventListener('keyup', e => { keys[e.key] = false; syncKeys(); });
+window.addEventListener('keyup', e => {
+    keys[e.key] = false; if (e.code) keys[e.code] = false;
+    syncKeys();
+});
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; syncKeys(); });
 
 /* ---- 터치 버튼 ---- */
