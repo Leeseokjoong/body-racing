@@ -759,6 +759,11 @@
         #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
     }
 
+/* ---- 방침서 링크 ---- */
+#legalRow { margin-top: 12px; text-align: center; }
+#legalRow a { color: #6f86a6; font-size: 12px; text-decoration: none; border-bottom: 1px solid rgba(111,134,166,.35); }
+#legalRow a:hover { color: #9fd0ff; border-bottom-color: rgba(159,208,255,.6); }
+
 /* ---- 타임 어택 ---- */
 #taBox { margin: 6px auto 0; max-width: 620px; text-align: center; }
 .taLine { font-size: 13px; color: #cfe3ff; line-height: 1.7; }
@@ -856,7 +861,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1033</div>
+<div id="build">v260808.1201</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -957,6 +962,10 @@
     <div id="goRow">
         <button class="btn" id="startBtn">레이스 시작</button>
         <button class="btn small" id="quizBtn">퀴즈방</button>
+    </div>
+    <!-- 광고를 붙인 이상 방침서는 어디서든 닿을 수 있어야 한다 (스토어 심사 요건이기도 하다) -->
+    <div id="legalRow">
+        <a href="privacy.html" target="_blank" rel="noopener">개인정보처리방침</a>
     </div>
 </div>
 
@@ -1206,7 +1215,7 @@ const EN = {
 
 // ── 광고 · 안내
 '광고': 'Ad', '5초 후 건너뛰기': 'Skip in 5s', '초 후 건너뛰기': 's until skip',
-'건너뛰기': 'Skip', '광고 자리': 'Ad slot',
+'건너뛰기': 'Skip', '광고 자리': 'Ad slot', '개인정보처리방침': 'Privacy Policy',
 
 // 타임 어택
 '타임 어택': 'Time Attack', '기록 도전': 'SET A TIME',
@@ -6946,6 +6955,11 @@ document.querySelectorAll('.modeBtn').forEach(b => {
         refreshModeUI();
     };
 });
+// 방침서도 지금 보고 있는 언어로 열어 준다
+document.querySelector('#legalRow a').onclick = function () {
+    this.href = 'privacy.html#' + (LANG === 'en' ? 'en' : 'ko');
+};
+
 el('createRoom').onclick = createRoom;
 el('joinRoom').onclick = joinRoom;
 el('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
