@@ -759,6 +759,20 @@
         #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
     }
 
+/* ---- 온라인 : 연결 경고 · 로비 색점 ---- */
+#netWarn {
+    position: absolute; left: 50%; top: 64px; transform: translateX(-50%);
+    background: rgba(150,40,40,.92); color: #ffe0e0;
+    border: 1px solid rgba(255,140,140,.5); border-radius: 9px;
+    padding: 7px 16px; font-size: 13px; font-weight: 700;
+    letter-spacing: .02em; white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity .25s; z-index: 30;
+}
+#netWarn.on { opacity: 1; }
+.lbDot { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+         margin-right: 7px; vertical-align: baseline;
+         box-shadow: 0 0 0 1px rgba(0,0,0,.45) inset; }
+
 /* ---- 방침서 링크 ---- */
 #legalRow { margin-top: 12px; text-align: center; }
 #legalRow a { color: #6f86a6; font-size: 12px; text-decoration: none; border-bottom: 1px solid rgba(111,134,166,.35); }
@@ -852,6 +866,8 @@
     <div id="toast"><div class="tt"></div><div class="td"></div></div>
     <button id="exitRace" title="메뉴로 나가기">나가기</button>
     <div id="wrongWay">반대 방향! 돌아가세요</div>
+    <!-- 끊기면 알려 준다. 아무 말 없이 상대가 멈추면 게임이 고장 난 줄 안다. -->
+    <div id="netWarn">연결이 끊겼습니다 · 다시 잇는 중</div>
     <div id="bigMsg"></div>
 </div>
 
@@ -861,7 +877,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1212</div>
+<div id="build">v260808.1337</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1037,7 +1053,8 @@
 <script type="module">
 // Firebase : 온라인 멀티플레이용. 실패해도 게임은 그대로 돌아간다.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp }
+import { getDatabase, ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp,
+         runTransaction, onChildAdded, onChildChanged, onChildRemoved }
     from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
 const firebaseConfig = {
@@ -1051,7 +1068,8 @@ const firebaseConfig = {
 };
 try {
     const fbApp = initializeApp(firebaseConfig);
-    window.FB = { db: getDatabase(fbApp), ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp };
+    window.FB = { db: getDatabase(fbApp), ref, set, get, update, onValue, onDisconnect, remove,
+                  serverTimestamp, runTransaction, onChildAdded, onChildChanged, onChildRemoved };
 } catch (e) { window.FB = null; }
 </script>
 
@@ -1216,6 +1234,19 @@ const EN = {
 // ── 광고 · 안내
 '광고': 'Ad', '5초 후 건너뛰기': 'Skip in 5s', '초 후 건너뛰기': 's until skip',
 '건너뛰기': 'Skip', '광고 자리': 'Ad slot', '개인정보처리방침': 'Privacy Policy',
+
+// 온라인
+'연결이 끊겼습니다 · 다시 잇는 중': 'Disconnected · reconnecting',
+'다시 연결됨': 'Reconnected', '로비로': 'BACK TO LOBBY',
+'방을 만드는 중…': 'Creating a room…', '방을 찾는 중…': 'Looking for the room…',
+'방을 만들지 못했습니다. 잠시 뒤 다시 시도해 주세요.': 'Could not create a room. Please try again in a moment.',
+'온라인 기능을 사용할 수 없습니다. 인터넷 연결을 확인해 주세요.': 'Online play is unavailable. Please check your connection.',
+'온라인 기능을 사용할 수 없습니다.': 'Online play is unavailable.',
+'코드 6자리를 정확히 입력해 주세요.': 'Please enter the full 6-character code.',
+'그런 방이 없습니다. 코드를 다시 확인해 주세요.': 'No such room. Please check the code.',
+'방이 가득 찼습니다 (최대 4명).': 'That room is full (4 players max).',
+'5분 동안 친구가 들어오지 않아 방을 닫았습니다.': 'Nobody joined within 5 minutes, so the room was closed.',
+'다시 만들거나, 친구에게 코드를 보내고 참가해 보세요.': 'Create another one, or send a friend your code and join theirs.',
 
 // 타임 어택
 '타임 어택': 'Time Attack', '기록 도전': 'SET A TIME',
@@ -5493,24 +5524,68 @@ function playBeep(freq, dur) {
 
 /* ============================================================================
    온라인 멀티 — Firebase Realtime Database
-   방 코드 6자리로 친구끼리만 만난다. 채팅·닉네임 입력 없음(아동 안전).
+   ----------------------------------------------------------------------------
+   방 코드 6자리로 친구끼리만 만난다. 채팅도 닉네임 입력도 없다(아동 안전).
+
+   구조를 이렇게 나눈 이유가 있다.
+       rooms/CODE/players/{id}   자리와 준비 상태 — 로비에서만 듣는다
+       rooms/CODE/race           출발 신호 하나 — 로비에서만 듣는다
+       rooms/CODE/ghosts/{id}    달리는 중 좌표 — 레이스에서만 듣는다
+   예전에는 방 전체를 하나로 듣고 있었다. 그런데 좌표는 초당 12번씩 바뀌므로,
+   방 전체가 초당 수십 번 다시 내려왔다 — 사람이 늘수록 통신량이 제곱으로 불었다.
+   지금은 각자 필요한 가지만 듣는다.
+
+   자리(seat)는 트랜잭션으로 하나씩만 나눠 준다. 동시에 들어와도 번호가 겹치지
+   않고, 다섯 명째는 아예 들어오지 못한다. 색과 이름은 이 번호에서 나오므로
+   모든 사람의 화면에서 같은 친구가 같은 색으로 보인다.
    ========================================================================== */
-const WAIT_LIMIT = 300;   // 방에서 친구를 기다리는 최대 시간(초)
+const WAIT_LIMIT  = 300;   // 방에서 친구를 기다리는 최대 시간(초)
+const MAX_PLAYERS = 4;
+const SEND_EVERY  = 80;    // 내 좌표를 올리는 간격(ms) — 초당 12번쯤
+const PEER_STALE  = 2.5;   // 이만큼 소식이 없으면 AI 가 대신 몬다(초)
 
 const net = {
     on: false,            // 온라인 모드로 달리는 중인가
-    waitLeft: 0,          // 남은 대기 시간
-    waitTimer: null,      // 카운트다운 인터벌
+    waitLeft: 0, waitTimer: null,
     roomId: null,
     myId: null,
-    myName: '1P',         // 상대 화면에 뜰 내 이름
-    hostId: null,         // 누가 방장인가
-    isHost: false,
+    mySeat: 0,            // 0~3. 색과 이름이 여기서 나온다
+    myName: '1P',
+    hostId: null, isHost: false,
     mapId: 'circulatory',
-    peers: {},            // 상대 카트들 { id: {kart, target} }
+    peers: {},            // 자리번호 -> { kart, id, ai, tx, ty, ta, vx, vy, last }
     lastSend: 0,
-    unsub: []
+    clockOff: 0,          // 서버 시각 - 내 시각 (기기 시계가 틀려도 같이 출발하게)
+    live: true,           // 지금 서버와 이어져 있는가
+    lastRaceAt: 0,        // 이미 시작한 신호는 다시 받지 않는다
+    swept: false,         // 빈 방을 이미 치웠는가 (두 번 치우려다 되돌지 않게)
+    lobbyUnsub: [], raceUnsub: [],
+    roomKill: null
 };
+
+const seatName = seat => (seat + 1) + 'P';
+const netNow = () => Date.now() + net.clockOff;
+
+/* 서버 시계와 연결 상태를 계속 지켜본다. 딱 한 번만 건다. */
+function netWatchInfo() {
+    if (!window.FB || netWatchInfo.done) return;
+    netWatchInfo.done = true;
+    try {
+        FB.onValue(FB.ref(FB.db, '.info/serverTimeOffset'), s => { net.clockOff = s.val() || 0; });
+        FB.onValue(FB.ref(FB.db, '.info/connected'), s => {
+            net.live = !!s.val();
+            netShowWarn();
+        });
+    } catch (e) {}
+}
+
+/* 끊겼을 때 화면에 알려 준다 — 아무 말 없이 상대가 멈추면 게임이 고장 난 줄 안다 */
+function netShowWarn() {
+    const w = el('netWarn');
+    if (!w) return;
+    w.classList.toggle('on', net.on && !net.live);
+    w.textContent = T('연결이 끊겼습니다 · 다시 잇는 중');
+}
 
 function randomCode() {
     const AB = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // 헷갈리는 글자 제외
@@ -5520,70 +5595,122 @@ function randomCode() {
 }
 
 function netStatus(html) { el('roomState').innerHTML = html; }
+function netDrop(list) { list.forEach(f => { try { f(); } catch (e) {} }); list.length = 0; }
+
+/* 상대 카트를 판에서 걷어낸다 (판이 새로 시작될 때) */
+function netResetPeers() {
+    Object.values(net.peers).forEach(p => {
+        const i = karts.indexOf(p.kart);
+        if (i >= 0) karts.splice(i, 1);
+    });
+    net.peers = {};
+}
 
 function netCleanup() {
     if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
     net.waitLeft = 0;
-    net.unsub.forEach(f => { try { f(); } catch (e) {} });
-    net.unsub = [];
+    netDrop(net.lobbyUnsub); netDrop(net.raceUnsub);
     if (window.FB && net.roomId && net.myId) {
-        try { FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}`)); } catch (e) {}
+        // 방장이 로비에서 나가면 방을 닫는다. 남은 사람이 빈 방을 보고 있을 이유가 없다.
+        try {
+            if (net.isHost) FB.remove(FB.ref(FB.db, `rooms/${net.roomId}`));
+            else {
+                FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}`));
+                FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`));
+            }
+        } catch (e) {}
     }
-    net.on = false; net.roomId = null; net.myId = null; net.isHost = false; net.peers = {};
+    if (net.roomKill) { try { net.roomKill.cancel(); } catch (e) {} net.roomKill = null; }
+    netResetPeers();
+    net.on = false; net.roomId = null; net.myId = null; net.isHost = false;
+    net.lastRaceAt = 0; net.swept = false;
+    netShowWarn();
 }
 
+/* ---- 방 만들기 ----
+   예전에는 만든 코드를 그냥 덮어썼다. 아주 드물지만 같은 코드가 두 번 나오면
+   먼저 놀고 있던 친구들의 방이 소리 없이 사라졌다. 이제는 빈 자리에만 쓴다. */
 async function createRoom() {
-    if (!window.FB) { netStatus('온라인 기능을 사용할 수 없습니다. 인터넷 연결을 확인해 주세요.'); return; }
+    if (!window.FB) { netStatus(T('온라인 기능을 사용할 수 없습니다. 인터넷 연결을 확인해 주세요.')); return; }
+    netWatchInfo();
     netCleanup();
-    const code = randomCode();
-    net.roomId = code;
-    net.myId = 'p' + Math.random().toString(36).slice(2, 9);
-    net.isHost = true;
-    net.hostId = net.myId;
-    net.mapId = selectedId;
-    net.myName = '1P';
+    netStatus(T('방을 만드는 중…'));
 
-    const roomRef = FB.ref(FB.db, `rooms/${code}`);
-    await FB.set(roomRef, {
-        createdAt: FB.serverTimestamp(),
-        mapId: selectedId,
-        state: 'lobby',
-        hostId: net.myId,
-        players: { [net.myId]: { name: '1P', color: 0, ready: false, joinedAt: FB.serverTimestamp() } }
-    });
-    // 로비에서 방장이 나가면 방을 닫는다. 출발한 뒤에는 이 예약을 취소하고
-    //   내 자리만 지우게 바꾼다 (안 그러면 방장이 끊길 때 남은 사람의 레이스가 사라진다)
+    const myId = 'p' + Math.random().toString(36).slice(2, 9);
+    let code = null;
+    for (let tryN = 0; tryN < 6 && !code; tryN++) {
+        const c = randomCode();
+        try {
+            const r = await FB.runTransaction(FB.ref(FB.db, `rooms/${c}`), cur => {
+                if (cur) return;                       // 이미 쓰는 코드 — 다른 코드로
+                return {
+                    createdAt: Date.now(), mapId: selectedId, hostId: myId,
+                    players: { [myId]: { seat: 0, ready: false } }
+                };
+            });
+            if (r && r.committed) code = c;
+        } catch (e) { break; }
+    }
+    if (!code) { netStatus(T('방을 만들지 못했습니다. 잠시 뒤 다시 시도해 주세요.')); return; }
+
+    net.roomId = code; net.myId = myId;
+    net.isHost = true; net.hostId = myId;
+    net.mapId = selectedId;
+    net.mySeat = 0; net.myName = seatName(0);
+
+    // 로비에서 방장이 끊기면 방을 통째로 닫는다 (출발한 뒤에는 이 예약을 거둔다)
     net.roomKill = FB.onDisconnect(FB.ref(FB.db, `rooms/${code}`));
     net.roomKill.remove();
-    watchRoom(code);
+
+    watchLobby(code);
     startWaitTimer();
-    renderRoomStatus({ [net.myId]: { name: '1P' } });
 }
 
+/* ---- 방 참가 ----
+   자리 배정을 트랜잭션으로 한다. 셋이 동시에 눌러도 2P·3P·4P 가 되고,
+   다섯 번째 사람은 확실하게 거절된다. 예전에는 셋이 동시에 들어오면
+   모두 '2P' 가 되고 색까지 같아졌다. */
 async function joinRoom() {
-    if (!window.FB) { netStatus('온라인 기능을 사용할 수 없습니다.'); return; }
+    if (!window.FB) { netStatus(T('온라인 기능을 사용할 수 없습니다.')); return; }
     const code = (el('roomInput').value || '').trim().toUpperCase();
-    if (code.length !== 6) { netStatus('코드 6자리를 정확히 입력해 주세요.'); return; }
+    if (code.length !== 6) { netStatus(T('코드 6자리를 정확히 입력해 주세요.')); return; }
+    netWatchInfo();
     netCleanup();
+    netStatus(T('방을 찾는 중…'));
 
     const snap = await FB.get(FB.ref(FB.db, `rooms/${code}`));
-    if (!snap.exists()) { netStatus('그런 방이 없습니다. 코드를 다시 확인해 주세요.'); return; }
+    if (!snap.exists()) { netStatus(T('그런 방이 없습니다. 코드를 다시 확인해 주세요.')); return; }
     const room = snap.val();
-    const count = Object.keys(room.players || {}).length;
-    if (count >= 4) { netStatus('방이 가득 찼습니다 (최대 4명).'); return; }
 
-    net.roomId = code;
-    net.myId = 'p' + Math.random().toString(36).slice(2, 9);
-    net.isHost = false;
+    const myId = 'p' + Math.random().toString(36).slice(2, 9);
+    let seat = -1;
+    try {
+        const r = await FB.runTransaction(FB.ref(FB.db, `rooms/${code}/players`), cur => {
+            const ps = cur || {};
+            const ids = Object.keys(ps);
+            if (ids.length >= MAX_PLAYERS) return;              // 가득 참 — 물러난다
+            const taken = new Set(ids.map(i => ps[i].seat));
+            let sN = 0; while (taken.has(sN)) sN++;
+            if (sN >= MAX_PLAYERS) return;
+            ps[myId] = { seat: sN, ready: false };
+            return ps;
+        });
+        if (r && r.committed && r.snapshot.val() && r.snapshot.val()[myId])
+            seat = r.snapshot.val()[myId].seat;
+    } catch (e) {}
+
+    if (seat < 0) { netStatus(T('방이 가득 찼습니다 (최대 4명).')); return; }
+
+    net.roomId = code; net.myId = myId;
+    net.isHost = false; net.hostId = room.hostId || null;
     net.mapId = room.mapId || 'circulatory';
     selectedId = net.mapId;
-    net.myName = (count + 1) + 'P';
+    net.mySeat = seat; net.myName = seatName(seat);
 
-    net.hostId = room.hostId || null;
-    await FB.set(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`),
-        { name: (count + 1) + 'P', color: count, ready: false, joinedAt: FB.serverTimestamp() });
-    FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/players/${net.myId}`)).remove();
-    watchRoom(code);
+    FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/players/${myId}`)).remove();
+    FB.onDisconnect(FB.ref(FB.db, `rooms/${code}/ghosts/${myId}`)).remove();
+
+    watchLobby(code);
     startWaitTimer();
 }
 
@@ -5596,12 +5723,10 @@ function startWaitTimer() {
         net.waitLeft--;
         renderRoomStatus();
         if (net.waitLeft <= 0) {
-            const code = net.roomId;
             clearInterval(net.waitTimer); net.waitTimer = null;
-            if (window.FB && code) { try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {} }
             netCleanup();
-            netStatus('5분 동안 친구가 들어오지 않아 방을 닫았습니다.<br>' +
-                      '다시 만들거나, 친구에게 코드를 보내고 참가해 보세요.');
+            netStatus(T('5분 동안 친구가 들어오지 않아 방을 닫았습니다.') + '<br>' +
+                      T('다시 만들거나, 친구에게 코드를 보내고 참가해 보세요.'));
         }
     }, 1000);
 }
@@ -5613,14 +5738,34 @@ function renderRoomStatus(players) {
     if (net.on || state !== 'menu') return;
     if (players) net.lastPlayers = players;
     const ps = net.lastPlayers || {};
-    const ids = Object.keys(ps);
+    // 자리 번호 순으로 세운다 — 누구 화면에서나 같은 순서로 보인다
+    const ids = Object.keys(ps).sort((a, b) => (ps[a].seat | 0) - (ps[b].seat | 0));
+
+    /* 방장이 나가 버리면 아무도 시작을 누를 수 없어 로비가 그대로 굳는다.
+       그래서 남은 사람 중 자리가 가장 앞선 사람이 방장을 이어받는다.
+       목록은 자리 순으로 세워져 있으므로 누구 화면에서나 같은 사람이 뽑힌다. */
+    if (ids.length && (!net.hostId || !ps[net.hostId])) {
+        net.hostId = ids[0];
+        if (net.hostId === net.myId && !net.isHost) {
+            net.isHost = true;
+            try {
+                FB.set(FB.ref(FB.db, `rooms/${net.roomId}/hostId`), net.myId);
+                // 이제 내가 나가면 방이 닫힌다
+                net.roomKill = FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}`));
+                net.roomKill.remove();
+            } catch (e) {}
+        }
+    }
+
     const meReady = !!(ps[net.myId] && ps[net.myId].ready);
     const allReady = ids.length >= 2 && ids.every(id => ps[id].ready);
 
     const rows = ids.map(id => {
-        const p = ps[id], me = id === net.myId;
+        const p = ps[id], me = id === net.myId, nm = seatName(p.seat | 0);
+        // 나는 내가 고른 차 색으로, 남은 자리 색으로 — 남의 화면에서 내가 보이는 색이다
+        const col = me ? carById(save.car).color : CAR_COLORS[(p.seat | 0) % 4];
         return `<div class="lbRow${me ? ' me' : ''}">
-            <span class="lbName">${p.name}${me ? ' ' + T('(나)') : ''}${id === net.hostId ? ' · ' + T('방장') : ''}</span>
+            <span class="lbName"><span class="lbDot" style="background:${col}"></span>${nm}${me ? ' ' + T('(나)') : ''}${id === net.hostId ? ' · ' + T('방장') : ''}</span>
             <span class="lbReady${p.ready ? ' on' : ''}">${p.ready ? T('준비 완료') : T('대기 중')}</span>
         </div>`;
     }).join('');
@@ -5649,31 +5794,47 @@ function renderRoomStatus(players) {
     const hb = el('hostStartBtn');
     if (hb) hb.onclick = () => {
         if (!allReady) return;
-        FB.update(FB.ref(FB.db, `rooms/${net.roomId}`),
-            { state: 'racing', startAt: Date.now() + 1600 }).catch(() => {});
+        // 서버 시계 기준으로 출발 시각을 정한다. 기기 시계가 틀려도 같이 달린다.
+        FB.set(FB.ref(FB.db, `rooms/${net.roomId}/race`), { at: netNow() + 1600 }).catch(() => {});
     };
     el('soloStartBtn').onclick = () => {
-        const code = net.roomId;
-        if (net.isHost && window.FB && code) { try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {} }
         netCleanup(); netStatus('');
-        startRace(selectedId);                 // 혼자 + AI 로
+        startRace(selectedId, false);          // 혼자 + AI 로
     };
 }
 
-function watchRoom(code) {
-    // 방 인원·준비 상태 변화. 시작은 방장이 직접 누른다.
-    const pRef = FB.ref(FB.db, `rooms/${code}/players`);
-    net.unsub.push(FB.onValue(pRef, snap => renderRoomStatus(snap.val() || {})));
-
-    // 시작 신호 : 방장이 정한 출발 시각(startAt)을 함께 받아 같은 순간에 달린다
-    net.unsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}`), snap => {
+function watchLobby(code) {
+    netDrop(net.lobbyUnsub);
+    // 사람과 준비 상태만 듣는다 (좌표는 여기 없다)
+    net.lobbyUnsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}/players`), snap => {
+        const ps = snap.val();
+        if (!ps || !Object.keys(ps).length) {
+            /* 아무도 없는 방은 남겨 둘 이유가 없다 — 다만 딱 한 번만 치운다.
+               지우면 이 알림이 다시 오는데, 그때 또 지우려 들면 끝없이 되돌게 된다. */
+            if (!net.on && !net.swept) {
+                net.swept = true;
+                try { FB.remove(FB.ref(FB.db, `rooms/${code}`)); } catch (e) {}
+            }
+            return;
+        }
+        net.swept = false;
+        renderRoomStatus(ps);
+    }));
+    // 출발 신호 하나만 듣는다
+    net.lobbyUnsub.push(FB.onValue(FB.ref(FB.db, `rooms/${code}/race`), snap => {
         const r = snap.val();
-        if (r && r.state === 'racing' && state === 'menu') startOnlineRace(r.startAt);
+        if (!r || !r.at) return;
+        if (r.at <= net.lastRaceAt) return;         // 이미 달린 신호
+        if (state !== 'menu') return;
+        net.lastRaceAt = r.at;
+        startOnlineRace(r.at);
     }));
 }
 
 function startOnlineRace(startAt) {
     if (net.waitTimer) { clearInterval(net.waitTimer); net.waitTimer = null; }
+    // 달리는 동안에는 로비 소식이 필요 없다 — 듣기를 끊어 통신량을 줄인다
+    netDrop(net.lobbyUnsub);
     // 출발했으니 '방 통째로 지우기' 예약을 거두고, 내 자리만 지우게 한다
     if (net.roomKill) { try { net.roomKill.cancel(); } catch (e) {} net.roomKill = null; }
     if (window.FB && net.roomId && net.myId) {
@@ -5681,58 +5842,122 @@ function startOnlineRace(startAt) {
         FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`)).remove();
     }
     net.on = true;
-    startRace(net.mapId);
+    netShowWarn();
+    startRace(net.mapId, false);
     // 늦게 신호를 받은 쪽은 카운트다운을 그만큼 줄여, 모두 같은 순간에 출발한다
-    if (startAt) countdown = clamp((startAt - Date.now()) / 1000 + 3.99, 1.2, 6);
-    // 상대 위치 구독
-    const gRef = FB.ref(FB.db, `rooms/${net.roomId}/ghosts`);
-    net.unsub.push(FB.onValue(gRef, snap => {
-        const all = snap.val() || {};
+    if (startAt) countdown = clamp((startAt - netNow()) / 1000 + 3.99, 1.2, 6);
 
-        // 사라진 사람 = 나갔거나 연결이 끊긴 사람. 그 자리를 AI 가 이어받는다.
-        //   카트를 없애 버리면 순위가 흔들리고 혼자 남은 사람이 심심해진다.
-        Object.keys(net.peers).forEach(id => {
-            if (all[id]) return;
-            const peer = net.peers[id];
-            delete net.peers[id];
-            const k = peer.kart;
-            if (!k || k.takenOver) return;
-            k.takenOver = true;
-            k.aiOff = false; k.isGhost = false;        // 이제부터 스스로 달린다
-            k.name = k.name + ' (AI)';
-            k.maxMul = .96; k.aiOffset = 0;
-            k.si = nearestSample(k.x, k.y);            // 어디쯤인지 다시 잡아 준다
-            if (state === 'race') popup(k.x, k.y, k.name + ' 이(가) 나갔습니다', '#9fd0ff');
-        });
+    netDrop(net.raceUnsub);
 
-        Object.entries(all).forEach(([id, g]) => {
-            if (id === net.myId) return;
-            let peer = net.peers[id];
-            if (!peer) {
-                const k = makeKart(false, (Object.keys(net.peers).length + 1) % 4, g.name || '친구');
-                k.maxMul = 1;
-                k.isGhost = true; k.aiOff = true;
-                k.x = g.x; k.y = g.y; k.ang = g.a;
-                karts.push(k);
-                peer = net.peers[id] = { kart: k };
+    /* 좌표는 '바뀐 사람 것만' 받는다.
+       ghosts 전체를 듣고 있으면 누구 하나가 움직일 때마다 네 사람 좌표가 통째로
+       다시 내려온다 — 사람 수의 제곱만큼 통신량이 는다. 자식 단위로 들으면
+       움직인 한 사람 몫만 온다. */
+    const gRoot = `rooms/${net.roomId}/ghosts`;
+
+    const apply = (id, g) => {
+        if (!g || id === net.myId) return;
+        const seat = clamp(g.s | 0, 0, MAX_PLAYERS - 1);
+        if (seat === net.mySeat) return;              // 내 자리를 흉내 내는 것은 무시
+        const now = performance.now();
+
+        /* 자리 번호로 찾는다 — 끊겼다 다시 들어오면 아이디는 바뀌지만 자리는 그대로다.
+           그래서 같은 사람의 카트가 둘로 늘어나지 않는다. */
+        let peer = net.peers[seat];
+        if (!peer) {
+            const k = makeKart(false, seat, seatName(seat));
+            k.maxMul = 1; k.isGhost = true; k.aiOff = true;
+            k.x = g.x; k.y = g.y; k.ang = g.a;
+            k.si = nearestSample(k.x, k.y);
+            karts.push(k);
+            peer = net.peers[seat] = { kart: k, seat, id, ai: false, vx: 0, vy: 0 };
+        }
+        peer.id = id;
+        netHandBack(peer);                            // 소식이 돌아왔다
+
+        // 이전 좌표와 견줘 속도를 짐작한다 (지연을 메워 부드럽게 달리게)
+        if (peer.last && peer.tx !== undefined) {
+            const dt = (now - peer.last) / 1000;
+            if (dt > .02 && dt < .5) {
+                peer.vx = (g.x - peer.tx) / dt;
+                peer.vy = (g.y - peer.ty) / dt;
             }
-            peer.tx = g.x; peer.ty = g.y; peer.ta = g.a;    // 목표 위치 (부드럽게 따라간다)
-            peer.kart.lap = g.lap || 1;
-            peer.kart.progress = g.prog || 0;
-        });
+        }
+        peer.tx = g.x; peer.ty = g.y; peer.ta = g.a; peer.last = now;
+        peer.kart.lap = g.lap || 1;
+        peer.kart.progress = g.prog || 0;
+        if (g.fin && !peer.kart.finished) { peer.kart.finished = true; peer.kart.finishTime = g.fin; }
+    };
+
+    net.raceUnsub.push(FB.onChildAdded(FB.ref(FB.db, gRoot), sn => apply(sn.key, sn.val())));
+    net.raceUnsub.push(FB.onChildChanged(FB.ref(FB.db, gRoot), sn => apply(sn.key, sn.val())));
+    // 나간 사람의 카트는 없애지 않는다 — 순위가 흔들리므로 AI 가 이어 몬다
+    net.raceUnsub.push(FB.onChildRemoved(FB.ref(FB.db, gRoot), sn => {
+        const g = sn.val() || {};
+        const peer = net.peers[clamp(g.s | 0, 0, MAX_PLAYERS - 1)];
+        if (peer && peer.id === sn.key) netTakeOver(peer);
     }));
+}
+
+/* 소식이 끊긴 자리를 AI 가 이어받는다 (되돌릴 수 있게 카트는 그대로 둔다) */
+function netTakeOver(peer) {
+    if (peer.ai) return;
+    peer.ai = true;
+    const k = peer.kart;
+    k.aiOff = false; k.isGhost = false;
+    k.maxMul = .96; k.aiOffset = 0;
+    k.si = nearestSample(k.x, k.y);
+    k.name = seatName(peer.seat) + ' (AI)';
+    if (state === 'race') popup(k.x, k.y, k.name, '#9fd0ff');
+}
+
+/* 다시 연결됐다. 그 사람에게 운전대를 돌려준다. */
+function netHandBack(peer) {
+    if (!peer.ai) return;
+    peer.ai = false;
+    const k = peer.kart;
+    k.aiOff = true; k.isGhost = true;
+    k.name = seatName(peer.seat);
+    if (state === 'race') popup(k.x, k.y, T('다시 연결됨'), '#7ee081');
+}
+
+/* ---- 레이스가 끝나면 로비로 돌아온다 ----
+   예전에는 '다시 도전' 이 그 자리에서 새 판을 시작해 버려서, 상대는 아직 결과
+   화면인데 나만 달리고 있었다. 다시 겨루려면 다 같이 준비를 눌러야 한다. */
+function netBackToLobby() {
+    if (!window.FB || !net.roomId || !net.myId) { backToMenu(); return; }
+    netDrop(net.raceUnsub);
+    netResetPeers();
+    net.on = false;
+    netShowWarn();
+    try {
+        FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`));
+        FB.set(FB.ref(FB.db, `rooms/${net.roomId}/players/${net.myId}/ready`), false);
+        if (net.isHost) {
+            FB.remove(FB.ref(FB.db, `rooms/${net.roomId}/race`));
+            net.roomKill = FB.onDisconnect(FB.ref(FB.db, `rooms/${net.roomId}`));
+            net.roomKill.remove();
+        }
+    } catch (e) {}
+    watchLobby(net.roomId);
+    startWaitTimer();
+    showMenu();
 }
 
 // 내 위치를 초당 12회 정도만 올린다 (트래픽 절약)
 function netSend() {
-    if (!net.on || !window.FB || !player) return;
+    if (!net.on || !window.FB || !player || !net.live) return;
     const now = performance.now();
-    if (now - net.lastSend < 80) return;
+    if (now - net.lastSend < SEND_EVERY) return;
     net.lastSend = now;
     FB.set(FB.ref(FB.db, `rooms/${net.roomId}/ghosts/${net.myId}`), {
+        s: net.mySeat,
         x: Math.round(player.x), y: Math.round(player.y),
         a: +player.ang.toFixed(2), lap: player.lap,
-        prog: Math.round(player.progress), name: net.myName || '친구'
+        prog: Math.round(player.progress),
+        // 완주 시각까지 보내야 순위가 맞는다. 안 보내면 상대가 먼저 골인해도
+        // 내 화면에서는 아무도 완주하지 않은 것이 되어 내가 1등이 된다.
+        fin: player.finished ? +player.finishTime.toFixed(2) : 0
     }).catch(e => { if (!netSend.warned) { netSend.warned = true; showDiag('위치 전송 실패\n' + (e && e.message)); } });
 }
 
@@ -5746,15 +5971,36 @@ function nearestSample(x, y) {
     return best;
 }
 
-// 받은 위치로 상대 카트를 부드럽게 이동시킨다 (네트워크 지연 보정)
+/* 받은 위치로 상대 카트를 옮긴다.
+   좌표는 초당 12번만 오므로 그대로 따라가면 뚝뚝 끊긴다. 그래서 마지막 두 좌표로
+   속도를 재어 '지금쯤 여기 있겠구나' 하는 자리를 짚고, 그쪽으로 미끄러지듯 붙인다. */
 function netInterp(dt) {
     if (!net.on) return;
+    const now = performance.now();
     Object.values(net.peers).forEach(p => {
-        if (p.tx === undefined) return;
-        const k = p.kart, t = 1 - Math.pow(.002, dt);
-        k.x = lerp(k.x, p.tx, t);
-        k.y = lerp(k.y, p.ty, t);
+        if (p.ai || p.tx === undefined) return;
+        if (p.last && now - p.last > PEER_STALE * 1000) { netTakeOver(p); return; }
+
+        const age = Math.min((now - (p.last || now)) / 1000, .4);
+        const gx = p.tx + (p.vx || 0) * age;
+        const gy = p.ty + (p.vy || 0) * age;
+        const k = p.kart, t = 1 - Math.pow(.0015, dt);
+        k.x = lerp(k.x, gx, t);
+        k.y = lerp(k.y, gy, t);
         k.ang += angDiff(p.ta, k.ang) * t;
+        k.speed = Math.hypot(p.vx || 0, p.vy || 0);      // 엔진음·바퀴 연출이 맞게 돌도록
+        k.wobble += dt * (2 + k.speed / 120);            // 통통 튀는 움직임도 살아 있게
+
+        /* 트랙 위 위치를 계속 따라잡는다. 이 값으로 다리 위인지 아래인지를 가리므로,
+           처음 한 번만 잡아 두면 상대가 내내 엉뚱한 층에 그려진다. */
+        const N = track.N;
+        let best = k.si, bd = 1e18;
+        for (let d = -8; d <= 16; d++) {
+            const i = ((k.si + d) % N + N) % N;
+            const q = track.pts[i], dd = (q.x - k.x) ** 2 + (q.y - k.y) ** 2;
+            if (dd < bd) { bd = dd; best = i; }
+        }
+        k.si = Math.sqrt(bd) > track.halfWidth * 6 ? nearestSample(k.x, k.y) : best;
     });
 }
 
@@ -6616,6 +6862,8 @@ function endRace() {
 
 function showResult() {
     resPage(1);                                  // 언제나 기록부터 보여 준다
+    // 온라인에서는 이 버튼이 '다시 겨루려면 로비로' 라는 뜻이 된다
+    el('retryBtn').textContent = T(net.on ? '로비로' : '다시 도전');
     el('result').classList.remove('hidden');
     el('hud').classList.add('hidden');
     el('touch').classList.remove('on'); document.body.classList.remove('touchUI');
@@ -7353,6 +7601,9 @@ el('exitRace').onclick = () => {
 el('retryBtn').onclick = () => {
     const id = track.sys.id;
     el('result').classList.add('hidden');
+    /* 온라인에서는 그 자리에서 새 판을 시작하면 안 된다.
+       상대는 아직 결과 화면인데 나만 달리게 된다. 다 같이 준비를 눌러야 다시 겨룬다. */
+    if (net.on) { showAdBreak(netBackToLobby); return; }
     const again = TA.on;                       // 같은 모드로 다시 달린다
     showAdBreak(() => startRace(id, again));    // 다음 판으로 넘어갈 때 광고
 };
@@ -7360,13 +7611,16 @@ el('menuBtn').onclick = () => {
     el('result').classList.add('hidden');
     showAdBreak(backToMenu);                   // 메뉴로 나갈 때 광고
 };
-function backToMenu() {
-    netCleanup();
+/* 화면만 메뉴로 되돌린다. 방에 남아 있는 채로 로비로 갈 때도 쓴다. */
+function showMenu() {
     state = 'menu';
     el('result').classList.add('hidden'); el('hud').classList.add('hidden');
     el('touch').classList.remove('on'); document.body.classList.remove('touchUI'); el('menu').classList.remove('hidden');
     renderCarPick();                       // 방금 번 포인트를 바로 쓸 수 있게 새로 그린다
-};
+}
+
+// 방에서 완전히 나가면서 메뉴로
+function backToMenu() { netCleanup(); showMenu(); }
 
 buildMenu();
 
