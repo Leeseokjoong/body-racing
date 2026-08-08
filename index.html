@@ -33,6 +33,12 @@
         padding: 10px 14px; z-index: 5;
     }
     .panel .t { font-size: 12px; letter-spacing: 2px; color: #8fc7f5; text-align: center; font-weight: bold; margin-bottom: 6px; }
+    /* ---- 감추기 ----
+       .hidden 은 "이건 지금 화면에 없다" 는 뜻이다. 그런데 #emotePad 처럼
+       아이디로 display 를 정해 둔 것들은 아이디 선택자가 더 세서 그대로 보였다.
+       이 함정을 이 프로젝트에서만 세 번 겪었다 (메뉴 · 타임어택 카드 · 말풍선 판).
+       그래서 여기서 한 번에 못 박는다. */
+    .hidden { display: none !important; }
     #hud.hidden { display: none; }
 
     #lapCard { top: 14px; left: 14px; min-width: 168px; }
@@ -900,7 +906,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1621</div>
+<div id="build">v260808.1628</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5466,26 +5472,26 @@ function sfxCrash(power = 1) {
     }
 }
 
-// 타이어 마찰음
-let skidSrc = null, skidGain = null, skidF = null;
+/* 타이어 마찰음 — 처음 만들었던 그대로.
+
+   한동안 저음을 얹고(lowshelf +5dB) 미끄러지는 정도에 따라 음을 올렸다가
+   (1500→2900Hz) 되돌렸다. 타이어가 비명 지르는 느낌을 노렸는데,
+   듣고 나니 웅웅거리고 들떴다. 고정된 2100Hz 로 쉭 하고 나가는 쪽이 낫다.
+   드리프트는 이 게임의 심장이라 여기서만큼은 취향을 따른다. */
+let skidSrc = null, skidGain = null;
 function sfxSkid(amount) {
     if (!audioCtx) return;
     if (loopSfx('skid', clamp(amount, 0, 1) * .38, 1.05)) return;
     if (!skidSrc) {
         skidSrc = audioCtx.createBufferSource();
         skidSrc.buffer = noiseBuffer(2); skidSrc.loop = true;
-        skidF = audioCtx.createBiquadFilter();
-        skidF.type = 'bandpass'; skidF.frequency.value = 1900; skidF.Q.value = 7;
-        const low = audioCtx.createBiquadFilter();
-        low.type = 'lowshelf'; low.frequency.value = 300; low.gain.value = 5;
+        const f = audioCtx.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 2100; f.Q.value = 5.5;
         skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
-        skidSrc.connect(skidF); skidF.connect(low); low.connect(skidGain);
-        skidGain.connect(masterOut());
+        skidSrc.connect(f); f.connect(skidGain); skidGain.connect(masterOut());
         skidSrc.start();
     }
-    const a = clamp(amount, 0, 1);
-    skidF.frequency.setTargetAtTime(1500 + a * 1400, audioCtx.currentTime, .08);
-    skidGain.gain.setTargetAtTime(a * .10, audioCtx.currentTime, .06);
+    skidGain.gain.setTargetAtTime(clamp(amount, 0, 1) * .10, audioCtx.currentTime, .06);
 }
 
 /* 아이템 획득 : 위로 올라가는 세 음 + 반짝임. 밋밋하지 않게 음을 올린다. */
