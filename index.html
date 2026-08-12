@@ -695,7 +695,6 @@
             column-gap: 10px; row-gap: 6px;
         }
         #menu > .titleSign { grid-area: title; justify-self: center; }
-        #menu > #mapCards  { grid-area: maps; align-content: start; }
         #menu > #carPick   { grid-area: cars; width: auto; align-self: start; }
         #menu > #modePick  { grid-area: mode; justify-self: center; align-self: center; }
         #menu > #startBtn  { grid-area: start; justify-self: center; align-self: start; }
@@ -764,6 +763,85 @@
         #toast { bottom: auto; top: 12px; padding: 8px 14px; }
         #toast .tt { font-size: 15px; } #toast .td { font-size: 11px; }
     }
+
+/* ---- 셋팅 페이지 ----
+   한 화면에 다 담으면 어디를 봐야 할지 알 수 없다.
+   결정 하나에 한 장을 주고, 좌우로 넘기게 한다. */
+#steps { display: flex; gap: 8px; margin: 4px 0 2px; }
+#steps b {
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+    padding: 6px 14px 6px 7px; border-radius: 999px; font-weight: 400;
+    background: rgba(255,255,255,.06); border: 2px solid transparent;
+    color: #8fa6c4; font-size: 13px; transition: all .16s;
+}
+#steps b i {
+    width: 21px; height: 21px; border-radius: 50%; font-style: normal;
+    display: grid; place-items: center; font-size: 12px; font-weight: 700;
+    background: rgba(255,255,255,.14); color: #cfe6ff;
+}
+#steps b.on { background: rgba(255,209,102,.14); border-color: #ffd166; color: #fff; }
+#steps b.on i { background: #ffd166; color: #16233a; }
+#steps b.done i { background: #7ee081; color: #12200f; }
+
+#setup { display: flex; justify-content: center; min-height: 322px; }
+#setup .page { display: flex; flex-direction: column; align-items: center; gap: 10px;
+               animation: pgIn .2s ease-out; }
+@keyframes pgIn { from { opacity: 0; transform: translateY(10px); } }
+
+#stepNav { display: flex; gap: 10px; align-items: center; }
+#stepNav .btn.ghost { visibility: hidden; }
+
+/* ---- 코스 고르기 ---- */
+#mpStage { display: flex; align-items: center; gap: 14px; touch-action: pan-y; }
+#mpCard {
+    width: 470px; max-width: 74vw; border-radius: 20px; padding: 14px;
+    background: linear-gradient(180deg, #16304f, #0d1f36);
+    border: 3px solid #ffd166; box-shadow: 0 0 28px rgba(255,209,102,.3);
+    user-select: none;
+}
+#mpCard h3 { font-size: 23px; margin-bottom: 2px; }
+#mpCard .kind { font-size: 11px; color: #8fa6c4; }
+#mpCard canvas { width: 100%; height: 190px; margin: 7px 0; background: rgba(0,0,0,.3); border-radius: 12px; }
+#mpCard .route { font-size: 12px; color: #9fd0ff; line-height: 1.55; min-height: 36px; }
+#mpCard .facts { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+#mpCard .fact { background: rgba(0,0,0,.32); border-radius: 9px; padding: 5px 10px; font-size: 12px; color: #cfe6ff; }
+#mpCard .fact b { color: #ffd166; margin-left: 5px; }
+#mpCard.inL { animation: mpL .2s ease-out; }
+#mpCard.inR { animation: mpR .2s ease-out; }
+@keyframes mpL { from { opacity: 0; transform: translateX(52px); } }
+@keyframes mpR { from { opacity: 0; transform: translateX(-52px); } }
+
+.mpArrow {
+    width: 52px; height: 52px; flex: 0 0 auto; cursor: pointer; font-family: inherit;
+    background: rgba(255,255,255,.08); border: 2px solid #3f6c9c; border-radius: 50%;
+    position: relative;
+}
+.mpArrow:hover { background: #2f6ea8; border-color: #7fd4ff; }
+.mpArrow::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 0; height: 0; border: 9px solid transparent;
+    border-right-color: #cfe6ff; transform: translate(-62%, -50%);
+}
+.mpArrow.r::after { border-right-color: transparent; border-left-color: #cfe6ff; transform: translate(-38%, -50%); }
+
+#mpDots { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+#mpDots i {
+    width: 9px; height: 9px; border-radius: 50%; cursor: pointer;
+    background: rgba(255,255,255,.22); transition: background .15s, transform .15s;
+}
+#mpDots i.on { background: #ffd166; transform: scale(1.35); }
+
+@media (max-width: 780px) {
+    #setup { min-height: 0; }
+    #steps b span { display: none; }
+    #steps b { padding: 6px; }
+    #mpStage { gap: 7px; }
+    #mpCard { padding: 10px; }
+    #mpCard h3 { font-size: 18px; }
+    #mpCard canvas { height: 132px; }
+    #mpCard .route { min-height: 0; }
+    .mpArrow { width: 42px; height: 42px; }
+}
 
 /* ---- 말풍선 고르는 판 ---- */
 #emotePad {
@@ -906,7 +984,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.0848</div>
+<div id="build">v260813.0857</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -967,27 +1045,48 @@
     <div class="titleSign"><div class="titleBoard">
         <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
     </div></div>
-    <div class="subtitle">몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성되고, 아이템과 장애물은 그 기관에 실제로 있는 물질입니다.</div>
-    <div class="cards" id="mapCards"></div>
+    <div class="subtitle">몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성됩니다.</div>
 
-    <!-- 자동차 고르기 : 달리기 전에 여기서 정한다 -->
-    <div id="carPick">
-        <div class="cpHead">
-            <span>자동차 고르기</span>
-            <span>보유 <b id="cpPoints">0 P</b></span>
-        </div>
-        <div class="cpBody">
-            <div class="cpList" id="cpList2"></div>
-            <div class="cpDetail" id="cpDetail"></div>
-        </div>
+    <!-- 셋팅은 한 장에 하나씩. 좌우로 넘긴다. -->
+    <div id="steps">
+        <b data-step="0"><i>1</i><span>코스</span></b>
+        <b data-step="1"><i>2</i><span>자동차</span></b>
+        <b data-step="2"><i>3</i><span>출발</span></b>
     </div>
 
-    <div class="keys">
-        <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
-        <span style="color:#ffe066">SPACE 드리프트 → 터보 충전</span><span style="color:#ff8a3c">E 터보 발사</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
-        <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
-    </div>
-    <div id="modePick">
+    <div id="setup">
+      <!-- ─── 1장 : 코스 ─── -->
+      <section class="page" data-step="0">
+        <div id="mpStage">
+            <button class="mpArrow" id="mpPrev" aria-label="이전 코스"></button>
+            <div id="mpCard"></div>
+            <button class="mpArrow r" id="mpNext" aria-label="다음 코스"></button>
+        </div>
+        <div id="mpDots"></div>
+      </section>
+
+      <!-- ─── 2장 : 자동차 ─── -->
+      <section class="page hidden" data-step="1">
+        <div id="carPick">
+            <div class="cpHead">
+                <span>자동차 고르기</span>
+                <span>보유 <b id="cpPoints">0 P</b></span>
+            </div>
+            <div class="cpBody">
+                <div class="cpList" id="cpList2"></div>
+                <div class="cpDetail" id="cpDetail"></div>
+            </div>
+        </div>
+      </section>
+
+      <!-- ─── 3장 : 출발 ─── -->
+      <section class="page hidden" data-step="2">
+        <div class="keys">
+            <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
+            <span style="color:#ffe066">SPACE 드리프트 → 터보 충전</span><span style="color:#ff8a3c">E 터보 발사</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
+            <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
+        </div>
+        <div id="modePick">
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
         <button class="modeBtn" data-mode="3">타임 어택</button>
         <button class="modeBtn" data-mode="2" id="modeOnline">친구와 온라인</button>
@@ -1013,9 +1112,17 @@
         </div>
         <div id="roomState"></div>
     </div>
-    <div id="goRow">
-        <button class="btn" id="startBtn">레이스 시작</button>
-        <button class="btn small" id="quizBtn">퀴즈방</button>
+        <div id="goRow">
+            <button class="btn" id="startBtn">레이스 시작</button>
+            <button class="btn small" id="quizBtn">퀴즈방</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 장을 넘기는 손잡이. 왼쪽 끝과 오른쪽 끝에서는 알아서 숨는다. -->
+    <div id="stepNav">
+        <button class="btn small" id="stepPrev">이전</button>
+        <button class="btn" id="stepNext">다음</button>
     </div>
     <!-- 광고를 붙인 이상 방침서는 어디서든 닿을 수 있어야 한다 (스토어 심사 요건이기도 하다) -->
     <div id="legalRow">
@@ -1296,6 +1403,12 @@ const EN = {
 // ── 광고 · 안내
 '광고': 'Ad', '5초 후 건너뛰기': 'Skip in 5s', '초 후 건너뛰기': 's until skip',
 '건너뛰기': 'Skip', '광고 자리': 'Ad slot', '개인정보처리방침': 'Privacy Policy',
+// 셋팅 페이지
+'코스': 'Course', '자동차': 'Kart', '출발': 'Go',
+'이전': 'Back', '다음': 'Next',
+'계통 순회 코스': 'A tour of one whole system',
+'기관 확대 코스': 'One organ, up close',
+'바퀴': 'Laps', '아이템': 'Items',
 
 // 온라인
 '연결이 끊겼습니다 · 다시 잇는 중': 'Disconnected · reconnecting',
@@ -8043,26 +8156,108 @@ cvs.addEventListener('touchend', () => { pinchDist = 0; });
 /* ============================================================================
    10. 메뉴
    ========================================================================== */
-function buildMenu() {
-    const wrap = el('mapCards'); wrap.innerHTML = '';
-    Object.values(SYSTEMS).forEach(sys => {
-        const card = document.createElement('div');
-        card.className = 'card' + (sys.id === selectedId ? ' sel' : '');
-        card.innerHTML = `<h3>${T(sys.name)}</h3>
-            <div class="route">${sys.flow.map(f => T(f.name)).join(' → ')}</div>
-            <canvas width="420" height="230"></canvas>
-            <div class="meta">${sys.laps} LAP · ${T('체크포인트')} ${sys.flow.length}</div>`;
-        card.onclick = () => {
-            selectedId = sys.id;
-            Array.from(wrap.children).forEach(c => c.classList.remove('sel'));
-            card.classList.add('sel');
-        };
-        card.ondblclick = () => startRace(sys.id);
-        wrap.appendChild(card);
-        drawPreview(card.querySelector('canvas'), sys);
+/* ============================================================================
+   셋팅 페이지 — 코스 → 자동차 → 출발
+   ----------------------------------------------------------------------------
+   한 화면에 다 담으려니 코스 11 개에 자동차 6 대에 모드까지 빽빽했다.
+   결정 하나에 한 장씩 준다. 좌우로 넘기고, 넘길 때마다 하나만 고르면 된다.
+   ========================================================================== */
+const MAP_IDS = () => Object.keys(SYSTEMS);
+let mapAt = 0;                     // 지금 보고 있는 코스
+let setupStep = 0;                 // 지금 보고 있는 장
+
+/* 계통을 도는 코스인지, 기관 하나를 확대한 코스인지 */
+const ZOOM_MAPS = ['glomerulus', 'liver', 'stomach', 'pancreas'];
+
+function drawMapCard(dir) {
+    const ids = MAP_IDS();
+    mapAt = (mapAt % ids.length + ids.length) % ids.length;
+    const sys = SYSTEMS[ids[mapAt]];
+    selectedId = sys.id;
+
+    const best = taBestOf(sys.id);
+    const card = el('mpCard');
+    card.innerHTML =
+        `<h3>${T(sys.name)}</h3>` +
+        `<div class="kind">${T(ZOOM_MAPS.includes(sys.id) ? '기관 확대 코스' : '계통 순회 코스')}</div>` +
+        `<canvas width="560" height="300"></canvas>` +
+        `<div class="route">${sys.flow.map(f => T(f.name)).join(' → ')}</div>` +
+        `<div class="facts">` +
+            `<span class="fact">${T('바퀴')}<b>${sys.laps}</b></span>` +
+            `<span class="fact">${T('체크포인트')}<b>${sys.flow.length}</b></span>` +
+            `<span class="fact">${T('아이템')}<b>${sys.pickups.length}</b></span>` +
+            (best ? `<span class="fact">${T('최고 랩')}<b>${fmtTime(best)}</b></span>` : '') +
+        `</div>`;
+    drawPreview(card.querySelector('canvas'), sys);
+
+    // 넘어온 방향으로 살짝 미끄러지게
+    card.classList.remove('inL', 'inR');
+    if (dir) { void card.offsetWidth; card.classList.add(dir > 0 ? 'inL' : 'inR'); }
+
+    el('mpDots').innerHTML = ids.map((_, i) => `<i class="${i === mapAt ? 'on' : ''}" data-i="${i}"></i>`).join('');
+    el('mpDots').querySelectorAll('i').forEach(d => {
+        d.onclick = () => { const i = +d.dataset.i; const dir = i > mapAt ? 1 : -1; mapAt = i; drawMapCard(dir); playBeep(880, .04); };
     });
+}
+
+function mapStep(d) { mapAt += d; drawMapCard(d); playBeep(760, .05); }
+
+/* 손가락으로 쓸어 넘기기. 세로로 긁는 것은 그냥 화면 스크롤이므로 건드리지 않는다. */
+function attachSwipe(node, onSwipe) {
+    let x0 = 0, y0 = 0, live = false;
+    node.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; live = true; });
+    node.addEventListener('pointerup', e => {
+        if (!live) return;
+        live = false;
+        const dx = e.clientX - x0, dy = e.clientY - y0;
+        if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.4) onSwipe(dx < 0 ? 1 : -1);
+    });
+    node.addEventListener('pointercancel', () => { live = false; });
+}
+
+function setStep(n) {
+    const pages = document.querySelectorAll('#setup .page');
+    setupStep = clamp(n, 0, pages.length - 1);
+    pages.forEach(p => p.classList.toggle('hidden', +p.dataset.step !== setupStep));
+    document.querySelectorAll('#steps b').forEach(b => {
+        const i = +b.dataset.step;
+        b.classList.toggle('on', i === setupStep);
+        b.classList.toggle('done', i < setupStep);
+    });
+    // 양 끝에서는 손잡이를 감춘다 (없애면 자리가 흔들려서 보이지만 않게 한다)
+    el('stepPrev').classList.toggle('ghost', setupStep === 0);
+    el('stepNext').classList.toggle('ghost', setupStep === pages.length - 1);
+    if (setupStep === 1) renderCarPick();
+    if (setupStep === 2) refreshModeUI();
+}
+
+function buildMenu() {
+    drawMapCard(0);
+    setStep(0);
     renderCarPick();
 }
+
+/* ---- 손잡이 붙이기 ---- */
+onClick('mpPrev', () => mapStep(-1));
+onClick('mpNext', () => mapStep(1));
+onClick('stepPrev', () => { setStep(setupStep - 1); playBeep(620, .05); });
+onClick('stepNext', () => { setStep(setupStep + 1); playBeep(900, .05); });
+document.querySelectorAll('#steps b').forEach(b => {
+    b.onclick = () => { setStep(+b.dataset.step); playBeep(820, .05); };
+});
+{
+    const stage = el('mpStage');
+    if (stage) attachSwipe(stage, d => mapStep(d));
+    const setup = el('setup');
+    // 코스 장에서는 코스가 넘어가고, 나머지 장에서는 장이 넘어간다
+    if (setup) attachSwipe(setup, d => { if (setupStep !== 0) setStep(setupStep + d); });
+}
+// 방향키로도 넘긴다
+window.addEventListener('keydown', e => {
+    if (state !== 'menu' || el('menu').classList.contains('hidden')) return;
+    if (e.code === 'ArrowLeft')  { setupStep === 0 ? mapStep(-1) : setStep(setupStep - 1); }
+    if (e.code === 'ArrowRight') { setupStep === 0 ? mapStep(1)  : setStep(setupStep + 1); }
+});
 
 /* ---- 초기 화면 자동차 고르기 ----
    왼쪽에서 차를 훑어보고, 오른쪽에서 성능 그래프로 지금 타는 차와 견줘 본다.
