@@ -906,7 +906,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.0836</div>
+<div id="build">v260813.0848</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -6062,26 +6062,97 @@ function sfxCrash(power = 1) {
     }
 }
 
-/* 타이어 마찰음 — 처음 만들었던 그대로.
+/* ---- 타이어 마찰음 ----
+   "끼익-익-익" 은 고른 잡음이 아니다. 실제로 타이어가 우는 소리는
+   고무가 붙었다 떨어지기를 아주 빠르게 되풀이하면서 나는 떨림이다.
+   그래서 세 겹으로 만든다.
 
-   한동안 저음을 얹고(lowshelf +5dB) 미끄러지는 정도에 따라 음을 올렸다가
-   (1500→2900Hz) 되돌렸다. 타이어가 비명 지르는 느낌을 노렸는데,
-   듣고 나니 웅웅거리고 들떴다. 고정된 2100Hz 로 쉭 하고 나가는 쪽이 낫다.
-   드리프트는 이 게임의 심장이라 여기서만큼은 취향을 따른다. */
-let skidSrc = null, skidGain = null;
+     몸통   2100Hz 대역 잡음. 예전에 쓰던 그대로 — 여기에 저음을 얹으면
+            웅웅거려서 못 쓴다. 한 번 그렇게 만들었다가 되돌렸다.
+     날     3300Hz 의 아주 좁은 공명(Q 16). '끼익' 의 날카로운 끝.
+     울음   대역 한가운데를 따라가는 아주 작은 순음. 노면이 '운다'.
+
+   그리고 이 셋을 두 개의 흔들림으로 함께 떨게 한다. 9.3Hz 와 13.7Hz —
+   서로 나누어떨어지지 않는 수라서 같은 자리로 돌아오지 않는다.
+   하나만 쓰면 기계가 웅웅대는 소리가 되고, 둘을 겹치면 살아 있는 떨림이 된다. */
+let skidSrc = null, skidGain = null, skidBand = null,
+    skidSharp = null, skidSharpGain = null, skidTone = null, skidToneGain = null,
+    skidWob = null, skidWobDepth = null;
+
+function buildSkid() {
+    const t = audioCtx.currentTime;
+
+    skidSrc = audioCtx.createBufferSource();
+    skidSrc.buffer = noiseBuffer(2); skidSrc.loop = true;
+
+    // 몸통
+    skidBand = audioCtx.createBiquadFilter();
+    skidBand.type = 'bandpass'; skidBand.frequency.value = 2100; skidBand.Q.value = 5.5;
+    skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
+    skidSrc.connect(skidBand); skidBand.connect(skidGain); skidGain.connect(masterOut());
+
+    // 날 — 같은 잡음을 더 좁게 걸러 위에 얹는다
+    skidSharp = audioCtx.createBiquadFilter();
+    skidSharp.type = 'bandpass'; skidSharp.frequency.value = 3300; skidSharp.Q.value = 16;
+    skidSharpGain = audioCtx.createGain(); skidSharpGain.gain.value = 0;
+    skidSrc.connect(skidSharp); skidSharp.connect(skidSharpGain); skidSharpGain.connect(masterOut());
+
+    // 울음 — 아주 작게. 이게 없으면 '쉬익', 있으면 '끼익'.
+    skidTone = audioCtx.createOscillator();
+    skidTone.type = 'sawtooth'; skidTone.frequency.value = 2100;
+    skidToneGain = audioCtx.createGain(); skidToneGain.gain.value = 0;
+    const toneCut = audioCtx.createBiquadFilter();          // 거칠지 않게 위를 깎는다
+    toneCut.type = 'lowpass'; toneCut.frequency.value = 4200;
+    skidTone.connect(toneCut); toneCut.connect(skidToneGain); skidToneGain.connect(masterOut());
+    skidTone.start(t);
+
+    /* 떨림 두 개. 주파수를 서로 어긋나게 잡아야 같은 자리로 안 돌아온다.
+       세기(depth)는 바깥에서 조절하므로 게이지처럼 하나로 묶어 둔다. */
+    skidWobDepth = audioCtx.createGain(); skidWobDepth.gain.value = 0;
+    const w1 = audioCtx.createOscillator(); w1.type = 'sine'; w1.frequency.value = 9.3;
+    const w2 = audioCtx.createOscillator(); w2.type = 'sine'; w2.frequency.value = 13.7;
+    const w2g = audioCtx.createGain(); w2g.gain.value = .55;   // 둘째는 조금 약하게
+    w1.connect(skidWobDepth); w2.connect(w2g); w2g.connect(skidWobDepth);
+    w1.start(t); w2.start(t);
+    skidWob = w1;
+
+    /* 떨림을 소리 세기에 얹는다 (대역 주파수는 건드리지 않는다 — 들뜬 소리가 된다).
+
+       세기를 고를 때 기준이 하나 있다. 마스터에 걸린 리미터의 문턱이 0.2 인데,
+       그 위로 올라가면 리미터가 떨림의 봉우리를 눌러 버린다.
+       떨리게 하려고 넣은 것을 리미터가 도로 깎아내는 셈이다.
+       그래서 가장 셀 때의 봉우리가 딱 0.2 아래에 닿도록 잡았다 —
+       봉우리 0.20, 골 0.03. 이 폭이 '끼익-익-익' 이 된다. */
+    const toBody  = audioCtx.createGain(); toBody.gain.value  = .032;
+    const toSharp = audioCtx.createGain(); toSharp.gain.value = .036;
+    const toTone  = audioCtx.createGain(); toTone.gain.value  = .007;
+    skidWobDepth.connect(toBody);  toBody.connect(skidGain.gain);
+    skidWobDepth.connect(toSharp); toSharp.connect(skidSharpGain.gain);
+    skidWobDepth.connect(toTone);  toTone.connect(skidToneGain.gain);
+
+    skidSrc.start(t);
+}
+
 function sfxSkid(amount) {
     if (!audioCtx) return;
     if (loopSfx('skid', clamp(amount, 0, 1) * .38, 1.05)) return;
-    if (!skidSrc) {
-        skidSrc = audioCtx.createBufferSource();
-        skidSrc.buffer = noiseBuffer(2); skidSrc.loop = true;
-        const f = audioCtx.createBiquadFilter();
-        f.type = 'bandpass'; f.frequency.value = 2100; f.Q.value = 5.5;
-        skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
-        skidSrc.connect(f); f.connect(skidGain); skidGain.connect(masterOut());
-        skidSrc.start();
-    }
-    skidGain.gain.setTargetAtTime(clamp(amount, 0, 1) * .10, audioCtx.currentTime, .06);
+    if (!skidSrc) buildSkid();
+
+    const a = clamp(amount, 0, 1);
+    const t = audioCtx.currentTime;
+
+    /* 세게 미끄러질수록 '날' 과 '울음' 의 비중이 커진다.
+       몸통은 거의 그대로 둔다 — 몸통까지 같이 키우면 그냥 시끄러워진다. */
+    skidGain.gain.setTargetAtTime(a * .072, t, .06);
+    skidSharpGain.gain.setTargetAtTime(a * a * .035, t, .05);
+    skidToneGain.gain.setTargetAtTime(a * a * .009, t, .07);
+
+    // 떨림은 미끄러질 때만. 살짝 미끄러질 때 떨면 어색하다.
+    skidWobDepth.gain.setTargetAtTime(a > .25 ? (a - .25) : 0, t, .08);
+
+    // 공명 자리를 조금만 움직인다. 크게 쓸면 들뜬 소리가 되므로 폭을 좁게 잡는다.
+    skidSharp.frequency.setTargetAtTime(3150 + a * 420, t, .12);
+    skidTone.frequency.setTargetAtTime(2050 + a * 260, t, .12);
 }
 
 /* 아이템 획득 : 위로 올라가는 세 음 + 반짝임. 밋밋하지 않게 음을 올린다. */
