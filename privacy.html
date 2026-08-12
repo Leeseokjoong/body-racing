@@ -96,8 +96,8 @@
        묻지 않습니다. 게임 기록은 여러분의 기기 안에만 저장되고 저희에게 전송되지 않습니다.
        <b>이용 분석 도구(구글 애널리틱스 등)를 일절 쓰지 않습니다.</b></p>
     <p>기기 밖으로 나가는 것은 두 가지뿐입니다 — 친구와 온라인으로 함께 달릴 때
-       주고받는 <b>카트 위치</b>, 그리고 <b>광고를 보여 주기 위해 구글이 수집하는 정보</b>입니다.
-       아래에서 하나씩 설명합니다.</p>
+       주고받는 <b>카트 위치와 말풍선 번호</b>, 그리고 <b>광고를 보여 주기 위해 구글이
+       수집하는 정보</b>입니다. 아래에서 하나씩 설명합니다.</p>
 </div>
 
 <h2>1. 이 방침이 다루는 것</h2>
@@ -129,18 +129,25 @@
    지우면 기록도 함께 사라지며 저희 쪽에는 복구할 사본이 없습니다.</p>
 
 <h2>3. 친구와 온라인으로 달릴 때</h2>
+<p style="background:rgba(20,32,54,.6);border-left:3px solid #7fd4ff;border-radius:8px;padding:12px 14px">
+   <b>모르는 사람과 매칭되는 기능은 없습니다.</b> 6자리 코드를 직접 주고받은
+   사람끼리만 같은 방에 들어갈 수 있습니다. 방 목록을 훑어보거나 무작위로
+   상대를 만나는 기능은 만들지 않았습니다.</p>
 <p>메뉴에서 <b>친구와 온라인</b>을 골라 방을 만들거나 6자리 코드로 참가할 때에만,
    구글의 <b>Firebase Realtime Database</b>를 통해 다음이 오갑니다.</p>
 <ul>
     <li>방 코드(6자리)와 고른 코스</li>
     <li>그 판에서만 쓰이는 임시 참가자 번호 (예: <code>p8k3xq2</code> — 접속할 때마다 새로 만들어지는 무작위 값입니다)</li>
     <li>화면에 표시되는 순번 이름 — <b>1P · 2P · 3P · 4P</b> 로 게임이 자동으로 붙입니다</li>
-    <li>레이스 중 카트의 위치 · 방향 · 바퀴 수 · 진행도 (0.08초에 한 번)</li>
+    <li>레이스 중 카트의 위치 · 방향 · 바퀴 수 · 진행도 (0.125초에 한 번)</li>
+    <li>말풍선을 띄우면 <b>고른 문구의 번호</b> (예: <code>1,2,…</code>) — 글자가 아니라 번호입니다</li>
 </ul>
 
 <p><b>이 게임에는 채팅 기능이 없고, 별명을 직접 입력하는 칸도 없습니다.</b>
-   그래서 다른 참가자에게 자기 자신에 대한 어떤 정보도 알려 줄 수 없도록 되어 있습니다.
-   6자리 코드를 서로 알려 준 사이끼리만 같은 방에 들어갈 수 있습니다.</p>
+   대화는 <b>정해진 여덟 마디</b>("안녕!", "가자!", "잘한다!" 같은 것) 중에서 고르는
+   방식뿐이고, 오가는 것은 그 문구의 번호입니다. 그래서 연락처나 나이, 사는 곳 같은 것을
+   주고받을 방법이 아예 없습니다. 6자리 코드를 서로 알려 준 사이끼리만 같은 방에
+   들어갈 수 있습니다.</p>
 
 <p>이 정보는 <b>레이스가 끝나면 사라집니다.</b> 접속이 끊기면 그 자리가 곧바로 지워지고,
    5분 동안 아무도 들어오지 않은 방은 자동으로 닫힙니다. 저희는 이 정보를
@@ -220,9 +227,9 @@
        phone number, or date of birth. Your game progress is stored only on your own device
        and is never sent to us. <b>We use no analytics of any kind</b> — no Google Analytics,
        nothing.</p>
-    <p>Only two things ever leave your device: the <b>position of your kart</b> while you race
-       online with friends, and whatever <b>Google collects in order to show ads</b>.
-       Both are explained below.</p>
+    <p>Only two things ever leave your device: your <b>kart's position and the number of the
+       phrase you picked</b> while racing online with friends, and whatever <b>Google collects
+       in order to show ads</b>. Both are explained below.</p>
 </div>
 
 <h2>1. Who this covers</h2>
@@ -254,6 +261,10 @@
    or uninstall the app. Once erased it is gone — we hold no copy to restore it from.</p>
 
 <h2>3. When you race online with friends</h2>
+<p style="background:rgba(20,32,54,.6);border-left:3px solid #7fd4ff;border-radius:8px;padding:12px 14px">
+   <b>There is no matchmaking with strangers.</b> Only people who have shared the
+   six-digit code with each other can end up in the same room. There is no room
+   browser and no way to be paired with someone at random.</p>
 <p>Only when you choose <b>Play with friends</b> and either create a room or join one with a
    six-digit code, the following passes through Google's
    <b>Firebase Realtime Database</b>:</p>
@@ -262,11 +273,14 @@
     <li>A temporary participant id used only for that session
         (e.g. <code>p8k3xq2</code> — a random value regenerated every time you connect)</li>
     <li>The display name, which the game assigns automatically as <b>1P · 2P · 3P · 4P</b></li>
-    <li>Your kart's position, heading, lap and progress during the race (about every 0.08 s)</li>
+    <li>Your kart's position, heading, lap and progress during the race (about every 0.125 s)</li>
+    <li>When you use a speech bubble, the <b>number of the phrase you chose</b> — a number, not text</li>
 </ul>
 
 <p><b>The game has no chat, and no field where a player can type a nickname.</b>
-   By design, there is no way for a player to tell other players anything about themselves.
+   Talking happens by picking one of <b>eight preset phrases</b> ("Hi!", "Let's go!",
+   "Nice one!" and so on), and what travels is the number of that phrase. There is
+   simply no route for a contact detail, an age, or an address to pass between players.
    Only people who have shared the six-digit code with each other can end up in the same room.</p>
 
 <p>This data is <b>discarded when the race ends.</b> A player's slot is removed the moment they

@@ -906,7 +906,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260808.1757</div>
+<div id="build">v260812.1730</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1004,9 +1004,9 @@
         <div class="obRow">
             <button class="btn" id="quickBtn">빠른 대전</button>
         </div>
-        <div class="obNote">코드 없이 지금 접속한 사람들과 바로 달립니다</div>
+        <div class="obNote" id="quickNote">코드 없이 지금 접속한 사람들과 바로 달립니다</div>
         <div class="obRow">
-            <button class="btn small" id="createRoom">친구방 만들기</button>
+            <button class="btn" id="createRoom">방 만들기</button>
             <span class="obOr">또는</span>
             <input id="roomInput" maxlength="6" placeholder="코드 6자리">
             <button class="btn small" id="joinRoom">참가</button>
@@ -1090,14 +1090,20 @@
 
 <script>
 /* ---- 온라인 스위치 ----
-   여기 하나만 true 로 바꾸면 온라인이 통째로 돌아온다. 코드는 그대로 남겨 두었다.
+   두 개로 나눠 두었다. 코드는 둘 다 그대로 남아 있고, 여기서만 켜고 끈다.
 
-   false 로 두면 —
-     · 파이어베이스 SDK 를 아예 내려받지 않는다 (첫 화면이 250KB 만큼 빨라진다)
-     · 서버에 연결하지 않으므로 요금이 한 푼도 나가지 않는다
-     · 메뉴에서 '친구와 온라인' 이 사라진다
-   혼자 하기와 타임 어택은 원래 서버를 쓰지 않으므로 아무 영향이 없다. */
-window.ONLINE_ON = false;
+   ONLINE_ON  친구방. 6자리 코드를 주고받은 사람끼리만 만난다.
+              끄면 파이어베이스 SDK 를 아예 내려받지 않아 첫 화면이 250KB 빨라지고,
+              서버에 연결하지 않으므로 요금이 한 푼도 나가지 않는다.
+
+   PUBLIC_ON  빠른 대전(공개방). 코드 없이 모르는 사람과 매칭된다.
+              지금은 끈다 — 사람이 없으면 빈 방만 보이고, 아이가 모르는 사람과
+              같은 방에 들어가는 일도 아직 열 이유가 없다.
+              여는 조건은 수익화-로드맵.md 5단계에 적어 두었다 (일일 이용자 500명).
+
+   혼자 하기와 타임 어택은 원래 서버를 쓰지 않으므로 둘 다와 무관하다. */
+window.ONLINE_ON = true;
+window.PUBLIC_ON = false;
 </script>
 
 <script type="module">
@@ -6290,6 +6296,7 @@ function netCleanup() {
    그래서 '누구나 들어와도 되는 방' 만 따로 작은 명단에 올린다.
    코드로 만든 방은 여기 올라가지 않는다 — 친구끼리 하던 방식은 그대로다. */
 function pubPublish(n) {
+    if (!window.PUBLIC_ON) return;              // 공개 명단에 올리지 않는다
     if (!net.pub || !net.roomId || !window.FB) return;
     FB.set(FB.ref(FB.db, `lobby/open/${net.roomId}`),
            { n: clamp(n | 0, 0, MAX_PLAYERS), map: net.mapId, at: Date.now() }).catch(() => {});
@@ -6305,6 +6312,7 @@ function pubRemove(code) {
    기다리다 아무도 안 오면 혼자라도 출발한다 — 눌렀는데 아무 일도 안 일어나는
    것이 가장 나쁘다. */
 async function quickMatch() {
+    if (!window.PUBLIC_ON) return;              // 빠른 대전은 잠겨 있다
     if (!window.FB) { netStatus(T('온라인 기능을 사용할 수 없습니다.')); return; }
     netWatchInfo();
     netCleanup();
@@ -8106,6 +8114,11 @@ if (!window.ONLINE_ON) {
     el('onlineBox').style.display = 'none';
     const first = document.querySelector('.modeBtn');
     if (first) document.querySelectorAll('.modeBtn').forEach(x => x.classList.toggle('sel', x === first));
+}
+/* 빠른 대전만 따로 잠근다. 친구방은 그대로 쓴다.
+   흐릿하게 눌리지 않는 버튼으로 두면 "안 된다" 는 후기가 달리므로 아예 치운다. */
+if (!window.PUBLIC_ON) {
+    ['quickBtn', 'quickNote'].forEach(id => { const e = el(id); if (e) e.remove(); });
 }
 
 document.querySelectorAll('.modeBtn').forEach(b => {
