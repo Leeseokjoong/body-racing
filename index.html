@@ -906,7 +906,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260812.1730</div>
+<div id="build">v260813.0836</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5551,6 +5551,13 @@ function drawConfetti(g) {
    7. HUD
    ========================================================================== */
 const el = id => document.getElementById(id);
+/* 버튼에 동작을 붙인다. 그 버튼이 화면에 없으면 그냥 넘어간다.
+
+   잠금 스위치(ONLINE_ON · PUBLIC_ON)로 버튼을 지우는 곳이 있는데,
+   지운 버튼에 el(...).onclick 을 달면 그 줄에서 예외가 나고
+   뒤따르는 초기화가 통째로 멈춘다 — 게임이 아예 시작되지 않는다.
+   실제로 한 번 그렇게 죽였다. 그래서 붙이는 쪽에서 막는다. */
+const onClick = (id, fn) => { const e = el(id); if (e) e.onclick = fn; };
 
 function buildHudStatic() {
     const s = track.sys;
@@ -8128,12 +8135,13 @@ document.querySelectorAll('.modeBtn').forEach(b => {
     };
 });
 // 방침서도 지금 보고 있는 언어로 열어 준다
-document.querySelector('#legalRow a').onclick = function () {
-    this.href = 'privacy.html#' + (LANG === 'en' ? 'en' : 'ko');
-};
+{
+    const a = document.querySelector('#legalRow a');
+    if (a) a.onclick = function () { this.href = 'privacy.html#' + (LANG === 'en' ? 'en' : 'ko'); };
+}
 
-el('quickBtn').onclick = quickMatch;
-el('createRoom').onclick = () => createRoom(false);
+onClick('quickBtn', quickMatch);          // 잠겨 있으면 이 버튼은 화면에 없다
+onClick('createRoom', () => createRoom(false));
 
 /* ---- 말풍선 고르는 판 ----
    폰에는 숫자키가 없으니 눌러서 고른다. 여덟 칸이 전부라 헤맬 것이 없다. */
@@ -8152,7 +8160,7 @@ function toggleEmotePad(on) {
     pad.classList.toggle('hidden', !show);
 }
 buildEmotePad();
-if (el('tTalk')) el('tTalk').onclick = () => toggleEmotePad();
+onClick('tTalk', () => toggleEmotePad());
 // 판이 열려 있을 때 딴 곳을 누르면 닫힌다
 document.addEventListener('pointerdown', e => {
     const pad = el('emotePad');
