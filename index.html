@@ -984,7 +984,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.0936</div>
+<div id="build">v260813.1018</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5877,6 +5877,34 @@ let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
 let engineGrowl = null, engineGrowlGain = null, engineGear = -1, engineShift = 0;
 let windSrc = null, windGain = null;
 
+/* ---- 녹음한 반복음 ----
+   assets/sfx_<이름>.mp3 가 있으면 그것을 '재료' 로 쓴다. 없으면 조용히 넘어가고
+   코드 합성음이 그대로 쓰인다. 실패해도 게임은 아무 일 없이 굴러간다. */
+const SAMPLE = {};                 // 이름 -> AudioBuffer | null(없음) | undefined(아직 모름)
+const SAMPLE_ON = { engine: false, skid: false, brake: false };
+
+function wantSample(name, onReady) {
+    if (name in SAMPLE) return SAMPLE[name];
+    SAMPLE[name] = null;                                   // 두 번 요청하지 않는다
+    fetch('assets/sfx_' + name + '.mp3')
+        .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('no file')))
+        .then(b => new Promise((ok, no) => audioCtx.decodeAudioData(b, ok, no)))
+        .then(buf => { SAMPLE[name] = buf; SAMPLE_ON[name] = true; try { onReady(buf); } catch (e) {} })
+        .catch(() => {});                                  // 없으면 합성음 그대로
+    return null;
+}
+
+/* 돌고 있는 반복음의 재료만 갈아 끼운다 (이어진 곳은 그대로 두고 소스만 교체) */
+function swapLoop(oldSrc, buf, targets, rate) {
+    const n = audioCtx.createBufferSource();
+    n.buffer = buf; n.loop = true;
+    if (rate) n.playbackRate.value = rate;
+    targets.forEach(t => n.connect(t));
+    n.start();
+    try { oldSrc.stop(); } catch (e) {}
+    return n;
+}
+
 function buildEngineBuffer() {
     const sr = audioCtx.sampleRate;
     const period = Math.round(sr / ENGINE_BASE_HZ);
@@ -5942,6 +5970,11 @@ function updateEngine() {
 
         engineSrc.start();
 
+        // 녹음이 있으면 재료를 그것으로 바꾼다 (조절 장치는 그대로 둔다)
+        wantSample('engine', buf => {
+            engineSrc = swapLoop(engineSrc, buf, [engineLP, engineGrowl], 1);
+        });
+
         windSrc = audioCtx.createBufferSource();
         windSrc.buffer = buildWindBuffer(); windSrc.loop = true;
         const wf = audioCtx.createBiquadFilter();
@@ -5994,12 +6027,23 @@ function updateEngine() {
     /* 밋밋하다는 말은 큰 데와 작은 데의 차이가 작다는 뜻이다.
        통째로 키우면 시끄럽기만 하다. 평소를 더 낮추고 밟을 때를 크게 올려 폭을 벌린다.
        공회전 0.03 → 전력 질주 0.26. 아홉 배 가까이 벌어진다. */
-    engineLP.frequency.setTargetAtTime(180 + load * 300, t, .09);
-    engineGain.gain.setTargetAtTime((.028 + load * load * .085) * cut, t, .07);
+    if (SAMPLE_ON.engine) {
+        /* 녹음에는 이미 엔진의 음색이 다 들어 있다. 좁게 거르면 두 번 색칠하는 셈이라
+           웅웅거린다. 그래서 필터는 '밟을수록 열리는 문' 역할만 하고,
+           살아 있는 느낌은 재생 속도와 세기로 낸다. */
+        engineLP.frequency.setTargetAtTime(600 + load * 5200, t, .08);
+        engineGain.gain.setTargetAtTime((.055 + load * load * .130) * cut, t, .07);
+        engineGrowl.frequency.setTargetAtTime(900 + load * load * 1800, t, .07);
+        engineGrowl.Q.setTargetAtTime(.7, t, .1);
+        engineGrowlGain.gain.setTargetAtTime(load * load * .055 * cut, t, .06);
+    } else {
+        engineLP.frequency.setTargetAtTime(180 + load * 300, t, .09);
+        engineGain.gain.setTargetAtTime((.028 + load * load * .085) * cut, t, .07);
 
-    engineGrowl.frequency.setTargetAtTime(430 + load * load * 2100, t, .06);
-    engineGrowl.Q.setTargetAtTime(1.7 - load * .8, t, .1);          // 밟을수록 넓게 열린다
-    engineGrowlGain.gain.setTargetAtTime(load * load * .155 * cut, t, .05);
+        engineGrowl.frequency.setTargetAtTime(430 + load * load * 2100, t, .06);
+        engineGrowl.Q.setTargetAtTime(1.7 - load * .8, t, .1);      // 밟을수록 넓게 열린다
+        engineGrowlGain.gain.setTargetAtTime(load * load * .155 * cut, t, .05);
+    }
 
     windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .055, t, .15);
 }
@@ -6296,6 +6340,14 @@ function buildSkid() {
     skidWobDepth.connect(toTone);  toTone.connect(skidToneGain.gain);
 
     skidSrc.start(t);
+
+    // 녹음이 있으면 잡음 대신 그것을 재료로
+    wantSample('skid', buf => {
+        skidSrc = swapLoop(skidSrc, buf, [skidBand, skidSharp, skidSharp2], 1);
+        // 녹음은 이미 '끼익' 이다. 좁은 공명을 그대로 두면 삐 소리가 덧씌워진다.
+        skidBand.type = 'bandpass'; skidBand.frequency.value = 2400; skidBand.Q.value = .8;
+        skidSharp.Q.value = 3; skidSharp2.Q.value = 3;
+    });
 }
 
 function sfxSkid(amount) {
@@ -6308,12 +6360,21 @@ function sfxSkid(amount) {
 
     /* 세게 미끄러질수록 '날' 과 '울음' 의 비중이 커진다.
        몸통은 거의 그대로 둔다 — 몸통까지 같이 키우면 그냥 시끄러워진다. */
-    /* 몸통(잡음)을 줄이고 날(공명)을 키운다. 소리를 통째로 키우면 리미터에 눌려
-       도로 밋밋해지므로, 총량은 낮추고 '끼익' 을 만드는 쪽에 몰아 준다. */
-    skidGain.gain.setTargetAtTime(a * .075, t, .06);
-    skidSharpGain.gain.setTargetAtTime(a * a * .105, t, .04);
-    skidSharp2Gain.gain.setTargetAtTime(a * a * a * .075, t, .04);
-    skidToneGain.gain.setTargetAtTime(a * a * .028, t, .06);
+    if (SAMPLE_ON.skid) {
+        /* 녹음이 이미 끼익거리므로 몸통만 크게 내보내고, 날과 울음은 거의 끈다.
+           떨림은 남긴다 — 녹음은 4초마다 똑같이 되풀이되는데, 떨림이 그 반복을 가려 준다. */
+        skidGain.gain.setTargetAtTime(a * .200, t, .06);
+        skidSharpGain.gain.setTargetAtTime(a * a * .030, t, .04);
+        skidSharp2Gain.gain.setTargetAtTime(0, t, .06);
+        skidToneGain.gain.setTargetAtTime(0, t, .08);
+    } else {
+        /* 몸통(잡음)을 줄이고 날(공명)을 키운다. 소리를 통째로 키우면 리미터에 눌려
+           도로 밋밋해지므로, 총량은 낮추고 '끼익' 을 만드는 쪽에 몰아 준다. */
+        skidGain.gain.setTargetAtTime(a * .075, t, .06);
+        skidSharpGain.gain.setTargetAtTime(a * a * .105, t, .04);
+        skidSharp2Gain.gain.setTargetAtTime(a * a * a * .075, t, .04);
+        skidToneGain.gain.setTargetAtTime(a * a * .028, t, .06);
+    }
 
     // 떨림은 미끄러질 때만. 살짝 미끄러질 때 떨면 어색하다.
     skidWobDepth.gain.setTargetAtTime(a > .22 ? (a - .22) * 1.28 : 0, t, .07);
@@ -6349,6 +6410,12 @@ function buildBrake() {
     brakeSquealGain.connect(masterOut());
 
     brakeSrc.start();
+
+    wantSample('brake', buf => {
+        brakeSrc = swapLoop(brakeSrc, buf, [brakeBand, brakeSqueal], 1);
+        brakeBand.frequency.value = 1600; brakeBand.Q.value = .7;
+        brakeSqueal.Q.value = 4;
+    });
 }
 
 /* amount 0~1. 빠를 때 세게 밟을수록 커진다 — 멈춰 있을 때 밟아도 소리가 나면 안 된다. */
@@ -6356,8 +6423,9 @@ function sfxBrake(amount) {
     if (!audioCtx) return;
     if (!brakeSrc) buildBrake();
     const a = clamp(amount, 0, 1), t = audioCtx.currentTime;
-    brakeGain.gain.setTargetAtTime(a * .085, t, .05);
-    brakeSquealGain.gain.setTargetAtTime(a * a * a * .105, t, .04);   // 세게 밟을 때만 비명
+    const bs = SAMPLE_ON.brake;
+    brakeGain.gain.setTargetAtTime(a * (bs ? .165 : .085), t, .05);
+    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .035 : .105), t, .04);   // 세게 밟을 때만
     brakeBand.frequency.setTargetAtTime(720 + a * 520, t, .08);
     brakeSqueal.frequency.setTargetAtTime(4100 + a * 700, t, .1);
 }
