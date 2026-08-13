@@ -982,7 +982,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.2100</div>
+<div id="build">v260813.2230</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -3611,13 +3611,39 @@ function applyBarrier(k) {
 }
 
 function aiControl(k, dt) {
-    // 고무줄 밸런스 : 플레이어와의 거리로 속도 보정 (붙어서 달리게)
+    /* 고무줄 밸런스 : 플레이어와의 거리로 속도를 보정해 붙어서 달리게 한다.
+
+       예전 식은 clamp(gap/900 * .12, -.06, .24) 였다. 재 보니 두 쪽 다 헐거웠다.
+         뒤따라올 때  +24% 가 되려면 1800 유닛이나 뒤져야 한다. 드리프트를 잘 쓰는
+                      플레이어에게는 곁에 있는 시간이 23% 로 떨어졌다 — 빈 트랙과 같다.
+         앞서갈 때    -6% 까지만 늦춘다. 느린 플레이어는 11판 중 8판을 꼴찌로 달렸다.
+
+       이제 700 유닛이면 보정이 끝까지 걸린다. 가까워질수록 저절로 풀리므로
+       바짝 붙으면 제 속도로 돌아온다 — 결승선 앞 접전은 여기서 나온다. */
     if (player && !player.finished) {
-        const gap = (player.progress - k.progress) / 900;   // +면 AI가 뒤
-        k.rubber = clamp(gap * .12, -.06, .24);
+        const gap = player.progress - k.progress;           // +면 AI가 뒤
+        k.rubber = gap > 0
+            ? Math.min(gap / 700, 1) * .34                  // 따라붙기 : 최대 +34%
+            : -Math.min(-gap / 700, 1) * .16;               // 기다리기 : 최대 -16%
     } else k.rubber = 0;
     k.aiTimer -= dt;
     if (k.aiTimer <= 0) { k.aiTimer = 1.2 + Math.random() * 1.5; k.aiOffset = (Math.random() * 2 - 1) * track.halfWidth * .3; }
+
+    /* 실수 : 이따금 한 박자 늦게 밟는다.
+
+       고무줄만 있으면 봇들이 플레이어 곁을 정확히 지키는 자석이 된다 —
+       늘 붙어는 있는데 순위가 한 번도 안 바뀌는, 이상하게 심심한 레이스.
+       실수가 순위를 섞는다. 느린 플레이어에게는 추월 기회가 되고,
+       빠른 플레이어에게는 봇마다 들쭉날쭉한 리듬이 된다.
+
+       8~16초마다 주사위를 던져 1.1~1.9초짜리 슬럼프에 들어간다. */
+    k.aiSlump = Math.max(0, (k.aiSlump || 0) - dt);
+    k.aiSlumpCool = (k.aiSlumpCool !== undefined ? k.aiSlumpCool : Math.random() * 8) - dt;
+    if (k.aiSlumpCool <= 0) {
+        k.aiSlumpCool = 8 + Math.random() * 8;
+        if (Math.random() < .5) k.aiSlump = 1.1 + Math.random() * .8;
+    }
+    if (k.aiSlump > 0) k.rubber -= .13;
 
     const N = track.N;
     const idx = d => track.closed ? (k.si + d) % N : Math.min(k.si + d, N - 1);
