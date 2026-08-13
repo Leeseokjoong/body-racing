@@ -982,7 +982,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.1705</div>
+<div id="build">v260813.1815</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2723,27 +2723,27 @@ const UPGRADES = [
          낮을수록 크고 묵직한 엔진, 높을수록 작고 앙칼진 엔진으로 들린다. */
 const CARS = [
     { id: 'rbc', hold: 1.00,   name: '적혈구 루키',  motif: '적', motifEn: 'R', color: '#d4353f', sprite: 'red',   cost: 0,
-      eng: 3, pitch: 1.00, skid: 1, skidPitch: 1.00,   // 기본기. 무엇 하나 모나지 않은 중간 소리
+      eng: 3, pitch: 1.01, skid: 1, skidPitch: 1.00,   // 기본. 녹음이 91Hz 라 거의 그대로 돈다 (92Hz)
       speed: 1.00, accel: 1.00, grip: 1.00, boost: 1.00,
       desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
     { id: 'plt', hold: 1.10,   name: '혈소판 터프',  motif: '판', motifEn: 'P', color: '#e8a33d', sprite: 'red',   cost: 260,
-      eng: 4, pitch: 0.92, skid: 2, skidPitch: 0.90,   // 접지력으로 버티는 무거운 차 — 가장 어둡고 두꺼운 엔진, 낮게 우는 타이어
+      eng: 1, pitch: 1.14, skid: 2, skidPitch: 0.90,   // 가장 무겁다. 가장 어두운 녹음을 가장 낮은 음으로 (72Hz)
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
       desc: '상처를 막는 세포. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
     { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#e8eef5', sprite: 'blue',  cost: 520,
-      eng: 5, pitch: 1.03, skid: 3, skidPitch: 0.97,   // 균형형. 기본보다 조금 더 두툼하다
+      eng: 7, pitch: 0.93, skid: 3, skidPitch: 0.97,   // 가드. 기본보다 한 단 낮아 두툼하다 (82Hz)
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
       desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
     { id: 'o2', hold: 0.95,    name: '산소 러너',    motif: '산', motifEn: 'O', color: '#4fb8e8', sprite: 'blue',  cost: 900,
-      eng: 8, pitch: 1.11, skid: 4, skidPitch: 1.12,   // 가볍고 빠르다 — 가장 밝은 엔진, 앙칼진 타이어
+      eng: 4, pitch: 0.93, skid: 4, skidPitch: 1.12,   // 가볍고 빠르다. 높은 음으로 팽팽하게 (114Hz)
       speed: 1.12, accel: 1.10, grip: 0.96, boost: 1.14,
       desc: '폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.' },
     { id: 'nerve', hold: 1.15, name: '신경 스파크',  motif: '신', motifEn: 'N', color: '#c77dff', sprite: 'pink',  cost: 1400,
-      eng: 7, pitch: 1.17, skid: 4, skidPitch: 1.18,   // 튀어 나간다 — 저역이 가장 얇아 날카롭게 들린다
+      eng: 8, pitch: 0.95, skid: 4, skidPitch: 1.18,   // 가장 날카롭다. 가장 밝은 녹음을 가장 높은 음으로 (126Hz)
       speed: 1.10, accel: 1.22, grip: 1.04, boost: 1.20,
       desc: '전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.' },
     { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: 'A', motifEn: 'A', color: '#ffd166', sprite: 'green', cost: 2200,
-      eng: 1, pitch: 1.06, skid: 2, skidPitch: 1.05,   // 전부 최고 — 밝으면서 저역도 살아 있다
+      eng: 5, pitch: 0.98, skid: 2, skidPitch: 1.05,   // 전부 최고. 기본보다 한 단 위 (102Hz)
       speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
       desc: '세포가 쓰는 에너지 그 자체. 모든 수치가 최고인 마지막 카트입니다.' }
 ];
@@ -6550,8 +6550,12 @@ function sfxBrake(amount) {
     if (!brakeSrc) buildBrake();
     const a = clamp(amount, 0, 1), t = audioCtx.currentTime;
     const bs = SAMPLE_ON.brake;
-    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? .300 : .190), t, .05);
-    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .075 : .230), t, .04);   // 세게 밟을 때만
+    /* 브레이크가 작게 들리던 이유는 둘이었다.
+       하나는 녹음이 한 번 났다가 사그라드는 소리라, 반복시키면 4초마다 꺼졌다 켜졌다 한 것.
+       (녹음에서 내내 울리는 2초만 잘라 내 고쳤다.)
+       둘은 그냥 세기가 모자랐던 것 — 여기서 올린다. 리미터까지는 아직 한참 남았다. */
+    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? .620 : .190), t, .05);
+    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .200 : .230), t, .04);   // 세게 밟을 때만
     brakeBand.frequency.setTargetAtTime(720 + a * 520, t, .08);
     brakeSqueal.frequency.setTargetAtTime(4100 + a * 700, t, .1);
 }
