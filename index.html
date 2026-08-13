@@ -913,8 +913,6 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
         crossorigin="anonymous"></script>
 -->
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -984,7 +982,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.1025</div>
+<div id="build">v260813.1620</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2719,23 +2717,33 @@ const UPGRADES = [
    소재는 전부 몸속 세포·물질. 성능이 곧 그 세포의 실제 기능이라
    "혈소판 카트는 잘 안 밀린다" 같은 감각이 그대로 지식이 된다.
    위로 갈수록 비싸고 빠르다. 첫 차(적혈구)는 처음부터 준다. */
+/* eng   어느 엔진 녹음을 쓰는가 (assets/sfx_engine<N>.mp3)
+   pitch 그 녹음을 얼마의 음높이로 돌리는가.
+         같은 녹음을 쓰는 두 대도 이 값이 달라 서로 다르게 들린다.
+         낮을수록 크고 묵직한 엔진, 높을수록 작고 앙칼진 엔진으로 들린다. */
 const CARS = [
     { id: 'rbc', hold: 1.00,   name: '적혈구 루키',  motif: '적', motifEn: 'R', color: '#d4353f', sprite: 'red',   cost: 0,
+      eng: 3, pitch: 1.00, skid: 1, skidPitch: 1.00,   // 기본기. 무엇 하나 모나지 않은 중간 소리
       speed: 1.00, accel: 1.00, grip: 1.00, boost: 1.00,
       desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
     { id: 'plt', hold: 1.10,   name: '혈소판 터프',  motif: '판', motifEn: 'P', color: '#e8a33d', sprite: 'red',   cost: 260,
+      eng: 4, pitch: 0.92, skid: 2, skidPitch: 0.90,   // 접지력으로 버티는 무거운 차 — 가장 어둡고 두꺼운 엔진, 낮게 우는 타이어
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
       desc: '상처를 막는 세포. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
     { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#e8eef5', sprite: 'blue',  cost: 520,
+      eng: 5, pitch: 1.03, skid: 3, skidPitch: 0.97,   // 균형형. 기본보다 조금 더 두툼하다
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
       desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
     { id: 'o2', hold: 0.95,    name: '산소 러너',    motif: '산', motifEn: 'O', color: '#4fb8e8', sprite: 'blue',  cost: 900,
+      eng: 8, pitch: 1.11, skid: 4, skidPitch: 1.12,   // 가볍고 빠르다 — 가장 밝은 엔진, 앙칼진 타이어
       speed: 1.12, accel: 1.10, grip: 0.96, boost: 1.14,
       desc: '폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.' },
     { id: 'nerve', hold: 1.15, name: '신경 스파크',  motif: '신', motifEn: 'N', color: '#c77dff', sprite: 'pink',  cost: 1400,
+      eng: 7, pitch: 1.17, skid: 4, skidPitch: 1.18,   // 튀어 나간다 — 저역이 가장 얇아 날카롭게 들린다
       speed: 1.10, accel: 1.22, grip: 1.04, boost: 1.20,
       desc: '전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.' },
     { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: 'A', motifEn: 'A', color: '#ffd166', sprite: 'green', cost: 2200,
+      eng: 1, pitch: 1.06, skid: 2, skidPitch: 1.05,   // 전부 최고 — 밝으면서 저역도 살아 있다
       speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
       desc: '세포가 쓰는 에너지 그 자체. 모든 수치가 최고인 마지막 카트입니다.' }
 ];
@@ -5890,7 +5898,8 @@ function wantSample(name, onReady) {
     fetch('assets/sfx_' + name + '.mp3')
         .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('no file')))
         .then(b => new Promise((ok, no) => audioCtx.decodeAudioData(b, ok, no)))
-        .then(buf => { SAMPLE[name] = buf; SAMPLE_ON[name] = true; try { onReady(buf); } catch (e) {} })
+        .then(buf => { SAMPLE[name] = buf; if (name in SAMPLE_ON) SAMPLE_ON[name] = true;
+                       try { onReady(buf); } catch (e) {} })
         .catch(() => {});                                  // 없으면 합성음 그대로
     return null;
 }
@@ -5962,6 +5971,20 @@ function buildWindBuffer() {                             // 고속에서 얹는 
     return buf;
 }
 
+/* 지금 고른 차의 엔진 녹음으로 갈아 끼운다.
+   차를 바꾸고 판을 새로 시작할 때마다 불린다. 녹음이 없으면 합성음 그대로. */
+let enginePitch = 1;
+function engineUseCar() {
+    if (!audioCtx || !engineNorm) return;
+    const c = carById(save.car);
+    enginePitch = c.pitch || 1;
+    const name = 'engine' + (c.eng || 1);
+    const put = buf => { engineSrc = swapLoop(engineSrc, buf, engineNorm, 1); SAMPLE_ON.engine = true; };
+    const have = SAMPLE[name];
+    if (have) put(have);                       // 이미 받아 둔 것이면 바로
+    else wantSample(name, put);
+}
+
 function updateEngine() {
     if (!audioCtx) return;
     const active = (state === 'race' || state === 'countdown') && player;
@@ -5994,10 +6017,7 @@ function updateEngine() {
 
         engineSrc.start();
 
-        // 녹음이 있으면 재료를 그것으로 바꾼다 (조절 장치는 그대로 둔다)
-        wantSample('engine', buf => {
-            engineSrc = swapLoop(engineSrc, buf, engineNorm, 1);
-        });
+        engineUseCar();          // 지금 고른 차의 엔진 녹음을 불러 온다
 
         windSrc = audioCtx.createBufferSource();
         windSrc.buffer = buildWindBuffer(); windSrc.loop = true;
@@ -6045,7 +6065,8 @@ function updateEngine() {
     engineShift = Math.max(0, engineShift - 1 / 60);
     const cut = engineShift > 0 ? .45 : 1;               // 변속 중에는 잠깐 힘이 빠진다
 
-    engineSrc.playbackRate.setTargetAtTime(rate, t, .07);
+    // 차마다 기본 음높이가 다르다 — 같은 녹음을 써도 다른 엔진으로 들린다
+    engineSrc.playbackRate.setTargetAtTime(rate * enginePitch, t, .07);
 
     // 울림은 늘 비슷하게 깔리고, 으르렁이 밟은 만큼 열린다
     /* 밋밋하다는 말은 큰 데와 작은 데의 차이가 작다는 뜻이다.
@@ -6203,6 +6224,37 @@ function setVolume(v) {
     save.vol = clamp(v, 0, 1);
     if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(save.vol, audioCtx.currentTime, .02);
     writeSave();
+}
+
+/* ---- 한 번 울리고 마는 녹음 (카운트다운 · 출발) ----
+
+   <audio> 요소로 틀 수도 있지만 그 길에는 문제가 둘 있다.
+   하나, 마스터 볼륨도 리미터도 거치지 않아 설정의 소리 크기가 듣지 않는다.
+   둘, 폰에서는 손가락으로 건드리기 전에 만들어 둔 <audio> 가 막히는 일이 있다.
+   그래서 이미 열려 있는 audioCtx 에 태운다 — 다른 소리와 같은 길을 간다.
+
+   아직 안 받았으면 false 를 돌려주고, 부르는 쪽이 합성음으로 넘어간다. */
+/* 카운트다운 소리는 판이 시작되자마자 첫 박이 울린다. 그때 받기 시작하면 늦어서
+   첫 판만 합성음으로 새어 버린다. 그래서 메뉴에서 소리가 처음 열릴 때 미리 받아 둔다.
+   두 번 불러도 wantSample 이 알아서 한 번만 받는다. */
+function preloadOneShots() {
+    if (!audioCtx) return;
+    wantSample('count', () => {});
+    wantSample('go', () => {});
+}
+
+function playOne(name, vol = 1, rate = 1) {
+    if (!audioCtx) return false;
+    const buf = SAMPLE[name];
+    if (!buf) { wantSample(name, () => {}); return false; }   // 받아 두고 이번엔 합성음
+    const s = audioCtx.createBufferSource();
+    s.buffer = buf;
+    s.playbackRate.value = clamp(rate, .25, 4);
+    const g = audioCtx.createGain();
+    g.gain.value = normFor(buf) * vol;        // 녹음마다 다른 음량을 같은 기준으로
+    s.connect(g); g.connect(masterOut());
+    s.start();
+    return true;
 }
 
 /* ---- 효과음 ----
@@ -6368,13 +6420,27 @@ function buildSkid() {
 
     skidSrc.start(t);
 
-    // 녹음이 있으면 잡음 대신 그것을 재료로
-    wantSample('skid', buf => {
-        skidSrc = swapLoop(skidSrc, buf, skidNorm, 1);
+    skidUseCar();
+}
+
+/* 지금 고른 차의 타이어 녹음으로 갈아 끼운다.
+   녹음 넷이 서로 거의 같아서(밝기 차이 0.5dB) 음높이로 성격을 가른다 —
+   접지력이 좋은 차일수록 낮게 운다. 굵은 타이어가 낮은 소리를 내는 것과 같다. */
+let skidPitch = 1;
+function skidUseCar() {
+    if (!audioCtx || !skidNorm) return;
+    const c = carById(save.car);
+    skidPitch = c.skidPitch || 1;
+    const name = 'skid' + (c.skid || 1);
+    const put = buf => {
+        skidSrc = swapLoop(skidSrc, buf, skidNorm, skidPitch);
+        SAMPLE_ON.skid = true;
         // 녹음은 이미 '끼익' 이다. 좁은 공명을 그대로 두면 삐 소리가 덧씌워진다.
         skidBand.type = 'bandpass'; skidBand.frequency.value = 2400; skidBand.Q.value = .8;
         skidSharp.Q.value = 3; skidSharp2.Q.value = 3;
-    });
+    };
+    const have = SAMPLE[name];
+    if (have) put(have); else wantSample(name, put);
 }
 
 function sfxSkid(amount) {
@@ -6514,11 +6580,17 @@ function sfxWin(first) {
     if (first) { bell(2093, 1.2, .05, at + .1, 1); bell(2637, 1.0, .035, at + .2, 1); }
 }
 
-/* 카운트다운 : 배를 울리는 북 한 방. 셋 · 둘 · 하나가 점점 높아진다. */
+/* 카운트다운 : 배를 울리는 북 한 방. 셋 · 둘 · 하나가 점점 높아진다.
+
+   녹음이 있으면 그것을 쓰되, 셋 · 둘 · 하나가 조금씩 높아지는 것은 그대로 지킨다.
+   같은 소리가 세 번 그냥 되풀이되면 시간이 흐르는 느낌이 안 나고,
+   높아질수록 '이제 곧 출발' 이라는 게 귀로 전해진다. */
 let countN = 0;
 function sfxCount() {
     if (!audioCtx) return;
-    if (playSfx('count', .6)) return;
+    const step0 = countN % 3;
+    if (playOne('count', .85, [1, 1.06, 1.13][step0])) { countN++; return; }
+    if (playSfx('count', .6)) { countN++; return; }
     const step = countN++ % 3;
     const f = [150, 168, 190][step];
     tone(f, .34, .24, 'sine', 0, f * .45, { punch: 2.4, bendT: .1, wet: 1 });  // 북
@@ -6529,6 +6601,7 @@ function sfxCount() {
 function sfxGo() {
     if (!audioCtx) return;
     countN = 0;
+    if (playOne('go', 1.0)) return;
     if (playSfx('go', .7)) return;
     // 화음이 한꺼번에 열리고 위로 뻗는다
     [523, 659, 784, 1047].forEach(fr => {
@@ -6545,6 +6618,7 @@ function sfxGo() {
 function playBeep(freq, dur) {
     try {
         if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); loadSfx(); }
+        preloadOneShots();
         const t = audioCtx.currentTime;
         // 사각파 하나면 삐 소리가 난다. 부드러운 몸통에 배음 한 겹만 얹어 둥글게.
         const mk = (f, v, type) => {
@@ -7329,6 +7403,8 @@ function startRace(id, timeAttack) {
     raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; countShown = -1; stickyHint = 0;
     subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
 
+    engineUseCar(); skidUseCar();            // 고른 차의 엔진 · 타이어 소리로
+    preloadOneShots();                       // 메뉴를 건너뛰고 왔을 때를 대비
     buildHudStatic();
     el('taCard').classList.toggle('hidden', !TA.on);
     if (el('tTalk')) el('tTalk').style.display = net.on ? '' : 'none';   // 혼자 달릴 때는 말할 상대가 없다
