@@ -984,7 +984,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.0857</div>
+<div id="build">v260813.0920</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5874,6 +5874,7 @@ let audioCtx = null;
    실린더마다 힘을 살짝 다르게 줘서 기계다운 울퉁불퉁함을 남겼다. */
 const ENGINE_BASE_HZ = 62;          // 재생속도 1 일 때의 초당 점화 횟수
 let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
+let engineGrowl = null, engineGrowlGain = null, engineGear = -1, engineShift = 0;
 let windSrc = null, windGain = null;
 
 function buildEngineBuffer() {
@@ -5920,14 +5921,25 @@ function updateEngine() {
         engineSrc = audioCtx.createBufferSource();
         engineSrc.buffer = buildEngineBuffer();
         engineSrc.loop = true;
-        engineLP = audioCtx.createBiquadFilter();
-        engineLP.type = 'lowpass'; engineLP.frequency.value = 700; engineLP.Q.value = .8;
-        engineBody = audioCtx.createBiquadFilter();      // 배기관이 울리는 공명
+        /* 한 겹으로 만들면 저역을 열 땐 먹먹하고 고역을 열 땐 윙윙거린다.
+           그래서 같은 점화음을 두 갈래로 나눈다.
+             울림  늘 깔려 있는 저음. 배 속을 울리는 몸통.
+             으르렁  밟을 때만 열리는 중고역. 엔진이 '서는' 느낌은 여기서 난다. */
+        engineLP = audioCtx.createBiquadFilter();                  // 울림
+        engineLP.type = 'lowpass'; engineLP.frequency.value = 240; engineLP.Q.value = .7;
+        engineBody = audioCtx.createBiquadFilter();                // 배기관 공명
         engineBody.type = 'peaking'; engineBody.frequency.value = 165;
         engineBody.Q.value = 1.1; engineBody.gain.value = 6;
         engineGain = audioCtx.createGain(); engineGain.gain.value = 0;
         engineSrc.connect(engineLP); engineLP.connect(engineBody);
         engineBody.connect(engineGain); engineGain.connect(masterOut());
+
+        engineGrowl = audioCtx.createBiquadFilter();               // 으르렁
+        engineGrowl.type = 'bandpass'; engineGrowl.frequency.value = 500; engineGrowl.Q.value = 1.15;
+        engineGrowlGain = audioCtx.createGain(); engineGrowlGain.gain.value = 0;
+        engineSrc.connect(engineGrowl); engineGrowl.connect(engineGrowlGain);
+        engineGrowlGain.connect(masterOut());
+
         engineSrc.start();
 
         windSrc = audioCtx.createBufferSource();
@@ -5942,7 +5954,9 @@ function updateEngine() {
     const t = audioCtx.currentTime;
     if (!active) {
         engineGain.gain.setTargetAtTime(0, t, .12);
+        engineGrowlGain.gain.setTargetAtTime(0, t, .12);
         windGain.gain.setTargetAtTime(0, t, .12);
+        engineGear = -1;
         return;
     }
 
@@ -5957,17 +5971,34 @@ function updateEngine() {
         rate = .62 + rev * 1.5;
     } else {
         const v = clamp(sp / MAXSPEED, 0, 1);
-        load = clamp(v * .85 + (player.pad && player.pad.gas ? .15 : 0) + (boost ? .25 : 0), .12, 1);
+        /* 예전에는 속도가 소리를 결정했다. 그래서 액셀에서 발을 떼도 소리가 그대로라
+           엔진이 살아 있는 느낌이 안 났다. 이제 '밟았는가' 가 절반을 넘게 한다 —
+           코너 앞에서 발을 떼면 소리가 확 잦아든다. */
+        const gas = !!(player.pad && player.pad.gas);
+        load = clamp((gas ? .58 : .10) + v * .34 + (boost ? .22 : 0), .10, 1);
+
         // 기어를 바꾸듯 rpm 이 올랐다 떨어지길 반복 → 한 음으로 붙어 있지 않게 한다
         const gear = Math.min(3, Math.floor(v * 4));
         const inGear = clamp(v * 4 - gear, 0, 1);
         rate = .70 + inGear * 1.05 + gear * .16 + (boost ? .35 : 0);
+
+        // 기어가 바뀌는 순간 아주 짧게 힘을 빼면 '변속' 으로 들린다 (클러치를 밟듯)
+        if (gear !== engineGear) { if (engineGear >= 0) engineShift = .12; engineGear = gear; }
     }
+    engineShift = Math.max(0, engineShift - 1 / 60);
+    const cut = engineShift > 0 ? .45 : 1;               // 변속 중에는 잠깐 힘이 빠진다
 
     engineSrc.playbackRate.setTargetAtTime(rate, t, .07);
-    engineLP.frequency.setTargetAtTime(520 + load * 3100, t, .08);   // 밟을수록 소리가 열린다
-    engineGain.gain.setTargetAtTime(.10 + load * .13, t, .08);
-    windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .05, t, .15);
+
+    // 울림은 늘 비슷하게 깔리고, 으르렁이 밟은 만큼 열린다
+    engineLP.frequency.setTargetAtTime(190 + load * 260, t, .09);
+    engineGain.gain.setTargetAtTime((.052 + load * .050) * cut, t, .08);
+
+    engineGrowl.frequency.setTargetAtTime(430 + load * load * 1700, t, .07);
+    engineGrowl.Q.setTargetAtTime(1.6 - load * .7, t, .1);          // 밟을수록 넓게 열린다
+    engineGrowlGain.gain.setTargetAtTime(load * load * .085 * cut, t, .06);
+
+    windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .045, t, .15);
 }
 
 /* ============================================================================
@@ -5983,7 +6014,11 @@ function updateEngine() {
    나머지(충돌·획득·부스터·카운트·출발)는 예전에 만들어 둔 파일이 기계음처럼 들려서,
    코드로 합성한 소리를 쓴다. 목록에서 빼면 playSfx 가 false 를 돌려주고
    각 함수의 합성 경로가 실행된다. 파일은 지우지 않고 남겨 둔다. */
-const SFX_NAMES = ['engine', 'engine_low', 'engine_high'];
+/* 지금은 모든 소리를 코드로 만든다. 여기에 이름을 적으면 assets/sfx_<이름>.mp3 를
+   찾아 쓰지만, 비워 두면 아무것도 내려받지 않는다.
+   한동안 엔진 이름 셋이 적혀 있었는데 정작 그 이름으로 재생하는 곳이 없었다 —
+   실행할 때마다 mp3 셋을 받아 놓고 한 번도 쓰지 않았다. */
+const SFX_NAMES = [];
 const SFX = {};
 
 // file:// 에서는 fetch 가 막히므로 <audio> 요소로 불러온다.
@@ -6079,11 +6114,16 @@ function masterOut() {
     if (!masterGain) {
         masterGain = audioCtx.createGain();
         masterGain.gain.value = save.vol;
-        // 리미터 : 여러 겹이 한꺼번에 울리면 1.0 을 넘어 찌그러진다.
-        //   찌그러진 소리는 뭉개져서 오히려 밋밋하게 들린다. 넘는 만큼만 눌러 준다.
+        /* 리미터 : 여러 겹이 한꺼번에 울릴 때만 넘는 만큼 눌러 준다.
+
+           문턱이 -14dB(0.2) 이던 때가 있었는데, 엔진 하나가 0.23 까지 갔다.
+           평소 주행 내내 리미터가 소리를 누르고 있었다는 뜻이다.
+           눌린 소리는 크기 변화가 사라져서 밋밋하게 들린다 —
+           '소리가 밋밋하다' 는 말의 진짜 원인이 여기 있었다.
+           이제 -6dB(0.5) 로 올려, 정말 겹쳐 터질 때만 걸린다. */
         const comp = audioCtx.createDynamicsCompressor();
-        comp.threshold.value = -14; comp.knee.value = 6;
-        comp.ratio.value = 12; comp.attack.value = .003; comp.release.value = .18;
+        comp.threshold.value = -6; comp.knee.value = 5;
+        comp.ratio.value = 5; comp.attack.value = .004; comp.release.value = .16;
         masterGain.connect(comp); comp.connect(audioCtx.destination);
     }
     return masterGain;
@@ -6231,14 +6271,13 @@ function buildSkid() {
 
     /* 떨림을 소리 세기에 얹는다 (대역 주파수는 건드리지 않는다 — 들뜬 소리가 된다).
 
-       세기를 고를 때 기준이 하나 있다. 마스터에 걸린 리미터의 문턱이 0.2 인데,
-       그 위로 올라가면 리미터가 떨림의 봉우리를 눌러 버린다.
-       떨리게 하려고 넣은 것을 리미터가 도로 깎아내는 셈이다.
-       그래서 가장 셀 때의 봉우리가 딱 0.2 아래에 닿도록 잡았다 —
-       봉우리 0.20, 골 0.03. 이 폭이 '끼익-익-익' 이 된다. */
-    const toBody  = audioCtx.createGain(); toBody.gain.value  = .032;
-    const toSharp = audioCtx.createGain(); toSharp.gain.value = .036;
-    const toTone  = audioCtx.createGain(); toTone.gain.value  = .007;
+       세기는 리미터 문턱(0.5)에 맞춰 잡는다. 그 위로 올라가면 리미터가
+       떨림의 봉우리를 눌러 버려서, 떨리게 하려고 넣은 것을 도로 깎아낸다.
+       엔진과 함께 울리는 것까지 감안해 봉우리 0.30 · 골 0.04 로 잡았다.
+       이 폭이 '끼익-익-익' 이 된다. */
+    const toBody  = audioCtx.createGain(); toBody.gain.value  = .046;
+    const toSharp = audioCtx.createGain(); toSharp.gain.value = .054;
+    const toTone  = audioCtx.createGain(); toTone.gain.value  = .010;
     skidWobDepth.connect(toBody);  toBody.connect(skidGain.gain);
     skidWobDepth.connect(toSharp); toSharp.connect(skidSharpGain.gain);
     skidWobDepth.connect(toTone);  toTone.connect(skidToneGain.gain);
@@ -6256,9 +6295,9 @@ function sfxSkid(amount) {
 
     /* 세게 미끄러질수록 '날' 과 '울음' 의 비중이 커진다.
        몸통은 거의 그대로 둔다 — 몸통까지 같이 키우면 그냥 시끄러워진다. */
-    skidGain.gain.setTargetAtTime(a * .072, t, .06);
-    skidSharpGain.gain.setTargetAtTime(a * a * .035, t, .05);
-    skidToneGain.gain.setTargetAtTime(a * a * .009, t, .07);
+    skidGain.gain.setTargetAtTime(a * .105, t, .06);
+    skidSharpGain.gain.setTargetAtTime(a * a * .052, t, .05);
+    skidToneGain.gain.setTargetAtTime(a * a * .013, t, .07);
 
     // 떨림은 미끄러질 때만. 살짝 미끄러질 때 떨면 어색하다.
     skidWobDepth.gain.setTargetAtTime(a > .25 ? (a - .25) : 0, t, .08);
