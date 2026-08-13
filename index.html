@@ -984,7 +984,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.1018</div>
+<div id="build">v260813.1025</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5874,7 +5874,8 @@ let audioCtx = null;
    실린더마다 힘을 살짝 다르게 줘서 기계다운 울퉁불퉁함을 남겼다. */
 const ENGINE_BASE_HZ = 62;          // 재생속도 1 일 때의 초당 점화 횟수
 let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
-let engineGrowl = null, engineGrowlGain = null, engineGear = -1, engineShift = 0;
+let engineGrowl = null, engineGrowlGain = null, engineNorm = null,
+    engineGear = -1, engineShift = 0;
 let windSrc = null, windGain = null;
 
 /* ---- 녹음한 반복음 ----
@@ -5894,12 +5895,32 @@ function wantSample(name, onReady) {
     return null;
 }
 
+/* ---- 재료의 음량을 재서 맞춘다 ----
+
+   녹음마다 음량이 제각각이다. 실제로 재 보니
+     엔진 -21.5dB · 드리프트 -15.9dB · 브레이크 -12.6dB
+   로 엔진이 브레이크의 5분의 1이었다. 여기에 고정 게인을 걸었으니
+   엔진은 아예 안 들리고 브레이크만 컸다. 코드 합성음까지 섞이면 더 엉킨다.
+
+   그래서 재료가 무엇이든 불러올 때 실효값을 재서 같은 기준으로 맞춘다.
+   그러고 나면 게인 숫자가 비로소 '얼마나 크게' 를 뜻하게 된다. */
+const REF_RMS = .22;
+
+function bufRms(buf) {
+    const d = buf.getChannelData(0);
+    let sum = 0, n = 0;
+    for (let i = 0; i < d.length; i += 7) { sum += d[i] * d[i]; n++; }   // 7칸마다 훑으면 충분하다
+    return Math.sqrt(sum / Math.max(1, n));
+}
+function normFor(buf) { return clamp(REF_RMS / Math.max(1e-4, bufRms(buf)), .15, 14); }
+
 /* 돌고 있는 반복음의 재료만 갈아 끼운다 (이어진 곳은 그대로 두고 소스만 교체) */
-function swapLoop(oldSrc, buf, targets, rate) {
+function swapLoop(oldSrc, buf, norm, rate) {
     const n = audioCtx.createBufferSource();
     n.buffer = buf; n.loop = true;
     if (rate) n.playbackRate.value = rate;
-    targets.forEach(t => n.connect(t));
+    n.connect(norm);
+    norm.gain.value = normFor(buf);
     n.start();
     try { oldSrc.stop(); } catch (e) {}
     return n;
@@ -5949,6 +5970,8 @@ function updateEngine() {
         engineSrc = audioCtx.createBufferSource();
         engineSrc.buffer = buildEngineBuffer();
         engineSrc.loop = true;
+        engineNorm = audioCtx.createGain();
+        engineNorm.gain.value = normFor(engineSrc.buffer);
         /* 한 겹으로 만들면 저역을 열 땐 먹먹하고 고역을 열 땐 윙윙거린다.
            그래서 같은 점화음을 두 갈래로 나눈다.
              울림  늘 깔려 있는 저음. 배 속을 울리는 몸통.
@@ -5959,20 +5982,21 @@ function updateEngine() {
         engineBody.type = 'peaking'; engineBody.frequency.value = 165;
         engineBody.Q.value = 1.1; engineBody.gain.value = 6;
         engineGain = audioCtx.createGain(); engineGain.gain.value = 0;
-        engineSrc.connect(engineLP); engineLP.connect(engineBody);
+        engineSrc.connect(engineNorm);
+        engineNorm.connect(engineLP); engineLP.connect(engineBody);
         engineBody.connect(engineGain); engineGain.connect(masterOut());
 
         engineGrowl = audioCtx.createBiquadFilter();               // 으르렁
         engineGrowl.type = 'bandpass'; engineGrowl.frequency.value = 500; engineGrowl.Q.value = 1.15;
         engineGrowlGain = audioCtx.createGain(); engineGrowlGain.gain.value = 0;
-        engineSrc.connect(engineGrowl); engineGrowl.connect(engineGrowlGain);
+        engineNorm.connect(engineGrowl); engineGrowl.connect(engineGrowlGain);
         engineGrowlGain.connect(masterOut());
 
         engineSrc.start();
 
         // 녹음이 있으면 재료를 그것으로 바꾼다 (조절 장치는 그대로 둔다)
         wantSample('engine', buf => {
-            engineSrc = swapLoop(engineSrc, buf, [engineLP, engineGrowl], 1);
+            engineSrc = swapLoop(engineSrc, buf, engineNorm, 1);
         });
 
         windSrc = audioCtx.createBufferSource();
@@ -6032,17 +6056,17 @@ function updateEngine() {
            웅웅거린다. 그래서 필터는 '밟을수록 열리는 문' 역할만 하고,
            살아 있는 느낌은 재생 속도와 세기로 낸다. */
         engineLP.frequency.setTargetAtTime(600 + load * 5200, t, .08);
-        engineGain.gain.setTargetAtTime((.055 + load * load * .130) * cut, t, .07);
+        engineGain.gain.setTargetAtTime((.150 + load * load * .420) * cut, t, .07);
         engineGrowl.frequency.setTargetAtTime(900 + load * load * 1800, t, .07);
         engineGrowl.Q.setTargetAtTime(.7, t, .1);
-        engineGrowlGain.gain.setTargetAtTime(load * load * .055 * cut, t, .06);
+        engineGrowlGain.gain.setTargetAtTime(load * load * .200 * cut, t, .06);
     } else {
         engineLP.frequency.setTargetAtTime(180 + load * 300, t, .09);
-        engineGain.gain.setTargetAtTime((.028 + load * load * .085) * cut, t, .07);
+        engineGain.gain.setTargetAtTime((.075 + load * load * .270) * cut, t, .07);
 
         engineGrowl.frequency.setTargetAtTime(430 + load * load * 2100, t, .06);
         engineGrowl.Q.setTargetAtTime(1.7 - load * .8, t, .1);      // 밟을수록 넓게 열린다
-        engineGrowlGain.gain.setTargetAtTime(load * load * .155 * cut, t, .05);
+        engineGrowlGain.gain.setTargetAtTime(load * load * .330 * cut, t, .05);
     }
 
     windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .055, t, .15);
@@ -6275,7 +6299,7 @@ function sfxCrash(power = 1) {
    그리고 이 셋을 두 개의 흔들림으로 함께 떨게 한다. 9.3Hz 와 13.7Hz —
    서로 나누어떨어지지 않는 수라서 같은 자리로 돌아오지 않는다.
    하나만 쓰면 기계가 웅웅대는 소리가 되고, 둘을 겹치면 살아 있는 떨림이 된다. */
-let skidSrc = null, skidGain = null, skidBand = null,
+let skidSrc = null, skidGain = null, skidBand = null, skidNorm = null,
     skidSharp = null, skidSharpGain = null, skidSharp2 = null, skidSharp2Gain = null,
     skidTone = null, skidToneGain = null, skidWob = null, skidWobDepth = null;
 
@@ -6284,24 +6308,27 @@ function buildSkid() {
 
     skidSrc = audioCtx.createBufferSource();
     skidSrc.buffer = noiseBuffer(2); skidSrc.loop = true;
+    skidNorm = audioCtx.createGain();
+    skidNorm.gain.value = normFor(skidSrc.buffer);
+    skidSrc.connect(skidNorm);
 
     // 몸통
     skidBand = audioCtx.createBiquadFilter();
     skidBand.type = 'bandpass'; skidBand.frequency.value = 2100; skidBand.Q.value = 5.5;
     skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
-    skidSrc.connect(skidBand); skidBand.connect(skidGain); skidGain.connect(masterOut());
+    skidNorm.connect(skidBand); skidBand.connect(skidGain); skidGain.connect(masterOut());
 
     // 날 — 같은 잡음을 아주 좁게 걸러 위에 얹는다. Q 를 높일수록 '끼' 에 가까워진다.
     skidSharp = audioCtx.createBiquadFilter();
     skidSharp.type = 'bandpass'; skidSharp.frequency.value = 3300; skidSharp.Q.value = 22;
     skidSharpGain = audioCtx.createGain(); skidSharpGain.gain.value = 0;
-    skidSrc.connect(skidSharp); skidSharp.connect(skidSharpGain); skidSharpGain.connect(masterOut());
+    skidNorm.connect(skidSharp); skidSharp.connect(skidSharpGain); skidSharpGain.connect(masterOut());
 
     // 날 둘째 — 더 위에 하나 더. 겹치면 비명에 가까워진다.
     skidSharp2 = audioCtx.createBiquadFilter();
     skidSharp2.type = 'bandpass'; skidSharp2.frequency.value = 5100; skidSharp2.Q.value = 26;
     skidSharp2Gain = audioCtx.createGain(); skidSharp2Gain.gain.value = 0;
-    skidSrc.connect(skidSharp2); skidSharp2.connect(skidSharp2Gain); skidSharp2Gain.connect(masterOut());
+    skidNorm.connect(skidSharp2); skidSharp2.connect(skidSharp2Gain); skidSharp2Gain.connect(masterOut());
 
     // 울음 — 아주 작게. 이게 없으면 '쉬익', 있으면 '끼익'.
     skidTone = audioCtx.createOscillator();
@@ -6330,10 +6357,10 @@ function buildSkid() {
        이 폭이 '끼익-익-익' 이 된다. */
     /* 떨림의 깊이. 날 쪽을 몸통보다 크게 흔들어야 '끼-익-익' 으로 들린다.
        몸통까지 같이 크게 흔들면 그냥 '쉭-쉭-쉭' 이 된다. */
-    const toBody  = audioCtx.createGain(); toBody.gain.value  = .022;
-    const toSharp = audioCtx.createGain(); toSharp.gain.value = .060;
-    const toShar2 = audioCtx.createGain(); toShar2.gain.value = .045;
-    const toTone  = audioCtx.createGain(); toTone.gain.value  = .012;
+    const toBody  = audioCtx.createGain(); toBody.gain.value  = .055;
+    const toSharp = audioCtx.createGain(); toSharp.gain.value = .140;
+    const toShar2 = audioCtx.createGain(); toShar2.gain.value = .100;
+    const toTone  = audioCtx.createGain(); toTone.gain.value  = .028;
     skidWobDepth.connect(toBody);  toBody.connect(skidGain.gain);
     skidWobDepth.connect(toSharp); toSharp.connect(skidSharpGain.gain);
     skidWobDepth.connect(toShar2); toShar2.connect(skidSharp2Gain.gain);
@@ -6343,7 +6370,7 @@ function buildSkid() {
 
     // 녹음이 있으면 잡음 대신 그것을 재료로
     wantSample('skid', buf => {
-        skidSrc = swapLoop(skidSrc, buf, [skidBand, skidSharp, skidSharp2], 1);
+        skidSrc = swapLoop(skidSrc, buf, skidNorm, 1);
         // 녹음은 이미 '끼익' 이다. 좁은 공명을 그대로 두면 삐 소리가 덧씌워진다.
         skidBand.type = 'bandpass'; skidBand.frequency.value = 2400; skidBand.Q.value = .8;
         skidSharp.Q.value = 3; skidSharp2.Q.value = 3;
@@ -6363,17 +6390,20 @@ function sfxSkid(amount) {
     if (SAMPLE_ON.skid) {
         /* 녹음이 이미 끼익거리므로 몸통만 크게 내보내고, 날과 울음은 거의 끈다.
            떨림은 남긴다 — 녹음은 4초마다 똑같이 되풀이되는데, 떨림이 그 반복을 가려 준다. */
-        skidGain.gain.setTargetAtTime(a * .200, t, .06);
-        skidSharpGain.gain.setTargetAtTime(a * a * .030, t, .04);
+        /* 세기를 미끄럼에 그대로 비례시키면 살짝 미끄러질 때 거의 안 들린다.
+           0.65 제곱으로 눌러 주면 조금만 미끄러져도 확실히 들리고,
+           세게 미끄러질 때의 차이는 그대로 남는다. */
+        skidGain.gain.setTargetAtTime(Math.pow(a, .65) * .520, t, .06);
+        skidSharpGain.gain.setTargetAtTime(a * a * .110, t, .04);
         skidSharp2Gain.gain.setTargetAtTime(0, t, .06);
         skidToneGain.gain.setTargetAtTime(0, t, .08);
     } else {
         /* 몸통(잡음)을 줄이고 날(공명)을 키운다. 소리를 통째로 키우면 리미터에 눌려
            도로 밋밋해지므로, 총량은 낮추고 '끼익' 을 만드는 쪽에 몰아 준다. */
-        skidGain.gain.setTargetAtTime(a * .075, t, .06);
-        skidSharpGain.gain.setTargetAtTime(a * a * .105, t, .04);
-        skidSharp2Gain.gain.setTargetAtTime(a * a * a * .075, t, .04);
-        skidToneGain.gain.setTargetAtTime(a * a * .028, t, .06);
+        skidGain.gain.setTargetAtTime(Math.pow(a, .65) * .170, t, .06);
+        skidSharpGain.gain.setTargetAtTime(Math.pow(a, 1.4) * .240, t, .04);
+        skidSharp2Gain.gain.setTargetAtTime(a * a * a * .170, t, .04);
+        skidToneGain.gain.setTargetAtTime(a * a * .065, t, .06);
     }
 
     // 떨림은 미끄러질 때만. 살짝 미끄러질 때 떨면 어색하다.
@@ -6391,28 +6421,31 @@ function sfxSkid(amount) {
      비명    4300Hz 의 아주 좁은 공명. 세게 밟을 때만 선다.
    드리프트가 '끼익' 이라면 브레이크는 '끼------' 에 가깝다.
    그래서 떨림을 얹지 않는다 — 떨면 드리프트와 구분이 안 된다. */
-let brakeSrc = null, brakeGain = null, brakeBand = null,
+let brakeSrc = null, brakeGain = null, brakeBand = null, brakeNorm = null,
     brakeSqueal = null, brakeSquealGain = null;
 
 function buildBrake() {
     brakeSrc = audioCtx.createBufferSource();
     brakeSrc.buffer = noiseBuffer(2); brakeSrc.loop = true;
+    brakeNorm = audioCtx.createGain();
+    brakeNorm.gain.value = normFor(brakeSrc.buffer);
+    brakeSrc.connect(brakeNorm);
 
     brakeBand = audioCtx.createBiquadFilter();
     brakeBand.type = 'bandpass'; brakeBand.frequency.value = 900; brakeBand.Q.value = 1.6;
     brakeGain = audioCtx.createGain(); brakeGain.gain.value = 0;
-    brakeSrc.connect(brakeBand); brakeBand.connect(brakeGain); brakeGain.connect(masterOut());
+    brakeNorm.connect(brakeBand); brakeBand.connect(brakeGain); brakeGain.connect(masterOut());
 
     brakeSqueal = audioCtx.createBiquadFilter();
     brakeSqueal.type = 'bandpass'; brakeSqueal.frequency.value = 4300; brakeSqueal.Q.value = 24;
     brakeSquealGain = audioCtx.createGain(); brakeSquealGain.gain.value = 0;
-    brakeSrc.connect(brakeSqueal); brakeSqueal.connect(brakeSquealGain);
+    brakeNorm.connect(brakeSqueal); brakeSqueal.connect(brakeSquealGain);
     brakeSquealGain.connect(masterOut());
 
     brakeSrc.start();
 
     wantSample('brake', buf => {
-        brakeSrc = swapLoop(brakeSrc, buf, [brakeBand, brakeSqueal], 1);
+        brakeSrc = swapLoop(brakeSrc, buf, brakeNorm, 1);
         brakeBand.frequency.value = 1600; brakeBand.Q.value = .7;
         brakeSqueal.Q.value = 4;
     });
@@ -6424,8 +6457,8 @@ function sfxBrake(amount) {
     if (!brakeSrc) buildBrake();
     const a = clamp(amount, 0, 1), t = audioCtx.currentTime;
     const bs = SAMPLE_ON.brake;
-    brakeGain.gain.setTargetAtTime(a * (bs ? .165 : .085), t, .05);
-    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .035 : .105), t, .04);   // 세게 밟을 때만
+    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? .300 : .190), t, .05);
+    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .075 : .230), t, .04);   // 세게 밟을 때만
     brakeBand.frequency.setTargetAtTime(720 + a * 520, t, .08);
     brakeSqueal.frequency.setTargetAtTime(4100 + a * 700, t, .1);
 }
