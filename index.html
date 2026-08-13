@@ -982,7 +982,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.1930</div>
+<div id="build">v260813.2005</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -6119,10 +6119,10 @@ function updateEngine() {
        실제로 재 보니 1.5kHz 위가 -50dB 였다. 엔진이 안 들린다는 말의 원인이 여기였다.
        이제 5.8kHz 까지 열어, 밟는 만큼 앞으로 나온다. */
     engineLP.frequency.setTargetAtTime(600 + load * 5200, t, .08);
-    engineGain.gain.setTargetAtTime((.150 + load * load * .420) * cut, t, .07);
+    engineGain.gain.setTargetAtTime((.090 + load * load * .250) * cut, t, .07);
     engineGrowl.frequency.setTargetAtTime(900 + load * load * 1800, t, .07);
     engineGrowl.Q.setTargetAtTime(.7, t, .1);
-    engineGrowlGain.gain.setTargetAtTime(load * load * .200 * cut, t, .06);
+    engineGrowlGain.gain.setTargetAtTime(load * load * .120 * cut, t, .06);
 
     windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .055, t, .15);
 }
@@ -6570,8 +6570,8 @@ function sfxBrake(amount) {
        하나는 녹음이 한 번 났다가 사그라드는 소리라, 반복시키면 4초마다 꺼졌다 켜졌다 한 것.
        (녹음에서 내내 울리는 2초만 잘라 내 고쳤다.)
        둘은 그냥 세기가 모자랐던 것 — 여기서 올린다. 리미터까지는 아직 한참 남았다. */
-    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? .620 : .190), t, .05);
-    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .200 : .230), t, .04);   // 세게 밟을 때만
+    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? .980 : .190), t, .05);
+    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .300 : .230), t, .04);   // 세게 밟을 때만
     brakeBand.frequency.setTargetAtTime(720 + a * 520, t, .08);
     brakeSqueal.frequency.setTargetAtTime(4100 + a * 700, t, .1);
 }
