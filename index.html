@@ -982,7 +982,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.2005</div>
+<div id="build">v260813.2100</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -6570,8 +6570,8 @@ function sfxBrake(amount) {
        하나는 녹음이 한 번 났다가 사그라드는 소리라, 반복시키면 4초마다 꺼졌다 켜졌다 한 것.
        (녹음에서 내내 울리는 2초만 잘라 내 고쳤다.)
        둘은 그냥 세기가 모자랐던 것 — 여기서 올린다. 리미터까지는 아직 한참 남았다. */
-    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? .980 : .190), t, .05);
-    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .300 : .230), t, .04);   // 세게 밟을 때만
+    brakeGain.gain.setTargetAtTime(Math.pow(a, .7) * (bs ? 1.320 : .190), t, .05);
+    brakeSquealGain.gain.setTargetAtTime(a * a * a * (bs ? .420 : .230), t, .04);   // 세게 밟을 때만
     brakeBand.frequency.setTargetAtTime(720 + a * 520, t, .08);
     brakeSqueal.frequency.setTargetAtTime(4100 + a * 700, t, .1);
 }
@@ -8316,10 +8316,16 @@ function loop(now) {
         if (player && state === 'race') {
             sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
             /* 브레이크는 '빠를 때 밟아야' 운다. 멈춰 있을 때 밟는 것은 소리가 없다.
-               드리프트 중에는 이미 타이어가 울고 있으므로 절반만 얹는다. */
-            const fast = clamp((Math.abs(player.speed) - 90) / 260, 0, 1);
+               드리프트 중에는 이미 타이어가 울고 있으므로 조금 덜어 낸다.
+
+               예전에는 (속도-90)/260 이라 속도 350 이상에서만 최대였다.
+               그런데 브레이크를 밟으면 초당 1250 씩 줄어든다 — 속도 400 에서 밟아도
+               0.2초면 150 아래로 떨어져 소리가 나자마자 사그라들었다.
+               '브레이크 소리가 작다' 는 말의 진짜 원인이 세기 값이 아니라 여기 있었다.
+               이제 속도 190 이면 최대라, 밟고 있는 내내 제대로 운다. */
+            const fast = clamp((Math.abs(player.speed) - 45) / 145, 0, 1);
             const on = (player.pad && player.pad.brake) ? 1 : 0;
-            sfxBrake(on * fast * (player.driftAmt > .3 ? .45 : 1));
+            sfxBrake(on * fast * (player.driftAmt > .3 ? .70 : 1));
         } else { sfxSkid(0); sfxBrake(0); }
         if (state !== 'menu' && !(victory && victory.staged)) updateHud();
     } catch (e) {
@@ -9121,16 +9127,12 @@ el('quizBack').onclick = () => {
     else leaveQuiz();
 };
 
-/* 레이스 중 나가기. 폰에서는 이게 없으면 완주할 때까지 갇힌다. */
+/* 레이스 중 나가기. 폰에서는 이게 없으면 완주할 때까지 갇힌다.
+   메뉴로 되돌리는 일은 backToMenu 한 곳에만 둔다 — 여기에 같은 코드를 따로 두었더니
+   나중에 '첫 장으로 되돌리기' 를 넣을 때 이쪽만 빠졌다. */
 el('exitRace').onclick = () => {
     if (state !== 'race' && state !== 'countdown') return;
-    netCleanup();
-    state = 'menu';
-    el('hud').classList.add('hidden');
-    el('touch').classList.remove('on'); document.body.classList.remove('touchUI');
-    el('result').classList.add('hidden');
-    el('menu').classList.remove('hidden');
-    renderCarPick();
+    backToMenu();
 };
 
 el('retryBtn').onclick = () => {
@@ -9152,6 +9154,10 @@ function showMenu() {
     state = 'menu';
     el('result').classList.add('hidden'); el('hud').classList.add('hidden');
     el('touch').classList.remove('on'); document.body.classList.remove('touchUI'); el('menu').classList.remove('hidden');
+    /* 첫 장(코스 고르기)으로 되돌린다.
+       이걸 안 했더니 마지막에 보던 장 — 대개 '출발' 장 — 이 그대로 떠서,
+       버튼에 '맵 선택' 이라 써 있는데 정작 맵이 안 보였다. */
+    setStep(0);
     renderCarPick();                       // 방금 번 포인트를 바로 쓸 수 있게 새로 그린다
 }
 
