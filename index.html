@@ -984,7 +984,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.0920</div>
+<div id="build">v260813.0936</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5991,14 +5991,17 @@ function updateEngine() {
     engineSrc.playbackRate.setTargetAtTime(rate, t, .07);
 
     // 울림은 늘 비슷하게 깔리고, 으르렁이 밟은 만큼 열린다
-    engineLP.frequency.setTargetAtTime(190 + load * 260, t, .09);
-    engineGain.gain.setTargetAtTime((.052 + load * .050) * cut, t, .08);
+    /* 밋밋하다는 말은 큰 데와 작은 데의 차이가 작다는 뜻이다.
+       통째로 키우면 시끄럽기만 하다. 평소를 더 낮추고 밟을 때를 크게 올려 폭을 벌린다.
+       공회전 0.03 → 전력 질주 0.26. 아홉 배 가까이 벌어진다. */
+    engineLP.frequency.setTargetAtTime(180 + load * 300, t, .09);
+    engineGain.gain.setTargetAtTime((.028 + load * load * .085) * cut, t, .07);
 
-    engineGrowl.frequency.setTargetAtTime(430 + load * load * 1700, t, .07);
-    engineGrowl.Q.setTargetAtTime(1.6 - load * .7, t, .1);          // 밟을수록 넓게 열린다
-    engineGrowlGain.gain.setTargetAtTime(load * load * .085 * cut, t, .06);
+    engineGrowl.frequency.setTargetAtTime(430 + load * load * 2100, t, .06);
+    engineGrowl.Q.setTargetAtTime(1.7 - load * .8, t, .1);          // 밟을수록 넓게 열린다
+    engineGrowlGain.gain.setTargetAtTime(load * load * .155 * cut, t, .05);
 
-    windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .045, t, .15);
+    windGain.gain.setTargetAtTime(clamp((sp - 180) / MAXSPEED, 0, 1) * .055, t, .15);
 }
 
 /* ============================================================================
@@ -6122,8 +6125,8 @@ function masterOut() {
            '소리가 밋밋하다' 는 말의 진짜 원인이 여기 있었다.
            이제 -6dB(0.5) 로 올려, 정말 겹쳐 터질 때만 걸린다. */
         const comp = audioCtx.createDynamicsCompressor();
-        comp.threshold.value = -6; comp.knee.value = 5;
-        comp.ratio.value = 5; comp.attack.value = .004; comp.release.value = .16;
+        comp.threshold.value = -3; comp.knee.value = 4;
+        comp.ratio.value = 3.5; comp.attack.value = .005; comp.release.value = .14;
         masterGain.connect(comp); comp.connect(audioCtx.destination);
     }
     return masterGain;
@@ -6229,8 +6232,8 @@ function sfxCrash(power = 1) {
    서로 나누어떨어지지 않는 수라서 같은 자리로 돌아오지 않는다.
    하나만 쓰면 기계가 웅웅대는 소리가 되고, 둘을 겹치면 살아 있는 떨림이 된다. */
 let skidSrc = null, skidGain = null, skidBand = null,
-    skidSharp = null, skidSharpGain = null, skidTone = null, skidToneGain = null,
-    skidWob = null, skidWobDepth = null;
+    skidSharp = null, skidSharpGain = null, skidSharp2 = null, skidSharp2Gain = null,
+    skidTone = null, skidToneGain = null, skidWob = null, skidWobDepth = null;
 
 function buildSkid() {
     const t = audioCtx.currentTime;
@@ -6244,11 +6247,17 @@ function buildSkid() {
     skidGain = audioCtx.createGain(); skidGain.gain.value = 0;
     skidSrc.connect(skidBand); skidBand.connect(skidGain); skidGain.connect(masterOut());
 
-    // 날 — 같은 잡음을 더 좁게 걸러 위에 얹는다
+    // 날 — 같은 잡음을 아주 좁게 걸러 위에 얹는다. Q 를 높일수록 '끼' 에 가까워진다.
     skidSharp = audioCtx.createBiquadFilter();
-    skidSharp.type = 'bandpass'; skidSharp.frequency.value = 3300; skidSharp.Q.value = 16;
+    skidSharp.type = 'bandpass'; skidSharp.frequency.value = 3300; skidSharp.Q.value = 22;
     skidSharpGain = audioCtx.createGain(); skidSharpGain.gain.value = 0;
     skidSrc.connect(skidSharp); skidSharp.connect(skidSharpGain); skidSharpGain.connect(masterOut());
+
+    // 날 둘째 — 더 위에 하나 더. 겹치면 비명에 가까워진다.
+    skidSharp2 = audioCtx.createBiquadFilter();
+    skidSharp2.type = 'bandpass'; skidSharp2.frequency.value = 5100; skidSharp2.Q.value = 26;
+    skidSharp2Gain = audioCtx.createGain(); skidSharp2Gain.gain.value = 0;
+    skidSrc.connect(skidSharp2); skidSharp2.connect(skidSharp2Gain); skidSharp2Gain.connect(masterOut());
 
     // 울음 — 아주 작게. 이게 없으면 '쉬익', 있으면 '끼익'.
     skidTone = audioCtx.createOscillator();
@@ -6275,11 +6284,15 @@ function buildSkid() {
        떨림의 봉우리를 눌러 버려서, 떨리게 하려고 넣은 것을 도로 깎아낸다.
        엔진과 함께 울리는 것까지 감안해 봉우리 0.30 · 골 0.04 로 잡았다.
        이 폭이 '끼익-익-익' 이 된다. */
-    const toBody  = audioCtx.createGain(); toBody.gain.value  = .046;
-    const toSharp = audioCtx.createGain(); toSharp.gain.value = .054;
-    const toTone  = audioCtx.createGain(); toTone.gain.value  = .010;
+    /* 떨림의 깊이. 날 쪽을 몸통보다 크게 흔들어야 '끼-익-익' 으로 들린다.
+       몸통까지 같이 크게 흔들면 그냥 '쉭-쉭-쉭' 이 된다. */
+    const toBody  = audioCtx.createGain(); toBody.gain.value  = .022;
+    const toSharp = audioCtx.createGain(); toSharp.gain.value = .060;
+    const toShar2 = audioCtx.createGain(); toShar2.gain.value = .045;
+    const toTone  = audioCtx.createGain(); toTone.gain.value  = .012;
     skidWobDepth.connect(toBody);  toBody.connect(skidGain.gain);
     skidWobDepth.connect(toSharp); toSharp.connect(skidSharpGain.gain);
+    skidWobDepth.connect(toShar2); toShar2.connect(skidSharp2Gain.gain);
     skidWobDepth.connect(toTone);  toTone.connect(skidToneGain.gain);
 
     skidSrc.start(t);
@@ -6295,16 +6308,58 @@ function sfxSkid(amount) {
 
     /* 세게 미끄러질수록 '날' 과 '울음' 의 비중이 커진다.
        몸통은 거의 그대로 둔다 — 몸통까지 같이 키우면 그냥 시끄러워진다. */
-    skidGain.gain.setTargetAtTime(a * .105, t, .06);
-    skidSharpGain.gain.setTargetAtTime(a * a * .052, t, .05);
-    skidToneGain.gain.setTargetAtTime(a * a * .013, t, .07);
+    /* 몸통(잡음)을 줄이고 날(공명)을 키운다. 소리를 통째로 키우면 리미터에 눌려
+       도로 밋밋해지므로, 총량은 낮추고 '끼익' 을 만드는 쪽에 몰아 준다. */
+    skidGain.gain.setTargetAtTime(a * .075, t, .06);
+    skidSharpGain.gain.setTargetAtTime(a * a * .105, t, .04);
+    skidSharp2Gain.gain.setTargetAtTime(a * a * a * .075, t, .04);
+    skidToneGain.gain.setTargetAtTime(a * a * .028, t, .06);
 
     // 떨림은 미끄러질 때만. 살짝 미끄러질 때 떨면 어색하다.
-    skidWobDepth.gain.setTargetAtTime(a > .25 ? (a - .25) : 0, t, .08);
+    skidWobDepth.gain.setTargetAtTime(a > .22 ? (a - .22) * 1.28 : 0, t, .07);
 
     // 공명 자리를 조금만 움직인다. 크게 쓸면 들뜬 소리가 되므로 폭을 좁게 잡는다.
     skidSharp.frequency.setTargetAtTime(3150 + a * 420, t, .12);
+    skidSharp2.frequency.setTargetAtTime(4900 + a * 620, t, .12);
     skidTone.frequency.setTargetAtTime(2050 + a * 260, t, .12);
+}
+
+/* ---- 브레이크 ----
+   드리프트와 같은 잡음원을 쓰되 전혀 다르게 거른다.
+     그르릉  900Hz 언저리의 넓은 대역. 패드가 디스크를 긁는 몸통.
+     비명    4300Hz 의 아주 좁은 공명. 세게 밟을 때만 선다.
+   드리프트가 '끼익' 이라면 브레이크는 '끼------' 에 가깝다.
+   그래서 떨림을 얹지 않는다 — 떨면 드리프트와 구분이 안 된다. */
+let brakeSrc = null, brakeGain = null, brakeBand = null,
+    brakeSqueal = null, brakeSquealGain = null;
+
+function buildBrake() {
+    brakeSrc = audioCtx.createBufferSource();
+    brakeSrc.buffer = noiseBuffer(2); brakeSrc.loop = true;
+
+    brakeBand = audioCtx.createBiquadFilter();
+    brakeBand.type = 'bandpass'; brakeBand.frequency.value = 900; brakeBand.Q.value = 1.6;
+    brakeGain = audioCtx.createGain(); brakeGain.gain.value = 0;
+    brakeSrc.connect(brakeBand); brakeBand.connect(brakeGain); brakeGain.connect(masterOut());
+
+    brakeSqueal = audioCtx.createBiquadFilter();
+    brakeSqueal.type = 'bandpass'; brakeSqueal.frequency.value = 4300; brakeSqueal.Q.value = 24;
+    brakeSquealGain = audioCtx.createGain(); brakeSquealGain.gain.value = 0;
+    brakeSrc.connect(brakeSqueal); brakeSqueal.connect(brakeSquealGain);
+    brakeSquealGain.connect(masterOut());
+
+    brakeSrc.start();
+}
+
+/* amount 0~1. 빠를 때 세게 밟을수록 커진다 — 멈춰 있을 때 밟아도 소리가 나면 안 된다. */
+function sfxBrake(amount) {
+    if (!audioCtx) return;
+    if (!brakeSrc) buildBrake();
+    const a = clamp(amount, 0, 1), t = audioCtx.currentTime;
+    brakeGain.gain.setTargetAtTime(a * .085, t, .05);
+    brakeSquealGain.gain.setTargetAtTime(a * a * a * .105, t, .04);   // 세게 밟을 때만 비명
+    brakeBand.frequency.setTargetAtTime(720 + a * 520, t, .08);
+    brakeSqueal.frequency.setTargetAtTime(4100 + a * 700, t, .1);
 }
 
 /* 아이템 획득 : 위로 올라가는 세 음 + 반짝임. 밋밋하지 않게 음을 올린다. */
@@ -8034,9 +8089,14 @@ function loop(now) {
             }
         } else render();
         updateEngine();
-        if (player && state === 'race')
+        if (player && state === 'race') {
             sfxSkid(Math.max(player.driftAmt, clamp((player.slip - 40) / 120, 0, 1)));
-        else sfxSkid(0);
+            /* 브레이크는 '빠를 때 밟아야' 운다. 멈춰 있을 때 밟는 것은 소리가 없다.
+               드리프트 중에는 이미 타이어가 울고 있으므로 절반만 얹는다. */
+            const fast = clamp((Math.abs(player.speed) - 90) / 260, 0, 1);
+            const on = (player.pad && player.pad.brake) ? 1 : 0;
+            sfxBrake(on * fast * (player.driftAmt > .3 ? .45 : 1));
+        } else { sfxSkid(0); sfxBrake(0); }
         if (state !== 'menu' && !(victory && victory.staged)) updateHud();
     } catch (e) {
         if (!loop.warned) {                     // 같은 오류로 화면을 도배하지 않는다
