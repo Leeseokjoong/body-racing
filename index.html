@@ -982,7 +982,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.1620</div>
+<div id="build">v260813.1705</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -5892,15 +5892,31 @@ let windSrc = null, windGain = null;
 const SAMPLE = {};                 // 이름 -> AudioBuffer | null(없음) | undefined(아직 모름)
 const SAMPLE_ON = { engine: false, skid: false, brake: false };
 
+/* 아직 받는 중일 때 또 부르면 그 쪽도 줄을 세워 둔다.
+
+   예전에는 '두 번 요청하지 않는다' 며 그냥 돌려보냈는데, 그러면 두 번째로 부른 쪽은
+   다 받은 뒤에도 아무 연락을 못 받는다. 차를 바꾸고 곧바로 다시 시작하면
+   새 엔진 녹음이 영영 안 걸리는 일이 여기서 생겼다. */
+const SAMPLE_WAIT = {};                // 이름 -> 받으면 부를 함수들
+
 function wantSample(name, onReady) {
-    if (name in SAMPLE) return SAMPLE[name];
-    SAMPLE[name] = null;                                   // 두 번 요청하지 않는다
+    const have = SAMPLE[name];
+    if (have) { try { onReady(have); } catch (e) {} return have; }   // 이미 있다
+    if (name in SAMPLE) { SAMPLE_WAIT[name].push(onReady); return null; }   // 받는 중 — 줄 서기
+
+    SAMPLE[name] = null;
+    SAMPLE_WAIT[name] = [onReady];
     fetch('assets/sfx_' + name + '.mp3')
         .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('no file')))
         .then(b => new Promise((ok, no) => audioCtx.decodeAudioData(b, ok, no)))
-        .then(buf => { SAMPLE[name] = buf; if (name in SAMPLE_ON) SAMPLE_ON[name] = true;
-                       try { onReady(buf); } catch (e) {} })
-        .catch(() => {});                                  // 없으면 합성음 그대로
+        .then(buf => {
+            SAMPLE[name] = buf;
+            if (name in SAMPLE_ON) SAMPLE_ON[name] = true;
+            const waiting = SAMPLE_WAIT[name] || [];
+            SAMPLE_WAIT[name] = [];
+            waiting.forEach(fn => { try { fn(buf); } catch (e) {} });
+        })
+        .catch(() => { SAMPLE_WAIT[name] = []; });          // 없으면 합성음 그대로
     return null;
 }
 
@@ -6241,6 +6257,17 @@ function preloadOneShots() {
     if (!audioCtx) return;
     wantSample('count', () => {});
     wantSample('go', () => {});
+
+    /* 엔진과 타이어 녹음도 같이 받아 둔다.
+       이것들은 판이 시작돼 소리 장치가 처음 만들어질 때야 받기 시작하는데,
+       116KB 라 다 받힐 때까지 첫 몇 초는 합성음으로 달리게 된다.
+       메뉴에서 차를 고르는 동안 미리 받아 두면 첫 판부터 제 소리가 난다.
+       받아만 두면 engineUseCar 가 곧바로 집어 쓴다. */
+    const c = carById(save.car);
+    if (c) {
+        wantSample('engine' + (c.eng || 1), () => {});
+        wantSample('skid' + (c.skid || 1), () => {});
+    }
 }
 
 function playOne(name, vol = 1, rate = 1) {
