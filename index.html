@@ -310,6 +310,23 @@
         border: 2px solid #3f6c9c; border-radius: 12px; font-family: inherit;
     }
     .modeBtn.sel { background: #2f6ea8; color: #fff; border-color: #7fd4ff; }
+
+    /* ---- 난이도 ---- */
+    #lvPick { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    #lvBtns { display: flex; gap: 7px; }
+    .lvBtn {
+        padding: 7px 15px; font-size: 13px; font-weight: bold; cursor: pointer;
+        background: rgba(255,255,255,.06); color: #9fb6d4; font-family: inherit;
+        border: 2px solid #37567c; border-radius: 10px; transition: all .15s;
+    }
+    .lvBtn .px { display: block; font-size: 10px; font-weight: 400; opacity: .8; margin-top: 1px; }
+    .lvBtn.sel { color: #fff; }
+    /* 단계마다 색이 올라간다 — 고르기 전에도 세기가 눈에 보이게 */
+    .lvBtn[data-lv="easy"].sel   { background: #2c6b46; border-color: #7ee081; }
+    .lvBtn[data-lv="normal"].sel { background: #2f6ea8; border-color: #7fd4ff; }
+    .lvBtn[data-lv="hard"].sel   { background: #8a5a12; border-color: #ffd166; }
+    .lvBtn[data-lv="legend"].sel { background: #7d2f2f; border-color: #ff8a3c; }
+    #lvNote { font-size: 11px; color: #8fa6c4; text-align: center; min-height: 15px; }
     #onlineBox { text-align: center; }
     #onlineBox .obRow { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
     #onlineBox .obOr { color: #9fd0ff; font-size: 12px; }
@@ -1050,7 +1067,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260813.2340</div>
+<div id="build">v260814.0110</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1156,6 +1173,11 @@
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
         <button class="modeBtn" data-mode="3">타임 어택</button>
         <button class="modeBtn" data-mode="2" id="modeOnline">친구와 온라인</button>
+    </div>
+    <!-- 난이도. 혼자 달릴 때만 뜻이 있다 (타임 어택·온라인에는 봇이 없다) -->
+    <div id="lvPick">
+        <div id="lvBtns"></div>
+        <div id="lvNote"></div>
     </div>
     <!-- 타임 어택 설명 : 무엇을 겨루는 판인지 한 줄로 -->
     <div id="taBox" style="display:none">
@@ -1428,6 +1450,10 @@ const EN = {
 // ── 결과
 '완주!': 'Finished!', '1위로 완주!': '1st place!', '보상': 'Rewards',
 '순위': 'Rank', '기록': 'Time', '최고 속도': 'Top speed', '최고 기록': 'Best',
+'쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '전설': 'Legendary',
+'코너 방향을 알려 줍니다': 'Shows which way the corner turns',
+'상대': 'Rivals', '점수': 'Points',
+'앞서가도 기다려 주지 않습니다': 'Rivals never wait for you',
 '베스트랩': 'Best lap', '최속': 'fastest', '신기록': 'NEW RECORD', '수집': 'Collected', '없음': 'none',
 '가속 유지': 'Throttle', '무사고': 'Clean', '충돌': 'crashes', '회': 'x',
 '완벽한 주행!': 'Flawless!', '훌륭해요!': 'Great!', '좋아요!': 'Good!',
@@ -2525,36 +2551,36 @@ const SYSTEMS = {
               info: '콩팥 동맥에서 갈라져 나온 가는 관. 사구체로 피를 밀어 넣습니다.',
               seg: { name: '모세혈관 뭉치', color: '#ff8fa8', wMul: .6,
                      desc: '실뭉치처럼 물결치며 감긴 바깥 고리. 물 · 포도당 · 요소가 벽 틈으로 빠져나갑니다' },
-              via: [[4208, 2413], [4304, 2690], [4171, 2945], [3899, 3061], [3602, 3083],
-                    [3305, 3070], [3081, 3227]] },
+              via: [[4328, 2428], [4430, 2724], [4068, 2899], [3742, 2965], [3572, 3059],
+                   [3422, 3196], [3076, 3218]] },
 
             { name: '여과막', at: [3001, 3514], color: '#ff8fa8', role: '크기로 거른다', blob: 200,
               info: '단백질과 혈구는 여과 틈보다 커서 빠져나가지 못합니다. 오줌에 단백질이 없는 이유!',
               seg: { name: '안쪽 뭉치', color: '#d94f66', wMul: .55,
                      desc: '더 깊고 더 촘촘하게 감긴 안쪽 고리. 사구체의 심장부' },
-              via: [[2890, 3790], [2698, 4015], [2415, 4069], [2179, 3896], [2039, 3634],
-                    [1954, 3349], [1819, 3093]] },
+              via: [[2872, 3717], [2710, 4120], [2407, 4243], [2183, 3875], [2094, 3464],
+                   [2008, 3236], [1745, 3190]] },
 
             { name: '수출 소동맥', at: [1524, 3077], color: '#c94358', role: '피가 나가는 문', blob: 220,
               info: '걸러지고 남은 피가 빠져나갑니다. 들어온 관보다 가늘어 압력을 지켜 줍니다.',
               seg: { name: '세뇨관 주위 모세혈관', color: '#e88fa0', wMul: .85, reabsorb: .42,
                      desc: '세뇨관을 감싸며 도는 길. 버렸던 것 중 필요한 것을 도로 빨아들입니다' },
-              via: [[1226, 3079], [937, 3010], [723, 2812], [730, 2523], [904, 2283],
-                    [1138, 2100]] },
+              via: [[1309, 3022], [1092, 2930], [695, 2822], [543, 2557], [818, 2287],
+                   [1220, 2106]] },
 
             { name: '재흡수 구역', at: [1383, 1930], color: '#e88fa0', role: '되찾아 오기', blob: 240,
               info: '여과로 버린 것의 99퍼센트를 다시 빨아들입니다. 포도당은 전부, 물은 거의 전부!',
               seg: { name: '콩팥 정맥으로', color: '#7f97d8', wMul: 1.0, vein: true,
                      desc: '깨끗해진 피가 사구체를 크게 한 바퀴 돌아 나갑니다' },
-              via: [[1407, 1654], [1303, 1375], [1244, 1083], [1296, 794], [1527, 622],
-                    [1819, 658], [2079, 802], [2313, 987], [2582, 1058]] },
+              via: [[1311, 1606], [1185, 1294], [1280, 1115], [1419, 938], [1553, 664],
+                   [1756, 515], [2031, 643], [2319, 1023], [2574, 1165]] },
 
             { name: '다음 여과', at: [2820, 879], color: '#7f97d8', role: '쉼 없이', blob: 250,
               info: '온몸의 피가 하루에 300번 넘게 콩팥을 지나갑니다. 사구체는 쉬는 법이 없습니다.',
               seg: { name: '다시 소동맥', color: '#e05c6e', wMul: .9,
                      desc: '피는 또 들어옵니다. 여과는 살아 있는 동안 멈추지 않습니다' },
-              via: [[3066, 711], [3347, 617], [3626, 694], [3752, 957], [3731, 1253],
-                    [3639, 1536], [3559, 1821], [3755, 2032]] }
+              via: [[3113, 586], [3373, 569], [3526, 827], [3660, 1048], [3787, 1210],
+                   [3803, 1440], [3550, 1824], [3631, 2049]] }
         ],
         pickups: [
             { icon: '물', name: '물',        color: '#6ec6f2', effect: 'turbo', img: 'rbc',
@@ -2591,37 +2617,37 @@ const SYSTEMS = {
               info: '소장이 흡수한 영양소가 심장보다 먼저 이곳으로 옵니다. 간이 첫 검문소!',
               seg: { name: '간소엽 벌집', color: '#e8a33d', wMul: .66,
                      desc: '육각형 방이 벌집처럼 붙어 있다 — 여섯 잎을 넘을 때마다 굽이가 온다' },
-              via: [[4264, 2419], [4313, 2704], [4106, 2909], [3818, 2986], [3521, 3019],
-                    [3321, 3206], [3288, 3503], [3215, 3792]] },
+              via: [[4373, 2433], [4534, 2765], [4233, 2965], [3801, 2976], [3379, 2905],
+                   [3201, 3059], [3274, 3479], [3253, 3876]] },
 
             { name: '소엽 모퉁이', at: [3018, 4008], color: '#e8a33d', role: '여섯 잎의 리듬', blob: 0,
               info: '간소엽 하나하나가 해독 공장입니다. 간에는 이런 방이 백만 개 넘게 있어요.',
               seg: { name: '시누소이드', color: '#b06be0', wMul: .52, tunnel: true,
                      desc: '간세포 사이의 좁은 틈새 길. 해독 · 저장 · 합성이 다 여기서' },
-              via: [[2731, 3972], [2509, 3773], [2332, 3533], [2087, 3400], [1811, 3515],
-                    [1528, 3608], [1235, 3579]] },
+              via: [[2745, 4082], [2509, 3781], [2352, 3377], [2155, 3201], [1837, 3466],
+                   [1467, 3696], [1133, 3691]] },
 
             { name: '중심정맥', at: [1084, 3336], color: '#7f97d8', role: '소엽 한가운데', blob: 0,
               pump: { power: .62, label: '해독 완료!', desc: '간세포가 해로운 것을 붙잡아 분해한 뒤 피를 내보냅니다.' },
               info: '잎 사이로 깊이 파인 골이 소엽의 한가운데. 검사를 마친 피가 여기로 모입니다.',
               seg: { name: '간정맥', color: '#7f97d8', wMul: .9, vein: true,
                      desc: '깨끗해진 피가 심장을 향해 빠져나갑니다' },
-              via: [[1126, 3042], [1241, 2766], [1284, 2482], [1058, 2290], [828, 2099],
-                    [679, 1844], [770, 1573], [1035, 1442]] },
+              via: [[1104, 3055], [1361, 2712], [1503, 2431], [1142, 2285], [747, 2094],
+                   [472, 1804], [582, 1505], [995, 1421]] },
 
             { name: '쓸개', at: [1331, 1398], color: '#4a9e4f', role: '쓸개즙 창고', blob: 300,
               info: '간이 만든 쓸개즙을 농축해 보관합니다. 지방이 오면 짜서 내보내요!',
               seg: { name: '쓸개관', color: '#5cb85c', wMul: .8,
                      desc: '쓸개즙이 십이지장으로 내려가는 관. 미끄럽습니다' },
-              via: [[1616, 1327], [1696, 1045], [1738, 749], [1863, 481], [2129, 377],
-                    [2388, 518], [2581, 745], [2770, 976]] },
+              via: [[1730, 1440], [1760, 1137], [1713, 701], [1795, 298], [2086, 167],
+                   [2382, 429], [2577, 820], [2738, 1123]] },
 
             { name: '십이지장 배출', at: [3053, 948], color: '#5cb85c', role: '지방 소화 지원', blob: 240,
               info: '쓸개즙은 소화효소가 아니지만, 지방을 잘게 부수어 소화를 돕습니다.',
               seg: { name: '문맥 복귀', color: '#8a5cd8', wMul: .95,
                      desc: '흡수된 영양이 다시 간으로 — 끝없는 순환' },
-              via: [[3328, 830], [3621, 783], [3872, 922], [3910, 1213], [3821, 1498],
-                    [3704, 1773], [3821, 2023]] }
+              via: [[3338, 813], [3730, 645], [4037, 769], [4004, 1147], [3779, 1521],
+                   [3511, 1841], [3705, 2039]] }
         ],
         pickups: [
             { icon: '글리', name: '글리코젠', color: '#ffd166', effect: 'turbo', img: 'rbc',
@@ -2658,29 +2684,29 @@ const SYSTEMS = {
               info: '식도와 위의 경계. 삼킨 음식이 여기로 떨어져 들어옵니다.',
               seg: { name: '위 기저부', color: '#ef8f9f', wMul: 1.1,
                      desc: '위의 천장. 삼킨 공기가 모이는 넓은 돔 — 트림이 여기서!' },
-              via: [[3482, 1053], [3597, 1334], [3717, 1613], [3864, 1879]] },
+              via: [[3587, 930], [3554, 1368], [3473, 1728], [3814, 1890]] },
 
             { name: '위 몸통', at: [4000, 2150], color: '#e2687e', role: '주름의 시작', blob: 0,
               info: '위벽 근육은 세 겹. 쥐어짜고 비틀며 음식을 죽처럼 만듭니다.',
               seg: { name: '추벽 주름', color: '#d95c73', wMul: .62,
                      desc: '빨래판처럼 이어지는 큰 주름. 좌우로 세 번 크게 흔드는 연타 구간!' },
-              via: [[4086, 2440], [4089, 2743], [3992, 3029], [3804, 3265], [3556, 3440],
-                    [3281, 3567], [2996, 3673], [2707, 3764]] },
+              via: [[4257, 2469], [4095, 2745], [3790, 2912], [3627, 3116], [3566, 3452],
+                   [3401, 3785], [3056, 3859], [2699, 3701]] },
 
             { name: '날문방', at: [2407, 3797], color: '#e88a5c', role: '연동운동', blob: 0,
               pump: { power: .78, label: '연동운동!', desc: '근육 물결이 뒤에서 연달아 밀어냅니다.' },
               info: '위의 마지막 방. 근육 물결이 초당 3번씩 음식을 날문 쪽으로 밀어냅니다.',
               seg: { name: '날문 괄약근', color: '#d97a4a', wMul: .5, tunnel: true,
                      desc: '위의 출구를 지키는 근육 문. 죽이 된 것만 조금씩 통과시킵니다' },
-              via: [[2108, 3743], [1829, 3626], [1580, 3453], [1370, 3235], [1204, 2981],
-                    [1086, 2701], [1018, 2406]] },
+              via: [[2134, 3643], [1766, 3758], [1422, 3668], [1316, 3285], [1384, 2871],
+                   [1306, 2621], [990, 2410]] },
 
             { name: '십이지장 구부', at: [1001, 2103], color: '#e79cd2', role: '위산 중화', blob: 240,
               info: '위에서 나온 강한 산성 죽이 여기서 이자액을 만나 중화됩니다.',
               seg: { name: '작은굽이 복귀', color: '#c76e85', wMul: 1.0,
                      desc: '위의 안쪽 굽이. 주름이 없어 매끈한 고속 구간입니다' },
-              via: [[1034, 1801], [1117, 1510], [1250, 1237], [1430, 993], [1653, 788],
-                    [1913, 632], [2200, 533], [2501, 500], [2804, 506], [3090, 603]] }
+              via: [[927, 1774], [1250, 1574], [1464, 1396], [1478, 1045], [1546, 616],
+                   [1822, 399], [2195, 507], [2503, 725], [2764, 740], [3090, 604]] }
         ],
         pickups: [
             { icon: '펩신', name: '펩신',     color: '#ff7a8a', effect: 'turbo', img: 'rbc',
@@ -2717,31 +2743,31 @@ const SYSTEMS = {
               info: '이자에서 가장 두툼한 부분. 십이지장이 C자로 감싸 안고 있습니다.',
               seg: { name: '섬 사이 슬라럼', color: '#7ee0b8', wMul: .7,
                      desc: '랑게르한스섬 사이를 좌우로 누빈다 — 세 번의 큰 슬라럼!' },
-              via: [[393, 1725], [612, 1524], [900, 1450], [1193, 1391], [1483, 1431],
-                    [1737, 1591], [2017, 1559], [2230, 1348], [2487, 1222], [2716, 1409],
-                    [2919, 1630], [3192, 1624], [3404, 1412], [3662, 1279], [3927, 1413],
-                    [4201, 1521], [4495, 1461]] },
+              via: [[348, 1718], [613, 1524], [946, 1466], [1277, 1429], [1578, 1481],
+                   [1829, 1637], [2086, 1610], [2175, 1268], [2481, 1204], [2721, 1514],
+                   [2937, 1580], [3208, 1606], [3415, 1400], [3637, 1302], [3832, 1468],
+                   [4135, 1547], [4458, 1475]] },
 
             { name: '랑게르한스섬', at: [4791, 1482], color: '#ffd166', role: '혈당 조절 본부', blob: 0,
               pump: { power: .62, label: '인슐린 분비!', desc: '혈당이 오르면 인슐린을 뿜어 낮춥니다.' },
               info: '소화액이 아니라 호르몬을 만드는 섬. 인슐린은 혈당을 낮추고 글루카곤은 올립니다.',
               seg: { name: '이자 꼬리', color: '#e8c95c', wMul: .85,
                      desc: '섬이 가장 많이 모여 있는 끝자락. 넓게 도는 고속 코너' },
-              via: [[5040, 1643], [5190, 1900], [5213, 2197], [5107, 2475], [4888, 2676]] },
+              via: [[5069, 1637], [5287, 1892], [5320, 2201], [5170, 2485], [4887, 2676]] },
 
             { name: '꼬리 끝', at: [4600, 2750], color: '#e8c95c', role: '되돌아가는 곳', blob: 220,
               info: '이자는 길이 15센티미터. 위 뒤에 가로로 길게 누워 있습니다.',
               seg: { name: '돌아오는 슬라럼', color: '#5cc99a', wMul: .7,
                      desc: '반대편 섬 사이로 다시 누비며 돌아간다' },
-              via: [[4307, 2809], [4017, 2769], [3763, 2609], [3483, 2641], [3270, 2852],
-                    [3013, 2978], [2784, 2791], [2581, 2570], [2308, 2576], [2096, 2788],
-                    [1838, 2921], [1573, 2787], [1299, 2679], [1005, 2739]] },
+              via: [[4247, 2782], [3922, 2719], [3671, 2563], [3414, 2590], [3325, 2932],
+                   [3019, 2996], [2779, 2686], [2563, 2620], [2292, 2594], [2085, 2800],
+                   [1863, 2898], [1668, 2732], [1365, 2653], [1042, 2725]] },
 
             { name: '총담관 합류', at: [709, 2718], color: '#4a9e4f', role: '쓸개즙과 합류', blob: 240,
               info: '간에서 온 쓸개즙 관과 이자관이 여기서 만나 한 관이 됩니다.',
               seg: { name: '오디 괄약근', color: '#48b088', wMul: .62, tunnel: true,
                      desc: '십이지장으로 나가는 마지막 문. 필요할 때만 열립니다' },
-              via: [[460, 2557], [310, 2300]] }
+              via: [[431, 2563], [241, 2306]] }
         ],
         pickups: [
             { icon: '아밀', name: '아밀레이스', color: '#8fd0e8', effect: 'turbo', img: 'rbc',
@@ -2821,8 +2847,32 @@ const carById = id => CARS.find(c => c.id === id) || CARS[0];
 const mo = c => (LANG === 'en' && c.motifEn) ? c.motifEn : c.motif;
 
 const SAVE_KEY = 'bodyRacing.save.v1';
+/* ---- 난이도 ----
+
+   단계마다 실제로 달라지는 것이 있어야 고르는 뜻이 생긴다.
+   이름만 다르고 속은 같으면 아이도 금방 알아챈다. 그래서 네 가지를 함께 움직인다.
+
+     guide   코너 안내. 굽은 길 앞에서 어느 쪽으로 꺾을지 화살표로 알려 준다.
+             처음 잡는 아이는 코너가 어디서 시작되는지를 모른다 — 그것만 알아도
+             드리프트를 걸어 볼 마음이 생긴다. 쉬움에서만 켠다.
+     bot     봇의 최고 속도 배수. 곱해서 쓴다.
+     slump   봇이 실수할 확률 (1이면 지금 그대로, 0이면 실수하지 않는다).
+     item    봇이 아이템을 쓰는 적극성.
+     pay     번 점수에 곱한다. 어려울수록 많이 준다 — 올라갈 이유가 된다.
+
+   전설은 '봇이 기다려 주지 않는' 단계다. 고무줄의 뒤쪽(-16%)을 없애서,
+   앞서 나가면 그대로 벌어진다. */
+const LEVELS = [
+    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1 },
+    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: 1.0, item: 1, pay: 1.20, wait: 1 },
+    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.06, slump: .5, item: 1.6, pay: 1.45, wait: .5 },
+    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.13, slump: .15, item: 2.2, pay: 1.80, wait: 0 }
+];
+const LV_OF = id => LEVELS.find(l => l.id === id) || LEVELS[0];
+function curLevel() { return LV_OF(save.level); }
+
 let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
-             cars: ['rbc'], car: 'rbc', vol: .7, lang: null };
+             cars: ['rbc'], car: 'rbc', vol: .7, lang: null, level: 'easy' };
 
 function loadSave() {
     try {
@@ -2837,6 +2887,7 @@ function loadSave() {
             save.car = save.cars.includes(d.car) ? d.car : 'rbc';
             save.vol = typeof d.vol === 'number' ? clamp(d.vol, 0, 1) : .7;
             save.lang = d.lang === 'en' || d.lang === 'ko' ? d.lang : null;
+            save.level = LEVELS.some(l => l.id === d.level) ? d.level : 'easy';
         }
     } catch (e) { /* 저장이 막힌 환경이면 그냥 진행 */ }
 }
@@ -2914,7 +2965,11 @@ function buildTrack(sys) {
     const spacing = total / N, WIN = 12, arcLen = spacing * WIN;
     for (let i = 0; i < N; i++) {
         const j = closed ? (i + WIN) % N : Math.min(i + WIN, N - 1);
-        const c = Math.abs(angDiff(pts[j].ang, pts[i].ang));
+        const signed = angDiff(pts[j].ang, pts[i].ang);
+        const c = Math.abs(signed);
+        /* curve 는 절댓값이라 '얼마나 굽었나' 만 안다. 어느 쪽으로 굽었는지는
+           코너 안내(쉬움 난이도)에서 왼쪽·오른쪽을 알려 주는 데 쓴다. */
+        pts[i].turn = signed;                              // +면 오른쪽, -면 왼쪽
         pts[i].curve = c;
         const radius = arcLen / Math.max(c, .02);          // 코너 반지름 근사
         // 고속에서 선회력이 줄어드는 것(STABLE_MIN)까지 감안해 잡는다
@@ -3688,11 +3743,12 @@ function aiControl(k, dt) {
 
        이제 700 유닛이면 보정이 끝까지 걸린다. 가까워질수록 저절로 풀리므로
        바짝 붙으면 제 속도로 돌아온다 — 결승선 앞 접전은 여기서 나온다. */
+    const LV = curLevel();
     if (player && !player.finished) {
         const gap = player.progress - k.progress;           // +면 AI가 뒤
         k.rubber = gap > 0
             ? Math.min(gap / 700, 1) * .34                  // 따라붙기 : 최대 +34%
-            : -Math.min(-gap / 700, 1) * .16;               // 기다리기 : 최대 -16%
+            : -Math.min(-gap / 700, 1) * .16 * LV.wait;     // 기다리기 : 전설에서는 안 기다린다
     } else k.rubber = 0;
     k.aiTimer -= dt;
     if (k.aiTimer <= 0) { k.aiTimer = 1.2 + Math.random() * 1.5; k.aiOffset = (Math.random() * 2 - 1) * track.halfWidth * .3; }
@@ -3709,7 +3765,7 @@ function aiControl(k, dt) {
     k.aiSlumpCool = (k.aiSlumpCool !== undefined ? k.aiSlumpCool : Math.random() * 8) - dt;
     if (k.aiSlumpCool <= 0) {
         k.aiSlumpCool = 8 + Math.random() * 8;
-        if (Math.random() < .5) k.aiSlump = 1.1 + Math.random() * .8;
+        if (Math.random() < .5 * LV.slump) k.aiSlump = 1.1 + Math.random() * .8;
     }
     if (k.aiSlump > 0) k.rubber -= .13;
 
@@ -3741,7 +3797,7 @@ function aiControl(k, dt) {
     // 속도 격차는 고무줄(rubber)이 채워 준다.
     k.aiDrift = false;
     if (k.offroad) { k.aiThrottle = 1; k.aiDrift = false; }
-    if (k.slots.length && Math.random() < .008) useItemFor(k);
+    if (k.slots.length && Math.random() < .008 * LV.item) useItemFor(k);
 }
 
 /* 내가 트랙의 어디쯤인지 찾는다.
@@ -4234,6 +4290,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.42)');
     g.fillStyle = vg; g.fillRect(0, 0, VW, VH);
 
+    drawCornerGuide(g);                 // 쉬움 : 굽은 길 앞에서 어느 쪽인지 알려 준다
     drawOffscreenMarkers(g, zoom);
     drawSpeedLines(g);
 
@@ -4302,6 +4359,81 @@ function drawOffscreenMarkers(g, zoom) {
 }
 
 /* ---- 스피드 라인 : 빠를수록 화면 가장자리에서 중심으로 선이 뻗는다 ---- */
+/* ---- 코너 안내 (쉬움 난이도) ----
+
+   처음 잡는 아이가 어려워하는 것은 조작이 아니라 '언제 꺾어야 하는가' 다.
+   코스를 외우기 전에는 코너가 어디서 시작되는지 몰라 벽에 박고, 그러다 그만둔다.
+
+   그래서 앞을 미리 보고, 굽은 길이 다가오면 화면 위쪽에 화살표를 띄운다.
+     방향   왼쪽인지 오른쪽인지 (pts[i].turn 의 부호)
+     세기   많이 굽을수록 화살표가 크고 붉어진다
+     시점   속도에 비례해 앞을 본다 — 빠를수록 일찍 알려 준다
+
+   답을 다 알려 주지는 않는다. '어느 쪽' 만 알려 주고 '얼마나 꺾을지' 는 직접 익힌다. */
+function drawCornerGuide(g) {
+    if (!player || state !== 'race' || fullMap) return;
+    if (!curLevel().guide) return;
+
+    const N = track.N;
+    const idx = d => track.closed ? (player.si + d) % N : Math.min(player.si + d, N - 1);
+    // 빠를수록 멀리 본다. 샘플 하나가 약 14 units 이다.
+    const ahead = 10 + Math.floor(Math.abs(player.speed) / 26);
+
+    /* 한 점만 보면 값이 튄다. 앞의 한 구간을 훑어 가장 굽은 곳을 찾는다. */
+    let worst = 0, at = 0;
+    for (let d = ahead; d < ahead + 14; d++) {
+        const t = track.pts[idx(d)].turn || 0;
+        if (Math.abs(t) > Math.abs(worst)) { worst = t; at = d; }
+    }
+    const mag = Math.abs(worst);
+    /* 기준을 0.22 로 잡았더니 전 코스의 64% 구간에서 화살표가 떴다.
+       늘 켜져 있으면 그건 안내가 아니라 배경이고, 정작 급코너에서 눈에 안 들어온다.
+       0.5 로 올리니 평균 36% — 진짜 꺾어야 하는 곳에서만 뜬다. */
+    if (mag < .5) return;
+
+    // 가까워질수록 진해진다
+    const near = clamp(1 - (at - ahead) / 20, .35, 1);
+    const a = clamp((mag - .5) / .45, 0, 1) * near;
+    const right = worst > 0;
+    const sharp = clamp((mag - .62) / .6, 0, 1);       // 0 완만 → 1 급코너
+
+    const cx = VW / 2, cy = Math.min(96, VH * .2);
+    const s = 26 + sharp * 16;
+    const col = sharp > .55 ? '255,120,80' : '255,209,102';
+
+    g.save();
+    g.globalAlpha = a;
+    g.translate(cx, cy);
+    if (!right) g.scale(-1, 1);                  // 왼쪽 코너는 뒤집어 그린다
+
+    // 굽은 화살표 : 활처럼 휘어 돌아가는 모양
+    g.strokeStyle = `rgba(${col},.95)`;
+    g.lineWidth = 7; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(-s * .9, s * .5);
+    g.quadraticCurveTo(-s * .15, s * .5, s * .35, -s * .25);
+    g.stroke();
+    // 촉
+    g.beginPath();
+    g.moveTo(s * .62, -s * .55);
+    g.lineTo(s * .18, -s * .12);
+    g.lineTo(s * .66, s * .06);
+    g.closePath();
+    g.fillStyle = `rgba(${col},.95)`;
+    g.fill();
+
+    // 급코너는 한 겹 더 — 강하게 꺾어야 한다는 뜻
+    if (sharp > .55) {
+        g.globalAlpha = a * (.35 + .3 * Math.sin(raceTime * 9));
+        g.lineWidth = 14;
+        g.beginPath();
+        g.moveTo(-s * .9, s * .5);
+        g.quadraticCurveTo(-s * .15, s * .5, s * .35, -s * .25);
+        g.stroke();
+    }
+    g.restore();
+}
+
 function drawSpeedLines(g) {
     if (!player || state === 'menu') return;
     const ratio = clamp(Math.abs(player.speed) / (MAXSPEED * 1.45), 0, 1);
@@ -7532,7 +7664,7 @@ function startRace(id, timeAttack) {
     if (!net.on && !TA.on) {
         for (let i = 0; i < 3; i++) {
             const ai = makeKart(false, i + 1, AI_NAMES[i]);
-            ai.maxMul = .93 + i * .035; ai.aiOffset = (i - 1) * 24;
+            ai.maxMul = (.93 + i * .035) * curLevel().bot; ai.aiOffset = (i - 1) * 24;
             karts.push(ai);
         }
     }
@@ -8308,7 +8440,12 @@ function endRace() {
         if (isBest) save.best[id] = player.finishTime;
     }
     const gradeBonus = { S: 150, A: 100, B: 60, C: 30, D: 10 }[G.grade];
-    const total = player.earned + rankBonus + bestBonus + gradeBonus;
+    /* 어려운 단계일수록 많이 준다. 이것이 없으면 다들 쉬움에만 머무른다 —
+       올라갈 이유를 점수로 준다. 타임 어택은 봇이 없으니 배수도 없다. */
+    const LV = curLevel();
+    const payMul = TA.on ? 1 : LV.pay;
+    const base = player.earned + rankBonus + bestBonus + gradeBonus;
+    const total = Math.round(base * payMul);
     save.points += total;
     writeSave();
 
@@ -8317,6 +8454,7 @@ function endRace() {
         (TA.on ? '' : ` + ${T('순위')} <b>${rankBonus}</b>`) +
         ` + <b style="color:${G.color}">${G.grade} ${gradeBonus}</b>` +
         (bestBonus ? ` + <b style="color:#7ee081">${T('신기록')} ${bestBonus}</b>` : '') +
+        (payMul !== 1 ? ` <b style="color:#ff8a3c">×${payMul.toFixed(2)}</b>` : '') +
         ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>`;
     if (TA.on) {
         const b = TA.prevBest;
@@ -8790,7 +8928,32 @@ function refreshModeUI() {
     el('startBtn').textContent = T(time ? '기록 도전' : '레이스 시작');
     if (!online) { netCleanup(); netStatus(''); }
     if (time) renderTaRecords();
+    // 난이도는 봇이 있을 때만 뜻이 있다 — 타임 어택과 온라인에는 봇이 없다
+    el('lvPick').style.display = (online || time) ? 'none' : 'flex';
+    renderLevels();
     syncKeys();
+}
+
+/* 난이도 단추를 그린다. 무엇이 달라지는지 한 줄로 같이 적는다 —
+   이름만 보고는 무엇이 어려워지는지 알 수 없기 때문이다. */
+function renderLevels() {
+    const box = el('lvBtns');
+    if (!box) return;
+    box.innerHTML = LEVELS.map(l =>
+        `<button class="lvBtn${l.id === save.level ? ' sel' : ''}" data-lv="${l.id}">` +
+        `${T(l.name)}<span class="px">×${l.pay.toFixed(2)}</span></button>`).join('');
+    box.querySelectorAll('.lvBtn').forEach(b => {
+        b.onclick = () => {
+            save.level = b.dataset.lv; writeSave();
+            renderLevels(); playBeep(880, .05);
+        };
+    });
+    const L = curLevel();
+    el('lvNote').textContent =
+        (L.guide ? T('코너 방향을 알려 줍니다') + ' · ' : '') +
+        T('상대') + ' ' + Math.round(L.bot * 100) + '%' +
+        (L.wait < 1 ? ' · ' + T('앞서가도 기다려 주지 않습니다') : '') +
+        ' · ' + T('점수') + ' ×' + L.pay.toFixed(2);
 }
 
 // 메뉴에서 코스별 최고 랩을 한눈에 보여 준다 — 아직 없는 코스가 곧 할 일이 된다
