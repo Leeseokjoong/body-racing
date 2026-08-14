@@ -236,8 +236,13 @@
     #tTurbo.ready { opacity: 1; border-color: #ff8a3c; background: rgba(90,34,10,.72);
                     box-shadow: 0 0 16px rgba(255,138,60,.55); }
     #tTurbo i { font-style: normal; font-size: 12px; color: #ffd166; font-weight: 900; }
-    /* 브레이크·후진은 가끔만 쓰므로 작게, 조향 패드 위에 */
-    #tBrake { width: 74px; height: 74px; font-size: 13px; left: 24px; bottom: 142px; }
+    /* 브레이크·후진은 가끔만 쓰므로 작게, 조향 패드 위에.
+       '후진' 을 아래에 적어 둔다 — 계속 누르면 뒤로 간다는 것을 아무도 몰랐다.
+       시작 화면 조작 안내에 적혀 있지만 폰 가로에서는 그 안내가 통째로 숨겨진다. */
+    #tBrake { width: 74px; height: 74px; font-size: 13px; left: 24px; bottom: 142px;
+              flex-direction: column; gap: 1px; }
+    #tBrake i { font-style: normal; font-size: 10px; font-weight: 700;
+                color: #9fd0ff; letter-spacing: -.3px; }
     #tGas   { display: none; }               /* 가속 자동 */
 
     /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
@@ -248,6 +253,7 @@
         #tItem  { width: 64px; height: 64px; font-size: 11px; right: 210px; bottom: 18px; }
         #tTurbo { width: 78px; height: 78px; font-size: 13px; right: 126px; bottom: 26px; }
         #tBrake { width: 62px; height: 62px; font-size: 11px; left: 18px; bottom: 116px; }
+        #tBrake i { font-size: 9px; }
         .arw { border-top-width: 14px; border-bottom-width: 14px; }
         .arw.l { border-right-width: 20px; } .arw.r { border-left-width: 20px; }
     }
@@ -1137,7 +1143,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0750</div>
+<div id="build">v260814.0820</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1150,7 +1156,7 @@
     <div class="tbtn" id="tDrift">드리프트</div>
     <div class="tbtn" id="tTurbo">터보<i id="tTurboN"></i></div>
     <div class="tbtn" id="tItem">아이템</div>
-    <div class="tbtn" id="tBrake">브레이크</div>
+    <div class="tbtn" id="tBrake">브레이크<i>후진</i></div>
     <!-- 정해진 말 한마디. 자유 입력은 없다. -->
     <div class="tbtn" id="tTalk">말</div>
 </div>
@@ -1520,6 +1526,7 @@ const EN = {
 // ── 결과
 '완주!': 'Finished!', '1위로 완주!': '1st place!', '보상': 'Rewards',
 '순위': 'Rank', '기록': 'Time', '최고 속도': 'Top speed', '최고 기록': 'Best',
+'후진': 'Reverse',
 '몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성됩니다.':
     'Race through a living body! Every course is built from how that system actually flows.',
 'W 가속 · A/D 좌우 · S 브레이크(계속 누르면 후진) ·':
