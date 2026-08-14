@@ -105,6 +105,14 @@
     #slots { display: flex; gap: 8px; justify-content: center; }
     .slot { width: 52px; height: 52px; border-radius: 12px; background: rgba(0,0,0,.4); border: 3px solid #3f6c9c; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; }
     .slot.filled { border-color: #ffe066; box-shadow: inset 0 0 14px rgba(255,224,102,.55); }
+    .slot { position: relative; overflow: hidden; }
+    /* 효과 이름 : 그림 아래쪽에 띠로 얹는다. 맵이 달라도 늘 같은 낱말·같은 색 */
+    .slot .eff {
+        position: absolute; left: 0; right: 0; bottom: 0;
+        font-size: 9px; font-weight: 900; font-style: normal; line-height: 13px;
+        color: #10203a; text-align: center; letter-spacing: -.3px;
+    }
+    @media (max-height: 500px) { .slot .eff { font-size: 8px; line-height: 11px; } }
     #slotPanel .hint { margin-top: 7px; font-size: 12px; color: #9fd0ff; font-weight: bold; }
     #slotPanel .key { display: inline-block; background: #2f6ea8; border-radius: 6px; padding: 2px 8px; margin-right: 5px; }
 
@@ -1005,7 +1013,7 @@
 
 <div id="hud" class="hidden">
     <div class="panel" id="lapCard">
-        <div id="rankBadge">1 위</div>
+        <div id="rankBadge">1</div>
         <div class="lbl">LAP</div>
         <div class="lap"><span id="lapNow">1</span>/<span id="lapTot">3</span></div>
         <div class="time"> <span id="timeTxt">00:00.00</span></div>
@@ -1051,7 +1059,7 @@
         <div class="hint"><span class="key">ENTER</span>사용</div>
     </div>
 
-    <div id="zoomHint">W 가속 · A/D 좌우 · S 브레이크 · <b style="color:#ffe066">SPACE 드리프트</b> · 휠 줌 · M 전체 맵</div>
+    <div id="zoomHint">W 가속 · A/D 좌우 · S 브레이크(계속 누르면 후진) · <b style="color:#ffe066">SPACE 드리프트</b> · 휠 줌 · M 전체 맵</div>
     <div id="subtitle"><div class="sname"></div><div class="sdesc"></div></div>
     <div id="toast"><div class="tt"></div><div class="td"></div></div>
     <button id="exitRace" title="메뉴로 나가기">나가기</button>
@@ -1067,7 +1075,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0330</div>
+<div id="build">v260814.0450</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1450,6 +1458,24 @@ const EN = {
 // ── 결과
 '완주!': 'Finished!', '1위로 완주!': '1st place!', '보상': 'Rewards',
 '순위': 'Rank', '기록': 'Time', '최고 속도': 'Top speed', '최고 기록': 'Best',
+'몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성됩니다.':
+    'Race through a living body! Every course is built from how that system actually flows.',
+'W 가속 · A/D 좌우 · S 브레이크(계속 누르면 후진) ·':
+    'W accelerate · A/D steer · S brake (hold to reverse) ·',
+'SPACE 드리프트': 'SPACE drift',
+'· 휠 줌 · M 전체 맵': '· wheel to zoom · M full map',
+'브레이크를 계속 누르면 후진!': 'Hold the brake to reverse!',
+'드리프트로 탈출!': 'Drift to break free!',
+'가속': 'Boost', '붙잡기': 'Trap', '연막': 'Smoke', '미끄럼': 'Slick', '명중': 'Homing',
+'쓰는 순간 앞으로 튀어 나갑니다. 직선에서 쓰면 가장 멉니다.':
+    'Launches you forward. Best saved for a straight.',
+'가장 가까운 상대를 묶어 느리게 만듭니다.': 'Grabs the nearest rival and slows them down.',
+'내 뒤에 연기를 깝니다. 쫓아오는 상대의 앞이 안 보입니다.':
+    'Lays smoke behind you. Anyone chasing loses sight of the road.',
+'내 뒤에 미끄러운 것을 깝니다. 밟은 상대가 느려집니다.':
+    'Lays a slick patch behind you. Whoever hits it slows down.',
+'바로 앞선 상대를 쫓아가 맞힙니다. 앞이 비어 있으면 그냥 날아갑니다.':
+    'Homes in on the kart ahead. Flies straight if nobody is there.',
 '쉬움': 'Easy', '보통': 'Normal', '어려움': 'Hard', '전설': 'Legendary',
 '코너 방향을 알려 줍니다': 'Shows which way the corner turns',
 '상대': 'Rivals', '점수': 'Points',
@@ -2907,6 +2933,34 @@ loadSave();
 
 const EFFECT_ICON = { turbo: 'rbc', wbc: 'wbc', smoke: 'co2', sticky: 'chol', clot: 'clot' };
 
+/* ---- 아이템이 무엇을 하는지 ----
+
+   효과는 다섯 가지뿐인데 이름이 맵마다 다르다. 같은 '붙잡기' 가 백혈구 포획 ·
+   펩신 포획 · 점액 포획 · 말이집 포획… 열한 가지 이름으로 나온다.
+   이름은 그 계통을 배우게 하니 좋지만, 그것만 보여 주면 무슨 효과인지 알 길이 없다.
+   게다가 칸에는 두 글자 약칭만 뜨고 설명은 '쏘고 난 뒤에' 나왔다.
+   그래서 아이가 아이템이 생기면 그냥 눌러 버린다.
+
+   이름은 그대로 두고, 효과를 나타내는 한 낱말과 색을 칸에 함께 보여 준다.
+   낱말과 색은 어느 맵에서나 같으므로 몇 판이면 저절로 외워진다.
+
+     가속   나를 밀어 준다            앞으로
+     붙잡기 가장 가까운 상대를 묶는다  겨냥
+     명중   앞선 상대를 쫓아가 맞힌다  겨냥
+     연막   뒤에 연기를 깔아 가린다    뒤에
+     미끄럼 뒤에 미끄러운 것을 깐다    뒤에                                   */
+const EFFECT_LABEL = { turbo: '가속', wbc: '붙잡기', smoke: '연막', sticky: '미끄럼', clot: '명중' };
+const EFFECT_COLOR = { turbo: '#ffd166', wbc: '#e8eef5', smoke: '#8a9aa8',
+                       sticky: '#e6c85a', clot: '#ff7a5c' };
+const EFFECT_TIP = {
+    turbo:  ['가속', '쓰는 순간 앞으로 튀어 나갑니다. 직선에서 쓰면 가장 멉니다.'],
+    wbc:    ['붙잡기', '가장 가까운 상대를 묶어 느리게 만듭니다.'],
+    smoke:  ['연막', '내 뒤에 연기를 깝니다. 쫓아오는 상대의 앞이 안 보입니다.'],
+    sticky: ['미끄럼', '내 뒤에 미끄러운 것을 깝니다. 밟은 상대가 느려집니다.'],
+    clot:   ['명중', '바로 앞선 상대를 쫓아가 맞힙니다. 앞이 비어 있으면 그냥 날아갑니다.']
+};
+const tipSeen = {};                    // 이번 판에 이미 알려 준 효과
+
 const EFFECT_DUR = {
     turbo: 3.4,      // 적혈구 터보 — 확실히 앞지를 만큼
     wbc: 4.0,        // 백혈구에 붙잡힌 시간
@@ -3259,6 +3313,8 @@ const DRIFT_KEY2 = IS_TOUCH ? '드리프트 버튼으로'   : 'SPACE 로';     /
 function buzz(ms) { if (IS_TOUCH && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
 
 let driftHint = 0;                      // 드리프트 안내를 다시 띄우기까지 남은 시간
+let escapeHint = 0;                     // 탈출 안내를 다시 띄우기까지 남은 시간
+let backHint = 0;                       // 후진 안내를 다시 띄우기까지 남은 시간
 let countShown = -1;                    // 카운트다운에서 방금 울린 숫자
 let stickyHint = 0;                     // 끈적임 파훼 안내를 다시 띄우기까지
 let subTimer = 0, lastSubKey = '';      // 기관·혈관 자막
@@ -3404,6 +3460,31 @@ function updateKart(k, dt) {
             popup(k.x, k.y, '떨쳐낸다!', '#7ee081');
         }
     }
+    /* 걸렸는데 드리프트를 안 하고 있으면 알려 준다.
+
+       탈출 방법은 있었지만 알 길이 없었다 — 드리프트하다 우연히 풀려야만 알게 된다.
+       그전까지는 그냥 느려진 채로 끌려 다니고, 왜 느린지도 모른다.
+       아이템에 당하는 것이 억울하지 않으려면 빠져나갈 길이 보여야 한다. */
+    if (k.isPlayer && (k.trapTime > 0 || k.stickyTime > 0 || k.hitTime > 0)
+        && k.driftAmt <= .5 && escapeHint <= 0) {
+        escapeHint = 4;
+        popup(k.x, k.y, DRIFT_KEY2 + ' ' + T('드리프트로 탈출!'), '#9fd0ff');
+    }
+
+    /* 벽에 코를 박고 멈춰 있으면 후진을 알려 준다.
+
+       브레이크를 계속 누르면 후진한다는 것을 아무도 모른다.
+       시작 화면의 조작 안내에 적어 두긴 했는데, 폰 가로에서는 그 안내가 통째로
+       숨겨진다(자리가 없어서). 그러니 폰으로 하는 아이는 볼 길이 아예 없었다.
+       정작 필요한 순간은 '멈춰서 어쩔 줄 모르는 지금' 이므로 여기서 알려 준다. */
+    if (k.isPlayer && state === 'race' && !k.finished) {
+        if (Math.abs(k.speed) < 40) k.stillT = (k.stillT || 0) + dt;
+        else k.stillT = 0;
+        if (k.stillT > 1.2 && backHint <= 0) {
+            backHint = 12;
+            popup(k.x, k.y, T('브레이크를 계속 누르면 후진!'), '#ffd166');
+        }
+    }
 
     if (throttle > 0) vF += ACCEL * (boosting ? 2 : 1) * (up ? up.accel() : 1) * dt;
     else if (throttle < 0) vF -= BRAKE * dt;
@@ -3544,6 +3625,8 @@ function updateKart(k, dt) {
         showToast(DRIFT_KEY + ' 누른 채 코너를 돌아보세요', '미끄러지며 게이지가 차고, 손을 떼면 부스터가 터집니다!');
     }
     driftHint -= dt;
+    escapeHint -= dt;
+    backHint -= dt;
 
     if (k.driftAmt > .25 || k.slip > 90 || (k.offroad && Math.abs(vF) > 150)) addSkid(k);
     if (k.driftAmt > .3 && Math.abs(vF) > 150) addDriftSmoke(k);
@@ -3891,6 +3974,13 @@ function checkPickups(k) {
             if (k.slots.length < 3) k.slots.push(kind);
             if (k.isPlayer) {
                 sfxPickup(); k.earned += 5;
+                /* 그 효과를 처음 얻었으면 무엇을 하는 것인지 알려 준다 — 쓰기 전에.
+                   예전에는 설명이 '쓰고 난 뒤' 에 나와서, 무엇인지 모른 채 눌러 버렸다. */
+                const tip = EFFECT_TIP[kind.effect];
+                if (tip && !tipSeen[kind.effect]) {
+                    tipSeen[kind.effect] = 1;
+                    showToast(T(kind.name) + ' — ' + T(tip[0]), T(tip[1]));
+                }
                 popup(it.x, it.y, kind.name, kind.color);
                 const ik = kind.img || EFFECT_ICON[kind.effect];
                 if (ik) itemPops.push({ x: it.x, y: it.y, key: ik, life: 1.1 });
@@ -6003,8 +6093,12 @@ function updateHud() {
         const it = player.slots[i];
         const key = it && (it.img || EFFECT_ICON[it.effect]);
         const url = key && iconURL(key, 64);
-        if (url) slots[i].innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain">`;
-        else slots[i].textContent = it ? T(it.icon) : '';
+        /* 그림 위에 효과 이름을 겹쳐 둔다. 이름과 색은 어느 맵에서나 같으므로,
+           맵마다 이름이 달라도 '무엇을 하는 것인지' 는 한눈에 알 수 있다. */
+        const tag = it ? `<i class="eff" style="background:${EFFECT_COLOR[it.effect]}">` +
+                         `${T(EFFECT_LABEL[it.effect])}</i>` : '';
+        if (url) slots[i].innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain">` + tag;
+        else slots[i].innerHTML = (it ? T(it.icon) : '') + tag;
         slots[i].className = 'slot' + (it ? ' filled' : '');
     }
     drawSpeedo(); drawMinimap();
@@ -7657,6 +7751,7 @@ function startRace(id, timeAttack) {
     smokeClouds.length = stickyPatches.length = projectiles.length = wbcShots.length = itemPops.length = reabsorbSparks.length = 0;
     reabsorbHint = 0;
     for (const k in bubbles) delete bubbles[k];
+    for (const k in tipSeen) delete tipSeen[k];      // 판마다 아이템 설명을 한 번씩 다시
     emoteCool = 0;
     karts = [];
     player = makeKart(true, 0, net.on ? net.myName : '1P'); player.pad = input; karts.push(player);
@@ -7674,7 +7769,7 @@ function startRace(id, timeAttack) {
     cam.x = player.x; cam.y = player.y;
     cam.targetZoom = .74; cam.zoom = .4;
     victory = null;
-    raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; countShown = -1; stickyHint = 0;
+    raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; escapeHint = 0; backHint = 0; countShown = -1; stickyHint = 0;
     subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
 
     engineUseCar(); skidUseCar();            // 고른 차의 엔진 · 타이어 소리로
