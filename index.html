@@ -399,8 +399,8 @@
                  border-radius: 6px; background: rgba(255,255,255,.12); color: #cfe6ff; }
     .upRow .nm { flex: 1; font-size: 13px; }
     .upRow .nm small { display: block; color: #9fd0ff; font-size: 11px; }
-    .upRow .pips { display: flex; gap: 3px; }
-    .upRow .pip { width: 13px; height: 13px; border-radius: 3px; background: rgba(255,255,255,.14); border: 1px solid #3f6c9c; }
+    .upRow .pips { display: flex; gap: 2px; }
+    .upRow .pip { width: 9px; height: 13px; border-radius: 3px; background: rgba(255,255,255,.14); border: 1px solid #3f6c9c; }
     .upRow .pip.on { background: #ffd166; border-color: #ffd166; }
     .upRow button {
         padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;
@@ -603,7 +603,7 @@
         .upRow { margin: 3px 0; gap: 7px; }
         .upRow .nm { font-size: 11px; }
         .upRow .nm small { display: none; }
-        .upRow .pip { width: 10px; height: 10px; }
+        .upRow .pip { width: 7px; height: 10px; }
         .upRow button { padding: 4px 9px; font-size: 11px; min-width: 60px; }
     }
 
@@ -1075,7 +1075,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0450</div>
+<div id="build">v260814.0620</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2827,11 +2827,21 @@ const SYSTEMS = {
    기기에 저장되므로 계정 없이도 이어서 키울 수 있다.
    ========================================================================== */
 const UPGRADES = [
-    { key: 'speed',  icon: '속도', name: '최고 속도', desc: '더 빨리 달립니다',       max: 5, cost: [60, 140, 260, 420, 640] },
-    { key: 'accel',  icon: '가속', name: '가속력',   desc: '더 빨리 속도가 붙습니다', max: 5, cost: [50, 120, 230, 380, 580] },
-    { key: 'grip',   icon: '접지', name: '접지력',   desc: '코너에서 덜 미끄러집니다', max: 5, cost: [50, 120, 230, 380, 580] },
-    { key: 'boost',  icon: '부스', name: '부스터',   desc: '부스터가 더 오래갑니다',   max: 5, cost: [70, 160, 300, 480, 720] },
-    { key: 'hold',   icon: '지속', name: '드리프트 지속', desc: '더 오래 미끄러져 큰 부스터까지 갑니다', max: 5, cost: [80, 180, 330, 520, 780] }
+    /* 10단계로 나눈 이유 —
+       5단계짜리는 몇 판이면 끝까지 올라가서, 그 뒤로는 벌어도 쓸 데가 없었다.
+       단계를 늘리되 단계당 상승폭은 절반으로 줄였다. 그래서 '끝까지 올린 카트' 의
+       성능은 예전과 똑같고, 거기까지 가는 길만 두 배로 잘게 나뉜다.
+       한 칸 올릴 때마다 조금씩 좋아지는 것이 오래 이어진다. */
+    { key: 'speed',  icon: '속도', name: '최고 속도', desc: '더 빨리 달립니다',       max: 10,
+      cost: [30, 80, 170, 270, 400, 550, 710, 890, 1090, 1300] },
+    { key: 'accel',  icon: '가속', name: '가속력',   desc: '더 빨리 속도가 붙습니다', max: 10,
+      cost: [20, 70, 140, 230, 340, 460, 600, 750, 920, 1100] },
+    { key: 'grip',   icon: '접지', name: '접지력',   desc: '코너에서 덜 미끄러집니다', max: 10,
+      cost: [20, 70, 140, 230, 340, 460, 600, 750, 920, 1100] },
+    { key: 'boost',  icon: '부스', name: '부스터',   desc: '부스터가 더 오래갑니다',   max: 10,
+      cost: [30, 100, 190, 320, 460, 630, 820, 1030, 1260, 1500] },
+    { key: 'hold',   icon: '지속', name: '드리프트 지속', desc: '더 오래 미끄러져 큰 부스터까지 갑니다', max: 10,
+      cost: [30, 110, 220, 360, 520, 720, 930, 1170, 1420, 1700] }
 ];
 
 /* ---- 자동차 종류 ----
@@ -2891,9 +2901,9 @@ const SAVE_KEY = 'bodyRacing.save.v1';
    앞서 나가면 그대로 벌어진다. */
 const LEVELS = [
     { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1 },
-    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: 1.0, item: 1, pay: 1.20, wait: 1 },
-    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.06, slump: .5, item: 1.6, pay: 1.45, wait: .5 },
-    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.13, slump: .15, item: 2.2, pay: 1.80, wait: 0 }
+    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .8, item: 1, pay: 1.20, wait: 0 },
+    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.06, slump: .35, item: 1.6, pay: 1.45, wait: 0 },
+    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.13, slump: .1, item: 2.2, pay: 1.80, wait: 0 }
 ];
 const LV_OF = id => LEVELS.find(l => l.id === id) || LEVELS[0];
 function curLevel() { return LV_OF(save.level); }
@@ -2922,12 +2932,14 @@ function writeSave() {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
 }
 // 최종 성능 = 자동차 기본기 × 강화 레벨
+/* 10단계로 나누면서 단계당 상승폭을 절반으로 줄였다.
+   10단계까지 올린 값은 예전 5단계까지 올린 값과 같다 — 천장은 그대로다. */
 const upMul = {
-    speed: () => carById(save.car).speed * (1 + save.lv.speed * .045),
-    accel: () => carById(save.car).accel * (1 + save.lv.accel * .07),
-    grip:  () => carById(save.car).grip  * (1 + save.lv.grip  * .06),
-    boost: () => carById(save.car).boost * (1 + save.lv.boost * .10),
-    hold:  () => carById(save.car).hold  * (1 + save.lv.hold  * .28)
+    speed: () => carById(save.car).speed * (1 + save.lv.speed * .0225),
+    accel: () => carById(save.car).accel * (1 + save.lv.accel * .035),
+    grip:  () => carById(save.car).grip  * (1 + save.lv.grip  * .03),
+    boost: () => carById(save.car).boost * (1 + save.lv.boost * .05),
+    hold:  () => carById(save.car).hold  * (1 + save.lv.hold  * .14)
 };
 loadSave();
 
@@ -3832,7 +3844,11 @@ function aiControl(k, dt) {
         const gap = player.progress - k.progress;           // +면 AI가 뒤
         k.rubber = gap > 0
             ? Math.min(gap / 700, 1) * .34                  // 따라붙기 : 최대 +34%
-            : -Math.min(-gap / 700, 1) * .16 * LV.wait;     // 기다리기 : 전설에서는 안 기다린다
+            /* 기다리기 : 쉬움에서만 한다.
+               예전에는 보통도 최대 16%, 어려움도 8% 를 스스로 늦췄다. 그래서 내가 벽에 박아도
+               앞선 봇이 알아서 속도를 줄여 주었다 — 실수해도 손해가 없으니 싱거웠다.
+               이제 보통부터는 앞서면 앞선 만큼 그대로 벌어진다. 실수하면 대가를 치른다. */
+            : -Math.min(-gap / 700, 1) * .16 * LV.wait;
     } else k.rubber = 0;
     k.aiTimer -= dt;
     if (k.aiTimer <= 0) { k.aiTimer = 1.2 + Math.random() * 1.5; k.aiOffset = (Math.random() * 2 - 1) * track.halfWidth * .3; }
