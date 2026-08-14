@@ -322,10 +322,10 @@
     .lvBtn .px { display: block; font-size: 10px; font-weight: 400; opacity: .8; margin-top: 1px; }
     .lvBtn.sel { color: #fff; }
     /* 단계마다 색이 올라간다 — 고르기 전에도 세기가 눈에 보이게 */
-    .lvBtn[data-lv="easy"].sel   { background: #2c6b46; border-color: #7ee081; }
-    .lvBtn[data-lv="normal"].sel { background: #2f6ea8; border-color: #7fd4ff; }
-    .lvBtn[data-lv="hard"].sel   { background: #8a5a12; border-color: #ffd166; }
-    .lvBtn[data-lv="legend"].sel { background: #7d2f2f; border-color: #ff8a3c; }
+    .lvBtn[data-diff="easy"].sel   { background: #2c6b46; border-color: #7ee081; }
+    .lvBtn[data-diff="normal"].sel { background: #2f6ea8; border-color: #7fd4ff; }
+    .lvBtn[data-diff="hard"].sel   { background: #8a5a12; border-color: #ffd166; }
+    .lvBtn[data-diff="legend"].sel { background: #7d2f2f; border-color: #ff8a3c; }
     #lvNote { font-size: 11px; color: #8fa6c4; text-align: center; min-height: 15px; }
     #onlineBox { text-align: center; }
     #onlineBox .obRow { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
@@ -1067,7 +1067,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0110</div>
+<div id="build">v260814.0230</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -8940,11 +8940,11 @@ function renderLevels() {
     const box = el('lvBtns');
     if (!box) return;
     box.innerHTML = LEVELS.map(l =>
-        `<button class="lvBtn${l.id === save.level ? ' sel' : ''}" data-lv="${l.id}">` +
+        `<button class="lvBtn${l.id === save.level ? ' sel' : ''}" data-diff="${l.id}">` +
         `${T(l.name)}<span class="px">×${l.pay.toFixed(2)}</span></button>`).join('');
     box.querySelectorAll('.lvBtn').forEach(b => {
         b.onclick = () => {
-            save.level = b.dataset.lv; writeSave();
+            save.level = b.dataset.diff; writeSave();
             renderLevels(); playBeep(880, .05);
         };
     });
@@ -9117,6 +9117,94 @@ const KNOW_QS = {
           w: ['포도당', '이산화탄소', '무기염류'], ex: '간에서 독성이 약한 요소로 바뀝니다.' },
         { q: '암모니아를 요소로 바꾸는 기관은?', a: '간',
           w: ['콩팥', '방광', '심장'], ex: '요소는 콩팥에서 걸러져 오줌으로 나갑니다.' }
+    ],
+    /* 아래 여섯 계통은 문제가 아예 없었다. 3·4단계에서 이 맵을 고르면
+       지식 문제가 하나도 안 나오고 전부 경로 문제로 떨어졌다. */
+    auditory: [
+        { q: '소리의 진동을 처음 받아 떨리는 막은?', a: '고막',
+          w: ['달팽이관', '반고리관', '전정기관'], ex: '바깥귀와 가운데귀의 경계에 있습니다.' },
+        { q: '고막의 떨림을 크게 키워 주는 것은?', a: '귓속뼈',
+          w: ['고막', '달팽이관', '귀인두관'], ex: '망치뼈·모루뼈·등자뼈가 지렛대처럼 이어져 있습니다.' },
+        { q: '소리를 느끼는 청각 세포가 있는 곳은?', a: '달팽이관',
+          w: ['고막', '반고리관', '귓속뼈'], ex: '달팽이 껍데기처럼 말려 있어 붙은 이름입니다.' },
+        { q: '몸이 회전하는 것을 느끼는 곳은?', a: '반고리관',
+          w: ['달팽이관', '전정기관', '고막'], ex: '세 개가 서로 직각으로 놓여 회전을 감지합니다.' },
+        { q: '몸이 기울어진 것을 느끼는 곳은?', a: '전정기관',
+          w: ['반고리관', '달팽이관', '귓속뼈'], ex: '중력의 방향을 알려 줍니다.' },
+        { q: '높은 곳에서 귀가 먹먹할 때 열리는 관은?', a: '귀인두관',
+          w: ['반고리관', '달팽이관', '청각신경'], ex: '코와 이어져 있어 안팎의 기압을 맞춰 줍니다.' }
+    ],
+    visual: [
+        { q: '눈으로 들어오는 빛의 양을 조절하는 것은?', a: '홍채',
+          w: ['수정체', '각막', '망막'], ex: '동공의 크기를 바꿔 빛의 양을 맞춥니다.' },
+        { q: '빛을 굴절시켜 상을 맺게 하는 것은?', a: '수정체',
+          w: ['망막', '홍채', '공막'], ex: '두께를 바꿔 초점을 맞춥니다.' },
+        { q: '시각 세포가 모여 상이 맺히는 곳은?', a: '망막',
+          w: ['각막', '수정체', '홍채'], ex: '카메라의 필름에 해당합니다.' },
+        { q: '어두운 곳에 들어가면 동공은?', a: '커진다',
+          w: ['작아진다', '그대로다', '사라진다'], ex: '빛을 더 많이 받아들이려고 넓어집니다.' },
+        { q: '가까운 것을 볼 때 수정체는?', a: '두꺼워진다',
+          w: ['얇아진다', '그대로다', '작아진다'], ex: '더 많이 굴절시켜야 초점이 맞습니다.' },
+        { q: '시각 신경이 빠져나가 상이 맺히지 않는 곳은?', a: '맹점',
+          w: ['황반', '각막', '홍채'], ex: '시각 세포가 없어 그 자리는 보이지 않습니다.' }
+    ],
+    glomerulus: [
+        { q: '사구체를 감싸고 있는 주머니는?', a: '보먼주머니',
+          w: ['세뇨관', '집합관', '방광'], ex: '여과된 액체를 받아 세뇨관으로 보냅니다.' },
+        { q: '사구체에서 걸러지지 않고 남는 것은?', a: '단백질',
+          w: ['물', '요소', '포도당'], ex: '알갱이가 커서 여과막을 빠져나가지 못합니다.' },
+        { q: '오줌이 만들어지는 순서로 옳은 것은?', a: '여과 → 재흡수 → 분비',
+          w: ['재흡수 → 여과 → 분비', '분비 → 여과 → 재흡수', '여과 → 분비 → 재흡수'],
+          ex: '거르고, 필요한 것을 되찾고, 남은 노폐물을 마저 내보냅니다.' },
+        { q: '사구체와 보먼주머니를 합쳐 부르는 이름은?', a: '말피기소체',
+          w: ['네프론', '세뇨관', '집합관'], ex: '여기에 세뇨관까지 더하면 네프론이 됩니다.' },
+        { q: '건강한 사람의 오줌에서 나오지 않는 것은?', a: '포도당',
+          w: ['물', '요소', '무기염류'], ex: '세뇨관에서 모두 재흡수되기 때문입니다.' },
+        { q: '콩팥에서 만들어진 오줌이 방광으로 가는 길은?', a: '오줌관',
+          w: ['요도', '세뇨관', '집합관'], ex: '방광에 모였다가 요도로 몸 밖에 나갑니다.' }
+    ],
+    liver: [
+        { q: '쓸개즙을 만드는 기관은?', a: '간',
+          w: ['쓸개', '이자', '위'], ex: '만드는 곳은 간, 저장하는 곳은 쓸개입니다.' },
+        { q: '간이 포도당을 저장하는 형태는?', a: '글리코젠',
+          w: ['녹말', '지방산', '아미노산'], ex: '필요할 때 다시 포도당으로 바꿔 내보냅니다.' },
+        { q: '소장에서 흡수한 영양소가 간으로 가는 혈관은?', a: '간문맥',
+          w: ['간정맥', '대동맥', '폐동맥'], ex: '간이 먼저 검사하고 저장한 뒤 온몸으로 보냅니다.' },
+        { q: '간에서 술이나 약의 독성을 없애는 일은?', a: '해독 작용',
+          w: ['소화 작용', '배설 작용', '호흡 작용'], ex: '간이 몸의 화학 공장이라 불리는 이유입니다.' },
+        { q: '간에서 암모니아는 무엇으로 바뀌는가?', a: '요소',
+          w: ['포도당', '단백질', '이산화탄소'], ex: '독성이 약한 요소로 바꿔 콩팥으로 보냅니다.' },
+        { q: '늙은 적혈구를 분해하는 기관은?', a: '간',
+          w: ['위', '이자', '폐'], ex: '이때 나온 색소가 쓸개즙의 색을 만듭니다.' }
+    ],
+    stomach: [
+        { q: '위액에 들어 있는 강한 산은?', a: '염산',
+          w: ['탄산', '젖산', '아세트산'], ex: '세균을 죽이고 펩신이 일하게 돕습니다.' },
+        { q: '위벽이 위산에 녹지 않게 지켜 주는 것은?', a: '점액',
+          w: ['펩신', '염산', '쓸개즙'], ex: '위벽을 얇게 덮어 산을 막아 줍니다.' },
+        { q: '펩신이 가장 잘 작동하는 조건은?', a: '강한 산성',
+          w: ['강한 염기성', '중성', '낮은 온도'], ex: '그래서 위에서만 힘을 씁니다.' },
+        { q: '위 안쪽에 잡힌 큰 주름을 무엇이라 하나?', a: '추벽',
+          w: ['융털', '폐포', '판막'], ex: '음식이 들어오면 펴져서 위가 크게 늘어납니다.' },
+        { q: '위에서 소장으로 내보내는 출구는?', a: '날문',
+          w: ['들문', '식도', '막창자'], ex: '죽처럼 된 것만 조금씩 통과시킵니다.' },
+        { q: '음식을 밀어내는 위와 소장의 운동은?', a: '연동 운동',
+          w: ['확산', '여과', '재흡수'], ex: '근육이 물결처럼 수축하며 밀어냅니다.' }
+    ],
+    pancreas: [
+        { q: '혈당을 낮추는 호르몬은?', a: '인슐린',
+          w: ['글루카곤', '아드레날린', '티록신'], ex: '포도당을 세포로 넣고 간에 저장시킵니다.' },
+        { q: '혈당을 높이는 호르몬은?', a: '글루카곤',
+          w: ['인슐린', '아드레날린', '멜라토닌'], ex: '간에 저장된 글리코젠을 포도당으로 바꿉니다.' },
+        { q: '인슐린과 글루카곤을 만드는 곳은?', a: '랑게르한스섬',
+          w: ['쓸개', '간', '위'], ex: '이자 곳곳에 섬처럼 흩어져 있어 붙은 이름입니다.' },
+        { q: '이자액 속에서 단백질을 분해하는 효소는?', a: '트립신',
+          w: ['아밀레이스', '라이페이스', '펩신'], ex: '위의 펩신이 하던 일을 이어서 합니다.' },
+        { q: '이자액이 십이지장에서 하는 일은?', a: '위산을 중화한다',
+          w: ['위산을 더 세게 한다', '물을 흡수한다', '산소를 공급한다'],
+          ex: '소장의 효소는 염기성에서 잘 작동하기 때문입니다.' },
+        { q: '이자처럼 호르몬을 혈액으로 내보내는 샘을 무엇이라 하나?', a: '내분비샘',
+          w: ['외분비샘', '림프샘', '땀샘'], ex: '관 없이 바로 혈액으로 보냅니다.' }
     ]
 };
 
@@ -9162,11 +9250,24 @@ function makeQ(sys, i, kind, nChoices, pool) {
         ask = `<b>${T(names[i])}</b>${T(' 다음은 어디일까요?')}`;
     }
 
-    // 오답은 같은 계통에서. 부족하면 다른 계통에서 채운다 (전문가 단계)
-    let wrong = names.filter(x => x !== answer && x !== names[i]);
-    if (pool) wrong = wrong.concat(pool.filter(x => x !== answer && !names.includes(x)));
-    shuffle(wrong);
-    const choices = shuffle([answer, ...wrong.slice(0, nChoices - 1)]);
+    /* 오답은 같은 계통에서 먼저 고른다 — 그래야 헷갈릴 만한 문제가 된다.
+
+       예전에는 같은 계통 오답과 다른 계통 오답을 한 덩어리로 섞은 뒤 잘랐다.
+       그러면 같은 계통 오답이 밀려나 엉뚱한 계통 이름만 보기에 뜨기도 했다.
+       게다가 pool 은 전문가 단계에만 있어서, 기관이 넷뿐인 맵(위·이자)은
+       오답을 둘밖에 못 만들었다 — 보기 4개를 약속한 2단계에서 3개만 나왔다.
+       실제로 5000문제 중 1633개가 약속보다 적었다.
+
+       이제 같은 계통에서 먼저 채우고, 모자란 만큼만 다른 계통에서 빌린다. */
+    const same = shuffle(names.filter(x => x !== answer && x !== names[i]));
+    const wrong = same.slice(0, nChoices - 1);
+    if (wrong.length < nChoices - 1 && pool) {
+        for (const e of shuffle(pool.slice())) {
+            if (wrong.length >= nChoices - 1) break;
+            if (e !== answer && e !== names[i] && !wrong.includes(e)) wrong.push(e);
+        }
+    }
+    const choices = shuffle([answer, ...wrong]);
     return { ask, answer, choices, order: chain(ansIdx), sysName: sys.name };
 }
 
@@ -9195,21 +9296,37 @@ function makeKnowQ(sysId, nChoices) {
 
 function buildRouteQuiz(lv, sys) {
     const all = Object.values(SYSTEMS);
-    const pool = lv.mix ? all.flatMap(x => x.flow.map(f => f.name)) : null;
+    /* 예비 보기 목록은 모든 단계에 준다.
+       전문가 단계에만 줬더니 기관이 넷뿐인 맵에서 보기가 모자랐다.
+       같은 계통으로 채울 수 있으면 이건 쓰이지 않는다 — 모자랄 때만 쓰인다. */
+    const pool = all.flatMap(x => x.flow.map(f => f.name));
     const kinds = lv.lv === 1 ? ['next']
                 : lv.lv === 2 ? ['next', 'prev']
                 : ['next', 'prev', 'nth'];
 
-    const qs = [];
+    /* 한 판에 같은 문제가 두 번 나오면 성의 없어 보인다.
+       예전에는 그냥 무작위로 뽑아서, 1단계 세 문제 중 한 번꼴로 겹쳤다
+       (3000문제 중 514번). 이제 이미 낸 문제면 다시 뽑는다. */
+    const qs = [], seen = new Set();
     for (let q = 0; q < lv.count; q++) {
-        const target = lv.mix ? all[Math.floor(Math.random() * all.length)] : sys;
-        // 단계가 올라가면 교과 지식 문제를 섞는다
-        if (lv.know && Math.random() < lv.know) {
-            const kq = makeKnowQ(target.id, lv.choices);
-            if (kq) { qs.push(kq); continue; }
+        let picked = null;
+        for (let tryN = 0; tryN < 40 && !picked; tryN++) {
+            const target = lv.mix ? all[Math.floor(Math.random() * all.length)] : sys;
+            let cand = null;
+            if (lv.know && Math.random() < lv.know) cand = makeKnowQ(target.id, lv.choices);
+            if (!cand) {
+                const i = Math.floor(Math.random() * target.flow.length);
+                cand = makeQ(target, i, kinds[q % kinds.length], lv.choices, pool);
+            }
+            const key = cand.ask + '|' + cand.answer;
+            if (!seen.has(key)) { seen.add(key); picked = cand; }
         }
-        const i = Math.floor(Math.random() * target.flow.length);
-        qs.push(makeQ(target, i, kinds[q % kinds.length], lv.choices, pool));
+        // 40번을 뽑아도 새 문제가 없으면(문제 수가 적은 맵) 그냥 마지막 것을 쓴다
+        if (!picked) {
+            const i = Math.floor(Math.random() * sys.flow.length);
+            picked = makeQ(sys, i, kinds[q % kinds.length], lv.choices, pool);
+        }
+        qs.push(picked);
     }
     return qs;
 }
