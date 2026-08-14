@@ -256,7 +256,13 @@
     .overlay {
         position: absolute; inset: 0; z-index: 20; padding: 18px; overflow: auto;
         background: radial-gradient(circle at 50% 26%, #1d3d63, #08111d 72%);
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+        display: flex; flex-direction: column; gap: 14px;
+        /* safe 를 붙인 이유 —
+           그냥 center 로 두면 내용이 화면보다 클 때 위아래가 똑같이 잘려 나간다.
+           그런데 잘려서 화면 위로 올라간 부분은 스크롤로도 닿을 수가 없다.
+           실제로 세로 화면에서 결과 2장이 1467px 이 되어 위쪽 327px 이 영영 안 보였다.
+           safe 는 '넘칠 때는 가운데 대신 처음부터' 로 물러나 준다. */
+        align-items: safe center; justify-content: safe center;
     }
     /* 어떤 규칙보다 숨김이 우선이다 — ID 선택자로 display 를 바꾸는 곳이 있어서다 */
     .overlay.hidden { display: none !important; }
@@ -399,7 +405,7 @@
                  border-radius: 6px; background: rgba(255,255,255,.12); color: #cfe6ff; }
     .upRow .nm { flex: 1; font-size: 13px; }
     .upRow .nm small { display: block; color: #9fd0ff; font-size: 11px; }
-    .upRow .pips { display: flex; gap: 2px; }
+    .upRow .pips { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; max-width: 120px; }
     .upRow .pip { width: 9px; height: 13px; border-radius: 3px; background: rgba(255,255,255,.14); border: 1px solid #3f6c9c; }
     .upRow .pip.on { background: #ffd166; border-color: #ffd166; }
     .upRow button {
@@ -408,6 +414,30 @@
     }
     .upRow button:disabled { opacity: .35; cursor: default; }
     .upRow button.can { background: #e8a020; border-color: #ffd166; color: #2a1a00; }
+
+    /* 좁은 화면(세로로 든 폰)에서 강화 줄이 터지던 것 —
+
+       한 줄에 아이콘·이름·칸10개·단추를 나란히 놓으면 375px 에서는 자리가 없다.
+       이름 칸이 19px 까지 눌려 글자가 한 자씩 세로로 쌓였고, 줄 하나가 342px 이 됐다.
+       결과 2장 전체가 1467px 이 되어 화면 밖으로 나갔다.
+
+       그래서 좁을 때는 두 줄짜리 판으로 바꾼다.
+         왼쪽 아이콘 | 위: 이름 / 아래: 칸 | 오른쪽 단추
+       설명글은 접는다 — 이름만으로 무엇인지 안다. */
+    @media (max-width: 520px) {
+        .upRow {
+            display: grid; align-items: center;
+            grid-template-columns: 30px minmax(0, 1fr) auto;
+            grid-template-areas: "ic nm btn" "ic pips btn";
+            gap: 2px 8px; margin: 5px 0;
+        }
+        .upRow .ic  { grid-area: ic; }
+        .upRow .nm  { grid-area: nm; font-size: 12px; min-width: 0; }
+        .upRow .nm small { display: none; }
+        .upRow .pips { grid-area: pips; max-width: none; justify-content: flex-start; }
+        .upRow .pip { width: 8px; height: 10px; }
+        .upRow button { grid-area: btn; min-width: 62px; }
+    }
 
     /* 자동차 목록 */
     .carRow { display: flex; align-items: center; gap: 10px; margin: 6px 0; padding: 7px 8px; border-radius: 10px;
@@ -866,8 +896,16 @@
     #setup { min-height: 0; }
     #steps b span { display: none; }
     #steps b { padding: 6px; }
-    #mpStage { gap: 7px; }
-    #mpCard { padding: 10px; }
+    /* 카드에 max-width: 74vw 가 걸려 있는데, 이 값은 좌우 화살표와 여백을 셈에 넣지 않는다.
+       그래서 세로로 든 폰(375px)에서 화살표+카드+화살표 = 376px 이 되어
+       '다음 코스' 화살표 19px 이 화면 밖으로 나갔다.
+       남는 자리만큼만 차지하도록 바꾼다. */
+    #setup .page { width: 100%; box-sizing: border-box; }
+    #mpStage { gap: 7px; width: 100%; }
+    #mpCard { padding: 10px; width: auto; max-width: none; flex: 1 1 auto; min-width: 0; }
+    #carPick { width: 100%; max-width: 100%; box-sizing: border-box; }
+    /* 손가락으로 누르는 단추 : 세로 화면에서도 너무 납작하지 않게 */
+    #opts .optBtn { min-height: 34px; }
     #mpCard h3 { font-size: 18px; }
     #mpCard canvas { height: 132px; }
     #mpCard .route { min-height: 0; }
@@ -925,11 +963,35 @@
     #mpDots { flex: none; }
     #mpDots i { width: 7px; height: 7px; }
 
-    /* 자동차 고르는 장 */
+    /* 손가락으로 누르는 단추는 너무 작으면 안 된다.
+       재 보니 강화 사기 단추가 60x26, 위쪽 설정 단추가 28px 높이였다.
+       아이 손가락에는 작다. 폰에서는 눌리는 부분을 키운다.
+       (칸 자체를 키우면 한 화면에 안 들어가므로 높이만 확보한다) */
+    /* 38px 로 했더니 강화 줄 다섯이 9px 넘쳐서 결과 상자가 잘렸다.
+       34px 이면 들어가고, 26px 이던 예전보다는 훨씬 누르기 쉽다. */
+    .upRow button { min-height: 34px; padding: 5px 12px; }
+    #opts .optBtn { min-height: 34px; }
+    #quizBack { min-height: 38px; }
+    /* 안전장치 : 내용이 늘어도 상자 밖으로 잘려 나가지 않게 한다.
+       강화가 10단계가 되면서 줄이 길어졌고, 앞으로 더 늘 수도 있다. */
+    #resultBox { max-height: calc(100% - 12px); overflow-y: auto; }
+    #exitRace { min-height: 38px; }
+    .modeBtn { min-height: 40px; }
+    #quizSysPick { min-height: 38px; }
+
+    /* 자동차 고르는 장
+
+       목록과 설명이 세로로 쌓이는데, 목록에 flex: 1 1 0% 가 걸려 있어서
+       설명칸이 자리를 다 가져가면 목록이 3px 까지 눌렸다. 카드가 14px 높이로
+       찌부러져 고를 수가 없었다. 목록에 제 높이를 주고, 남는 자리는 설명이 쓴다. */
     #carPick { width: 100%; box-sizing: border-box; height: 100%;
                display: flex; flex-direction: column; min-height: 0; }
     #carPick .cpBody { flex: 1 1 auto; min-height: 0; }
-    #carPick .cpList { overflow-y: auto; }
+    #carPick .cpList {
+        flex: none; height: 74px; align-items: stretch;
+        overflow-x: auto; overflow-y: hidden;
+    }
+    #carPick .cpDetail { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
     /* 출발 장 */
     #onlineBox { width: auto; }
@@ -1075,7 +1137,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0620</div>
+<div id="build">v260814.0750</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
