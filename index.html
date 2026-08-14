@@ -1067,7 +1067,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0230</div>
+<div id="build">v260814.0330</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1467,12 +1467,13 @@ const EN = {
 '순서에 교과 지식이 섞여 나옵니다': 'Order plus science questions',
 '다섯 계통 · 교과 지식까지 모두': 'All five systems, plus science',
 '코스 순서를 맞히면 포인트를 받습니다': 'Earn points by recalling the course order',
-'계통 :': 'System:', '4단계는 다섯 계통이 섞여 나옵니다': 'Level 4 mixes all five systems',
+'계통 :': 'System:', '4단계는 열한 계통이 모두 섞여 나옵니다': 'Level 4 mixes all eleven systems',
 '아직 안 풀어봤어요': 'Not tried yet', '최고': 'Best',
 '문제': 'questions', '보기': 'choices', '문제당': 'each', '단계': 'Level', '결과': 'Result',
 '맞았습니다!': 'Correct!', '아니에요. 정답은': 'Nope. The answer is',
-' 다음은 어디일까요?': ' — what comes next?', ' 바로 앞은 어디일까요?': ' — what comes before?',
-'번째로 지나는 곳은?': 'th stop on the course?', '문제 중': 'of',
+' 다음 차례는?': ' — what comes next?', ' 바로 앞 차례는?': ' — what comes before?',
+'코스 차례': 'course order',
+'문제 중': 'of',
 '문제 정답': 'correct', '전부 정답! 보너스 50% 를 더 받았습니다': 'Perfect! 50% bonus added',
 '코스를 완전히 외웠습니다!': 'You know the whole course!',
 
@@ -9229,25 +9230,52 @@ const shuffle = a => {
 };
 
 /* 한 문제 만들기.
-   kind : next(다음은?) / prev(앞은?) / nth(몇 번째?) */
+   kind : next(다음은?) / prev(앞은?) / mid(사이는?)
+
+   예전에는 nth('N번째로 지나는 곳은?') 가 있었는데 없앴다.
+   이 코스들은 전부 닫힌 고리다. 고리에는 첫 번째가 없다 —
+   어디서부터 세는지 말해 주지 않으면 답을 정할 수가 없다.
+   실제로 '순환계 서킷 — 2번째로 지나는 곳은?' 이 나왔는데,
+   우심방부터 세면 우심실이지만 폐부터 세면 좌심방이다. 물음이 성립하지 않았다.
+
+   대신 '사이' 를 묻는다. 앞뒤를 둘 다 짚어 주므로 고리에서도 답이 하나로 정해지고,
+   순서를 진짜로 아는지 묻는다는 점은 그대로다. */
 function makeQ(sys, i, kind, nChoices, pool) {
     const names = sys.flow.map(f => f.name);
     const n = names.length;
     const chain = i2 => names.map((x, xi) => xi === i2 ? `<b>${T(x)}</b>` : T(x)).join(' → ');
     let ask, answer, ansIdx;
+    const skip = [];                       // 물음에 이미 나온 이름은 보기에서 뺀다
+
+    /* '어디일까요?' 라고 물으면 안 된다.
+
+       코스의 마디가 전부 기관인 것은 아니다. 호흡계에는 '산소 교환' 과 '날숨' 이
+       들어 있는데, 이것은 호흡이 일어나는 차례이지 장소가 아니다.
+       그런데 '폐포 다음은 어디일까요?' 라고 물으니, 장소를 묻는 말에 사건이 답이 되어
+       말이 되지 않았다. 배설계의 '배출 · 깨끗한 피', 사구체의 '다음 여과' 도 마찬가지다.
+
+       이 퀴즈가 묻는 것은 원래 코스의 차례다. 그러니 차례를 물으면 된다.
+       그러면 기관이든 과정이든 모두 옳은 답이 된다. */
+    const head = `<span style="font-size:.66em;color:#9fd0ff">${T(sys.name)} ${T('코스 차례')}</span><br>`;
 
     if (kind === 'prev') {
         ansIdx = (i - 1 + n) % n;
         answer = names[ansIdx];
-        ask = `<b>${T(names[i])}</b>${T(' 바로 앞은 어디일까요?')}`;
-    } else if (kind === 'nth') {
+        ask = head + `<b>${T(names[i])}</b>${T(' 바로 앞 차례는?')}`;
+        skip.push(names[i]);
+    } else if (kind === 'mid') {
         ansIdx = i;
         answer = names[i];
-        ask = `${T(sys.name)} — <b>${i + 1}</b>${T('번째로 지나는 곳은?')}`;
+        const before = names[(i - 1 + n) % n], after = names[(i + 1) % n];
+        /* 화살표로 보이면 말이 거의 필요 없다. 한국어 조사(와/과)도 영어 어순도
+           신경 쓸 것이 없어 어느 말로 읽어도 뜻이 같다. */
+        ask = head + `<b>${T(before)}</b> → <b style="color:#ffe066">?</b> → <b>${T(after)}</b>`;
+        skip.push(before, after);
     } else {
         ansIdx = (i + 1) % n;
         answer = names[ansIdx];
-        ask = `<b>${T(names[i])}</b>${T(' 다음은 어디일까요?')}`;
+        ask = head + `<b>${T(names[i])}</b>${T(' 다음 차례는?')}`;
+        skip.push(names[i]);
     }
 
     /* 오답은 같은 계통에서 먼저 고른다 — 그래야 헷갈릴 만한 문제가 된다.
@@ -9259,12 +9287,14 @@ function makeQ(sys, i, kind, nChoices, pool) {
        실제로 5000문제 중 1633개가 약속보다 적었다.
 
        이제 같은 계통에서 먼저 채우고, 모자란 만큼만 다른 계통에서 빌린다. */
-    const same = shuffle(names.filter(x => x !== answer && x !== names[i]));
+    // 물음에 이미 적힌 이름은 보기에 넣지 않는다 (사이 문제의 앞뒤 같은 것)
+    const banned = new Set([answer, ...skip]);
+    const same = shuffle(names.filter(x => !banned.has(x)));
     const wrong = same.slice(0, nChoices - 1);
     if (wrong.length < nChoices - 1 && pool) {
         for (const e of shuffle(pool.slice())) {
             if (wrong.length >= nChoices - 1) break;
-            if (e !== answer && e !== names[i] && !wrong.includes(e)) wrong.push(e);
+            if (!banned.has(e) && !wrong.includes(e)) wrong.push(e);
         }
     }
     const choices = shuffle([answer, ...wrong]);
@@ -9302,7 +9332,7 @@ function buildRouteQuiz(lv, sys) {
     const pool = all.flatMap(x => x.flow.map(f => f.name));
     const kinds = lv.lv === 1 ? ['next']
                 : lv.lv === 2 ? ['next', 'prev']
-                : ['next', 'prev', 'nth'];
+                : ['next', 'prev', 'mid'];
 
     /* 한 판에 같은 문제가 두 번 나오면 성의 없어 보인다.
        예전에는 그냥 무작위로 뽑아서, 1단계 세 문제 중 한 번꼴로 겹쳤다
@@ -9332,7 +9362,11 @@ function buildRouteQuiz(lv, sys) {
 }
 
 /* 퀴즈방 첫 화면 : 단계와 계통을 고른다 */
-function openQuizRoom() {
+/* fromMenu 면 방금 고른 코스의 계통으로 연다.
+   그러지 않았더니 직전에 풀던 계통을 계속 기억해서, 코스를 바꿔도 같은 계통만 나왔다.
+   '다른 단계 풀기' 로 다시 들어올 때는 고르던 계통을 그대로 둔다. */
+function openQuizRoom(fromMenu) {
+    if (fromMenu) quizSys = SYSTEMS[selectedId] || null;
     el('menu').classList.add('hidden');
     el('quizRoom').classList.remove('hidden');
     el('quizNav').style.display = 'none';
@@ -9354,9 +9388,9 @@ function openQuizRoom() {
          <div class="qPick">${T('계통 :')}
             <select id="quizSysPick">
                 ${Object.values(SYSTEMS).map(x =>
-                    `<option value="${x.id}">${T(x.name)}</option>`).join('')}
+                    `<option value="${x.id}"${x.id === (quizSys ? quizSys.id : selectedId) ? ' selected' : ''}>${T(x.name)}</option>`).join('')}
             </select>
-            <span class="qPickHint">${T('4단계는 다섯 계통이 섞여 나옵니다')}</span>
+            <span class="qPickHint">${T('4단계는 열한 계통이 모두 섞여 나옵니다')}</span>
          </div>`;
 
     el('quizStage').querySelectorAll('.qLv').forEach(b => {
@@ -9487,8 +9521,8 @@ el('langBtn').onclick = () => setLang(LANG === 'en' ? 'ko' : 'en');
 // 저장된 설정이 있으면 그것을, 없으면 기기 언어를 따른다
 setLang(save.lang || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en'));
 
-el('quizBtn').onclick = openQuizRoom;
-el('quizAgain').onclick = openQuizRoom;
+el('quizBtn').onclick = () => openQuizRoom(true);     // 메뉴에서 : 고른 코스를 따른다
+el('quizAgain').onclick = () => openQuizRoom(false);   // 이어서 : 고르던 계통 유지
 const leaveQuiz = () => {
     el('quizRoom').classList.add('hidden');
     el('menu').classList.remove('hidden');
@@ -9497,7 +9531,7 @@ const leaveQuiz = () => {
 el('quizExit').onclick = leaveQuiz;
 // 문제를 푸는 중이면 단계 고르기로, 거기서 또 누르면 메뉴로
 el('quizBack').onclick = () => {
-    if (quizQs.length && quizAt < quizQs.length) openQuizRoom();
+    if (quizQs.length && quizAt < quizQs.length) openQuizRoom(false);
     else leaveQuiz();
 };
 
