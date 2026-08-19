@@ -1143,7 +1143,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0820</div>
+<div id="build">v260814.0910</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -9968,12 +9968,27 @@ if (IS_TOUCH && !(window.Capacitor && window.Capacitor.isNativePlatform && windo
         });
     }
 
-    // AdMob : 웹의 애드센스 대신 네이티브 전면 광고를 쓴다
+    /* AdMob : 웹의 애드센스 대신 네이티브 전면 광고를 쓴다.
+
+       이 게임은 중학생이 보는 것이므로 광고도 그에 맞춰야 한다. 기술이 아니라 정책 문제다.
+         tagForChildDirectedTreatment  아동 대상 앱이라고 구글에 알린다 (COPPA)
+         tagForUnderAgeOfConsent       유럽의 동의 연령 미만 취급 (TFUA)
+         maxAdContentRating: 'G'       전체 이용가 광고만 받는다
+         npa: true                     맞춤 광고를 끈다 — 아이 행동을 추적해 고른 광고를 안 띄운다
+
+       맞춤 광고를 끄면 단가는 떨어진다. 그래도 이렇게 두는 이유는,
+       아동 대상 앱에서 이 설정을 빠뜨리면 정책 위반으로 계정이 정지될 수 있고,
+       무엇보다 아이를 추적해 번 돈이기 때문이다. */
     if (P.AdMob) {
-        P.AdMob.initialize({ initializeForTesting: !AD.admobId }).catch(() => {});
+        P.AdMob.initialize({
+            initializeForTesting: !AD.admobId,
+            tagForChildDirectedTreatment: true,
+            tagForUnderAgeOfConsent: true,
+            maxAdContentRating: 'G'
+        }).catch(() => {});
         window.admob = {
             prepareInterstitial: o => P.AdMob.prepareInterstitial(
-                { adId: o.adId, isTesting: !AD.admobId }),
+                { adId: o.adId, isTesting: !AD.admobId, npa: true }),
             showInterstitial: () => P.AdMob.showInterstitial()
         };
         // 실제 ID 를 안 넣었으면 구글 테스트 광고 단위로 돌린다
