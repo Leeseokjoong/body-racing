@@ -916,6 +916,8 @@
 #mpCard h3 { font-size: 23px; margin-bottom: 2px; }
 #mpCard .kind { font-size: 11px; color: #8fa6c4; }
 #mpCard canvas { width: 100%; height: 190px; margin: 7px 0; background: rgba(0,0,0,.3); border-radius: 12px; }
+/* 칸을 키우는 것은 포기했다 — 한 장에 다 들어가야 하는데 '다음' 단추와 겹쳤다.
+   대신 그림 쪽 빈 여백을 잘라내서, 같은 칸 안에서 그림이 커지게 했다. */
 #mpCard .route { font-size: 12px; color: #9fd0ff; line-height: 1.55; min-height: 36px; }
 #mpCard .facts { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
 #mpCard .fact { background: rgba(0,0,0,.32); border-radius: 9px; padding: 5px 10px; font-size: 12px; color: #cfe6ff; }
@@ -1190,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 91</div>
+<div id="build">버전 92</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2106,6 +2108,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 92, d: '9월 9일', t: [
+        '앱이 2.2MB에서 1.8MB로 줄었다 (그림을 전부 WebP로)',
+        'The app shrank from 2.2MB to 1.8MB (all images moved to WebP)',
+        '신경계·소화계·배설계는 코스를 고를 때 그림 지도가 나온다',
+        'Nervous, digestive and urinary courses now show an illustrated map when you pick them',
+        '고르면서 기관 이름을 읽게 된다 — 전두엽, 소장, 방광처럼',
+        'You read organ names while choosing — frontal lobe, small intestine, bladder'
+    ] },
     { v: 91, d: '9월 9일', t: [
         '코스가 허공에 뜬 선이 아니라 땅 위에 놓인 섬이 되었다',
         'Courses now sit on solid ground instead of floating in space',
@@ -3790,6 +3800,17 @@ const BOT_ASSIST = 2.0;      // 봇이 받는 보조 — 난이도와 무관하�
 const CAR_COLORS = ['#d4353f', '#3f74c4', '#2f9e4f', '#e8628e'];
 const AI_NAMES = ['적혈이', '백구', '효소맨'];
 
+/* ---- 맵 고르는 화면의 카드 그림 ----
+   있으면 그림, 없으면 코드로 그린 코스 선. 그림은 고를 때만 쓰므로
+   레이스 중에는 메모리에 올라가지 않는다 (구형 폰을 생각하면 이게 중요하다). */
+const MAPCARDS = {};
+['nervous', 'digestive', 'urinary'].forEach(key => {
+    const im = new Image();
+    im.onload = () => { im.ready = true; if (typeof buildMenu === 'function' && state === 'menu') buildMenu(); };
+    im.src = 'assets/mapcard_' + key + '.webp';
+    MAPCARDS[key] = im;
+});
+
 /* ---- 섬(기관 모양 땅) 그림 ----
    수식으로 만든 바깥선은 '기관처럼' 보이지 않는다. 진짜 실루엣은 그림이라야 한다.
    그림이 있으면 그림을 깔고, 없으면 수식 모양으로 버틴다 — 기관 그림과 같은 방식이다.
@@ -3798,7 +3819,7 @@ const ISLAND_IMAGES = {};
 ['brain', 'stomach', 'kidney', 'liver', 'ear', 'eye', 'lungs', 'pancreas'].forEach(key => {
     const im = new Image();
     im.onload = () => { im.ready = true; };
-    im.src = 'assets/island_' + key + '.png';
+    im.src = 'assets/island_' + key + '.webp';
     ISLAND_IMAGES[key] = im;
 });
 
@@ -3807,7 +3828,7 @@ const ORGAN_IMAGES = {};
 ['heart', 'lungs', 'stomach', 'liver'].forEach(key => {
     const im = new Image();
     im.onload = () => { im.ready = true; };
-    im.src = 'assets/organ_' + key + '.png';
+    im.src = 'assets/organ_' + key + '.webp';
     ORGAN_IMAGES[key] = im;
 });
 
@@ -3816,7 +3837,7 @@ const ITEM_IMAGES = {};
 ['rbc', 'wbc', 'co2', 'chol', 'clot'].forEach(key => {
     const im = new Image();
     im.onload = () => { im.ready = true; };
-    im.src = 'assets/item_' + key + '.png';
+    im.src = 'assets/item_' + key + '.webp';
     ITEM_IMAGES[key] = im;
 });
 
@@ -3830,7 +3851,7 @@ const KART_SPRITES = {};
 [...new Set([...KART_KEYS, ...CARS.map(c => c.sprite)])].forEach(key => {
     const im = new Image();
     im.onload = () => { im.ready = true; };
-    im.src = 'assets/kart_' + key + '.png';
+    im.src = 'assets/kart_' + key + '.webp';
     KART_SPRITES[key] = im;
 });
 
@@ -9510,7 +9531,7 @@ function renderCarPick() {
         const owned = save.cars.includes(c.id);
         const can = !owned && save.points >= c.cost;
         return `<div class="cpCar${carPreview === c.id ? ' on' : ''}${owned ? '' : ' locked'}" data-cp="${c.id}">
-            <div class="em"><img src="assets/kart_${c.sprite}.png" alt="">${owned ? '' : `<span>${T('잠김')}</span>`}</div>
+            <div class="em"><img src="assets/kart_${c.sprite}.webp" alt="">${owned ? '' : `<span>${T('잠김')}</span>`}</div>
             <div class="nm">${T(c.name)}</div>
             <div class="pr ${owned ? 'own' : can ? 'can' : ''}">${
                 save.car === c.id ? T('사용 중') : owned ? T('보유') : c.cost + ' P'}</div>
@@ -9526,7 +9547,7 @@ function renderCarPick() {
     const picked = save.car === c.id;
 
     el('cpDetail').innerHTML =
-        `<div class="dn" style="color:${c.color}"><img class="dImg" src="assets/kart_${c.sprite}.png" alt="">${T(c.name)}</div>
+        `<div class="dn" style="color:${c.color}"><img class="dImg" src="assets/kart_${c.sprite}.webp" alt="">${T(c.name)}</div>
          <div class="dd">${T(c.desc)}</div>` +
         CAR_STATS.map(s => {
             const { lo, hi } = statRange(s.key);
@@ -9557,6 +9578,17 @@ function renderCarPick() {
 }
 
 function drawPreview(cv, sys) {
+    const g0 = cv.getContext('2d');
+    /* 그려 둔 카드 그림이 있으면 그걸 쓴다 — 코스 선보다 훨씬 잘 읽힌다 */
+    const card = MAPCARDS[sys.id];
+    if (card && card.ready) {
+        g0.clearRect(0, 0, cv.width, cv.height);
+        const s2 = Math.min(cv.width / card.width, cv.height / card.height);
+        const w2 = card.width * s2, h2 = card.height * s2;
+        g0.drawImage(card, (cv.width - w2) / 2, (cv.height - h2) / 2, w2, h2);
+        return;
+    }
+
     const t = buildTrack(sys), g = cv.getContext('2d');
     /* 섬까지 들어가도록 테두리를 잡는다 — 트랙만 기준으로 잡으면 땅이 잘린다 */
     let ix0 = 1e9, iy0 = 1e9, ix1 = -1e9, iy1 = -1e9;
