@@ -657,9 +657,9 @@
 
     /* 빌드 번호 — 폰이 예전 파일을 들고 있는지 바로 알아보기 위한 것.
        누르면 무엇이 바뀌었는지 뜬다 (폰에서 확인하려고). */
-    #build { position: fixed; left: 8px; bottom: 6px; z-index: 999;
-             font-size: 10px; color: rgba(159,208,255,.5); letter-spacing: 1px;
-             padding: 4px 6px; }
+    #build { position: fixed; left: 6px; bottom: 4px; z-index: 999;
+             font-size: 15px; font-weight: 700; color: rgba(159,208,255,.72);
+             letter-spacing: .5px; padding: 6px 10px; }
     #build:active { color: #ffd166; }
 
     #whatsNew { position: fixed; inset: 0; z-index: 1001; display: flex;
@@ -1163,7 +1163,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260909.1930</div>
+<div id="build">버전 86</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="whatsNew" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>무엇이 바뀌었나</b><button id="wnClose">닫기</button></div>
@@ -2043,7 +2043,7 @@ Object.assign(EN, {
 '간에서 독성이 약한 요소로 바뀝니다.': 'The liver turns it into less toxic urea.',
 '암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
 '심장': 'Heart', '코': 'Nose', '간': 'Liver',
-'무엇이 바뀌었나': "What's new", '지금 판': 'current',
+'무엇이 바뀌었나': "What's new", '지금 판': 'current', '버전': 'Version',
 '9월 9일': 'Sep 9', '8월 19일': 'Aug 19', '8월 15일': 'Aug 15',
 '8월 14일': 'Aug 14', '8월 13일': 'Aug 13',
 '요소는 콩팥에서 걸러져 오줌으로 나갑니다.': 'Urea is filtered by the kidney and leaves as urine.'
@@ -2056,42 +2056,42 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
-    { v: 'v260909.1930', d: '9월 9일', t: [
+    { v: 86, d: '9월 9일', t: [
         '판 번호를 누르면 이 창이 뜬다 — 무엇이 바뀌었는지 폰에서 바로 보려고', 'Tap the version number to open this panel and see what changed'
     ] },
-    { v: 'v260909.1830', d: '9월 9일', t: [
+    { v: 84, d: '9월 9일', t: [
         '드리프트가 차오를 때 화면이 흔들리고 불꽃이 튄다. 다 차면 "최대 충전!"', 'Drift now shakes the screen and throws sparks. "Full charge!" when maxed',
         '터보를 쓰면 차가 걷어차이듯 튀어 나간다. 오래 모을수록 더 세게', 'Turbo kicks the kart forward — the longer you charge, the harder',
         '아이템을 맞히면 "명중!", 맞으면 무엇에 맞았는지 뜬다', '"Hit!" when your item lands, and you see what hit you'
     ] },
-    { v: 'v260909.1040', d: '9월 9일', t: [
+    { v: 83, d: '9월 9일', t: [
         '저장이 망가져도 차가 안 움직이거나 사라지지 않게 (출시 전 점검)', 'A damaged save no longer breaks your kart (pre-release check)',
         '예전 저장의 강화가 반토막 나던 것을 고침', 'Fixed old saves losing half their upgrades'
     ] },
-    { v: 'v260819.1920', d: '8월 19일', t: [
+    { v: 81, d: '8월 19일', t: [
         '광고를 13세 이상 기준으로 바로잡음', 'Ads set to the 13+ standard',
         '앱 크기를 16MB에서 2MB로 줄임', 'App size cut from 16MB to 2MB'
     ] },
-    { v: 'v260815.0800', d: '8월 15일', t: [
+    { v: 79, d: '8월 15일', t: [
         '브레이크 단추 밑에 "후진" 이라고 적어 둠', 'The brake button now says "Reverse" underneath',
         '폰 화면에서 잘리던 곳 네 군데를 고침', 'Fixed four places that were cut off on phone screens'
     ] },
-    { v: 'v260814.1620', d: '8월 14일', t: [
+    { v: 77, d: '8월 14일', t: [
         '강화를 10단계로 잘게 나누고 값을 올림 — 오래 키울 거리가 생기게', 'Upgrades split into 10 steps and priced higher — more to build toward',
         '보통 난이도부터는 내가 실수하면 봇이 기다려 주지 않고 치고 나간다', 'From Normal up, rivals punish your mistakes instead of waiting',
         '아이템이 무슨 일을 하는지 이름표로 보이게', 'Item slots now name what the item does'
     ] },
-    { v: 'v260814.1520', d: '8월 14일', t: [
+    { v: 75, d: '8월 14일', t: [
         '퀴즈: 열한 계통 모두에 교과 지식 문제를 넣음', 'Quiz: knowledge questions added for all eleven systems',
         '퀴즈: 답이 하나로 안 정해지던 "몇 번째" 문제를 없앰', 'Quiz: dropped the "which one is Nth" questions — a loop has no first',
         '퀴즈: 고른 코스의 계통 문제가 나오게', 'Quiz: questions now follow the course you picked'
     ] },
-    { v: 'v260814.1440', d: '8월 14일', t: [
+    { v: 73, d: '8월 14일', t: [
         '난이도를 쉬움·보통·어려움·전설 네 단계로', 'Four difficulties: Easy, Normal, Hard, Legendary',
         '쉬움에서는 굽은 길 앞에서 방향을 알려 준다', 'Easy shows which way the next corner turns',
         '사구체·간·위·이자 코스에 굽이를 넣어 덜 심심하게', 'Added real curves to the Glomerulus, Liver, Stomach and Pancreas courses'
     ] },
-    { v: 'v260813.1530', d: '8월 13일', t: [
+    { v: 71, d: '8월 13일', t: [
         '봇이 실수도 하고 바짝 붙기도 한다 — 혼자 달리기가 아니라 레이스가 되게', 'Rivals slip and press close — a race, not a solo lap',
         '엔진 소리를 합성음으로 새로 만들고, 브레이크 소리를 키움', 'Engine sound rebuilt from synthesis; brake made louder'
     ] }
@@ -9984,7 +9984,7 @@ refreshFsUI();
 
 function showWhatsNew() {
     el('wnList').innerHTML = CHANGES.map((c, i) =>
-        '<div class="wnV">' + c.v + '<span class="wnD">' + T(c.d) +
+        '<div class="wnV">' + T('버전') + ' ' + c.v + '<span class="wnD">' + T(c.d) +
         (i === 0 ? ' · ' + T('지금 판') : '') + '</span></div>' +
         c.t.filter((_, j) => j % 2 === (LANG === 'en' ? 1 : 0))
            .map(x => '<div class="wnI">· ' + x + '</div>').join('')
@@ -10015,7 +10015,7 @@ function showDiag(extra) {
     el('diagText').textContent = t;
     el('diag').classList.remove('hidden');
 }
-el('build').textContent = CHANGES[0].v;          // 판 번호는 한 곳에서만 적는다
+el('build').textContent = T('버전') + ' ' + CHANGES[0].v;   // 판 번호는 한 곳에서만 적는다
 {
     let hold = 0, long = false;
     const dn = () => { long = false; hold = setTimeout(() => { long = true; showDiag(''); }, 700); };
