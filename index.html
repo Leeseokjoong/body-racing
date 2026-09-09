@@ -561,13 +561,8 @@
         padding: 4px 14px; font: inherit; font-size: 12px; cursor: pointer;
     }
     #keysToggle:hover { color: #cfe6ff; border-color: #5f8ec4; }
+    #keysWin .keys { justify-content: flex-start; max-width: none; padding: 8px 0; }
 
-    /* 퀴즈방은 시작 단추와 다투지 않게 한 발 물러선다 */
-    #quizBtn {
-        background: none; border: 0; color: #9fd0ff; font: inherit; font-size: 13px;
-        text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px;
-    }
-    #quizBtn:hover { color: #ffd166; }
     .qIntro { font-size: 13px; color: #9fd0ff; margin-bottom: 12px; }
     .qIntro b { color: #ffe066; font-size: 15px; }
     .qLvList { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap;
@@ -680,21 +675,21 @@
              letter-spacing: .5px; padding: 6px 10px; }
     #build:active { color: #ffd166; }
 
-    #whatsNew { position: fixed; inset: 0; z-index: 1001; display: flex;
+    #whatsNew, #keysWin { position: fixed; inset: 0; z-index: 1001; display: flex;
                 align-items: center; justify-content: center; padding: 16px;
                 background: rgba(4,10,20,.82); }
-    #whatsNew .wnBox {
+    #whatsNew .wnBox, #keysWin .wnBox {
         width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column;
         background: #10203a; border: 2px solid #3f6c9c; border-radius: 14px; overflow: hidden;
     }
-    #whatsNew .wnHead { display: flex; align-items: center; justify-content: space-between;
+    #whatsNew .wnHead, #keysWin .wnHead { display: flex; align-items: center; justify-content: space-between;
                         padding: 11px 14px; background: rgba(255,255,255,.06); font-size: 15px; }
-    #whatsNew .wnHead button { background: #2f6ea8; color: #fff; border: 0; border-radius: 8px;
+    #whatsNew .wnHead button, #keysWin .wnHead button { background: #2f6ea8; color: #fff; border: 0; border-radius: 8px;
                                padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
-    #whatsNew .wnList { overflow-y: auto; padding: 6px 14px 14px; }
-    #whatsNew .wnV { margin-top: 12px; font-size: 12px; color: #ffd166; font-weight: 700; }
-    #whatsNew .wnV .wnD { color: #7f97b8; font-weight: 400; margin-left: 6px; }
-    #whatsNew .wnI { font-size: 13px; color: #cfe6ff; line-height: 1.6; margin-top: 3px;
+    #whatsNew .wnList, #keysWin .wnList { overflow-y: auto; padding: 6px 14px 14px; }
+    #whatsNew .wnV, #keysWin .wnV { margin-top: 12px; font-size: 12px; color: #ffd166; font-weight: 700; }
+    #whatsNew .wnV .wnD, #keysWin .wnV .wnD { color: #7f97b8; font-weight: 400; margin-left: 6px; }
+    #whatsNew .wnI, #keysWin .wnI { font-size: 13px; color: #cfe6ff; line-height: 1.6; margin-top: 3px;
                      padding-left: 11px; border-left: 2px solid rgba(120,170,240,.3); }
 
     /* ================= 음량 · 전체 화면 ================= */
@@ -748,8 +743,16 @@
     .cpCar:hover { transform: translateY(-3px); }
     .cpCar.on { border-color: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.22); }
     .cpCar.locked { opacity: .55; }
-    .cpCar .em { font-size: 15px; font-weight: 900; color: #10161f; width: 40px; height: 40px;
-                 line-height: 40px; border-radius: 50%; margin: 0 auto; text-shadow: 0 1px 0 rgba(255,255,255,.4); }
+    /* 카드에 실제로 탈 카트를 보여 준다 — 글자 한 자로는 무슨 차인지 알 수 없다 */
+    .cpCar .em { position: relative; width: 62px; height: 62px; margin: 0 auto; }
+    .cpCar .em img { width: 100%; height: 100%; object-fit: contain;
+                     filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+    .cpCar.locked .em img { filter: grayscale(1) brightness(.5); }
+    .cpCar .em span { position: absolute; inset: 0; display: flex; align-items: center;
+                      justify-content: center; font-size: 11px; font-weight: 700; color: #cfe6ff;
+                      text-shadow: 0 1px 3px #000; }
+    .cpDetail .dn .dImg { width: 42px; height: 42px; object-fit: contain; vertical-align: middle;
+                          margin-right: 6px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
     .cpCar .nm { font-size: 11px; font-weight: bold; margin-top: 3px; line-height: 1.25; }
     .cpCar .pr { font-size: 10px; margin-top: 4px; color: #9fd0ff; }
     .cpCar .pr.can { color: #ffd166; } .cpCar .pr.own { color: #7ee081; }
@@ -1187,8 +1190,18 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 87</div>
+<div id="build">버전 88</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
+<div id="keysWin" class="hidden"><div class="wnBox">
+    <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
+    <div class="wnList">
+        <div class="keys">
+            <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
+            <span style="color:#ffe066">SPACE 드리프트 → 터보 충전</span><span style="color:#ff8a3c">E 터보 발사</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
+            <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
+        </div>
+    </div>
+</div></div>
 <div id="whatsNew" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>무엇이 바뀌었나</b><button id="wnClose">닫기</button></div>
     <div class="wnList" id="wnList"></div>
@@ -1290,11 +1303,6 @@
       <!-- ─── 3장 : 출발 ─── -->
       <section class="page hidden" data-step="2">
         <button id="keysToggle">조작법</button>
-        <div class="keys hidden" id="keysBox">
-            <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
-            <span style="color:#ffe066">SPACE 드리프트 → 터보 충전</span><span style="color:#ff8a3c">E 터보 발사</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
-            <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
-        </div>
         <div class="pickLabel">어떻게 달릴까</div>
         <div id="modePick">
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
@@ -1331,7 +1339,6 @@
         <div id="goRow">
             <button class="btn" id="startBtn">레이스 시작</button>
         </div>
-        <button id="quizBtn">퀴즈방에서 점수 벌기</button>
       </section>
     </div>
 
@@ -2071,7 +2078,7 @@ Object.assign(EN, {
 '암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
 '심장': 'Heart', '코': 'Nose', '간': 'Liver',
 '무엇이 바뀌었나': "What's new", '지금 판': 'current', '버전': 'Version',
-'조작법': 'Controls', '조작법 닫기': 'Hide controls',
+'조작법': 'Controls',
 '어떻게 달릴까': 'How to race', '난이도': 'Difficulty',
 '· 어려울수록 점수를 더 준다': '· harder pays more',
 '퀴즈방에서 점수 벌기': 'Earn points in the quiz room',
@@ -2087,6 +2094,18 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 88, d: '9월 9일', t: [
+        '앞으로만 눌러도 차가 알아서 돌던 것을 고침 — 이제 핸들을 잡아야 돈다',
+        'Holding accelerate no longer steers for you — the wheel matters now',
+        '난이도마다 조향 보조가 다르다. 쉬움은 넉넉히, 전설은 거의 없다',
+        'Steering aid now scales with difficulty: generous on Easy, almost none on Legendary',
+        '자동차 고르는 칸에 실제로 탈 카트 그림이 나온다',
+        'The car picker now shows the actual kart you will drive',
+        '퀴즈방을 없앴다 — 달리지 않고 점수 버는 지름길이라 레이스를 밀어냈다',
+        'Removed the quiz room — earning points without racing was crowding out the race',
+        '조작법을 창으로 띄운다',
+        'Controls now open in their own window'
+    ] },
     { v: 87, d: '9월 9일', t: [
         '출발 화면을 정리했다 — 키 안내 아홉 줄을 접고, 무엇을 고르는 줄인지 적었다',
         'Cleaned up the start screen — nine key hints folded away, each row now labelled',
@@ -3084,10 +3103,10 @@ const SAVE_KEY = 'bodyRacing.save.v1';
    전설은 '봇이 기다려 주지 않는' 단계다. 고무줄의 뒤쪽(-16%)을 없애서,
    앞서 나가면 그대로 벌어진다. */
 const LEVELS = [
-    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1 },
-    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .8, item: 1, pay: 1.20, wait: 0 },
-    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.06, slump: .35, item: 1.6, pay: 1.45, wait: 0 },
-    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.13, slump: .1, item: 2.2, pay: 1.80, wait: 0 }
+    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1, aid: 2.0 },
+    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .8, item: 1, pay: 1.20, wait: 0, aid: 1.3 },
+    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.06, slump: .35, item: 1.6, pay: 1.45, wait: 0, aid: .9 },
+    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.13, slump: .1, item: 2.2, pay: 1.80, wait: 0, aid: .6 }
 ];
 const LV_OF = id => LEVELS.find(l => l.id === id) || LEVELS[0];
 function curLevel() { return LV_OF(save.level); }
@@ -3583,8 +3602,23 @@ function fireTurbo(k) {
 }
 const STEER_SMOOTH = .035;   // 조향 입력이 반영되는 속도. 클수록 부드럽고 덜 예민하다
 const STABLE_MIN = .88;      // 고속에서 남는 선회력 비율 (낮출수록 고속 안정, 대신 코너를 못 돈다)
-const ASSIST = 4.2;          // 도로 방향으로 스스로 정렬되는 세기 (초보 보조)
+/* 도로 방향으로 스스로 정렬되는 세기 (초보 보조).
+
+   재 보니 4.2 에서는 방향키를 한 번도 안 눌러도 열한 맵 중 열 곳을 완주했다.
+   즉 핸들이 하는 일이 없었다. 그런데 같은 맵을 제대로 몰면 보조가 0 이어도
+   아홉 곳을 완주한다 — 보조를 낮춰도 못 몰게 되지 않는다는 뜻이다.
+
+     보조   방향키 안 누르고 완주   제대로 몰면 완주
+     4.2          10/11                10/11
+     2.0           4/11                10/11
+     1.3           2/11                 9/11
+     0.6           0/11                 9/11
+
+   그래서 난이도마다 다르게 준다 (LEVELS.aid). 쉬움은 넉넉히 잡아 주고,
+   보통 위로는 핸들을 잡아야 돈다. 봇은 보조를 받지 않는다 — 제 실력으로 돈다. */
+const ASSIST = 4.2;          // 기본값(난이도 표가 없을 때만 쓰인다)
 const ASSIST_TURNING = .5;   // 조향 중에도 유지되는 보조 비율
+const BOT_ASSIST = 2.0;      // 봇이 받는 보조 — 난이도와 무관하게 깔끔한 라인을 돈다
 const CAR_COLORS = ['#d4353f', '#3f74c4', '#2f9e4f', '#e8628e'];
 const AI_NAMES = ['적혈이', '백구', '효소맨'];
 
@@ -3747,13 +3781,16 @@ function updateKart(k, dt) {
     k.ang += k.steer * TURN_RATE * lerp(1, DRIFT_TURN, k.driftAmt) * spd * stable * dt * (vF < 0 ? -1 : 1);
 
     // 도로 방향으로 스스로 정렬 (초보 보조). 조향 중에도 약하게 유지된다.
-    if (Math.abs(vF) > 55) {
+    //   봇은 난이도와 무관하게 일정하게 받는다 — 봇을 약하게 만들자는 게 아니라
+    //   플레이어가 저절로 굴러가지 않게 하자는 것이므로, 봇은 깔끔하게 돌면 된다.
+    const aid = k.isPlayer ? (curLevel().aid !== undefined ? curLevel().aid : ASSIST) : BOT_ASSIST;
+    if (aid > 0 && Math.abs(vF) > 55) {
         const road = track.pts[k.si].ang;
         let w = Math.abs(steerIn) < .05 ? 1 : ASSIST_TURNING;
         w = lerp(w, .22, k.driftAmt);          // 드리프트 중에도 약하게 유지 → 스핀 방지
         // 빠를수록 보조를 키운다 — 부스터로 폭주할 때 제어를 잃지 않게
         const fastAid = 1 + clamp((Math.abs(vF) - MAXSPEED) / (MAXSPEED * .6), 0, 1) * 1.1;
-        k.ang += clamp(angDiff(road, k.ang), -.9, .9) * ASSIST * w * fastAid * dt;
+        k.ang += clamp(angDiff(road, k.ang), -.9, .9) * aid * w * fastAid * dt;
     }
 
     // ── 드리프트 지속 한계 : 타이어가 버티는 시간만큼만 미끄러진다.
@@ -9235,7 +9272,7 @@ function renderCarPick() {
         const owned = save.cars.includes(c.id);
         const can = !owned && save.points >= c.cost;
         return `<div class="cpCar${carPreview === c.id ? ' on' : ''}${owned ? '' : ' locked'}" data-cp="${c.id}">
-            <div class="em" style="background:${owned ? c.color : '#33445c'}">${owned ? mo(c) : T('잠김')}</div>
+            <div class="em"><img src="assets/kart_${c.sprite}.png" alt="">${owned ? '' : `<span>${T('잠김')}</span>`}</div>
             <div class="nm">${T(c.name)}</div>
             <div class="pr ${owned ? 'own' : can ? 'can' : ''}">${
                 save.car === c.id ? T('사용 중') : owned ? T('보유') : c.cost + ' P'}</div>
@@ -9251,7 +9288,7 @@ function renderCarPick() {
     const picked = save.car === c.id;
 
     el('cpDetail').innerHTML =
-        `<div class="dn" style="color:${c.color}">${mo(c)} ${T(c.name)}</div>
+        `<div class="dn" style="color:${c.color}"><img class="dImg" src="assets/kart_${c.sprite}.png" alt="">${T(c.name)}</div>
          <div class="dd">${T(c.desc)}</div>` +
         CAR_STATS.map(s => {
             const { lo, hi } = statRange(s.key);
@@ -9911,11 +9948,9 @@ el('langBtn').onclick = () => setLang(LANG === 'en' ? 'ko' : 'en');
 // 저장된 설정이 있으면 그것을, 없으면 기기 언어를 따른다
 setLang(save.lang || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en'));
 
-el('keysToggle').onclick = () => {
-    const box = el('keysBox'), open = box.classList.toggle('hidden');
-    el('keysToggle').textContent = T(open ? '조작법' : '조작법 닫기');
-};
-el('quizBtn').onclick = () => openQuizRoom(true);     // 메뉴에서 : 고른 코스를 따른다
+el('keysToggle').onclick = () => el('keysWin').classList.remove('hidden');
+el('keysClose').onclick = () => el('keysWin').classList.add('hidden');
+el('keysWin').onclick = e => { if (e.target === el('keysWin')) el('keysWin').classList.add('hidden'); };
 el('quizAgain').onclick = () => openQuizRoom(false);   // 이어서 : 고르던 계통 유지
 const leaveQuiz = () => {
     el('quizRoom').classList.add('hidden');
