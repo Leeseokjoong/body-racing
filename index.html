@@ -550,6 +550,24 @@
         font-family: inherit; cursor: pointer;
     }
     #goRow { display: flex; gap: 12px; align-items: center; justify-content: center; }
+
+    /* 고르는 줄이 서로 다른 물음임을 알아보게 하는 작은 머리말 */
+    .pickLabel { font-size: 12px; color: #7f97b8; letter-spacing: .5px; margin-bottom: -2px; }
+    .pickLabel .pl2 { color: #5f7796; }
+
+    /* 조작법은 접어 둔다 — 한 번 읽고 마는 참고가 고르는 자리를 밀어냈다 */
+    #keysToggle {
+        background: none; border: 1px solid #35557c; color: #7f97b8; border-radius: 999px;
+        padding: 4px 14px; font: inherit; font-size: 12px; cursor: pointer;
+    }
+    #keysToggle:hover { color: #cfe6ff; border-color: #5f8ec4; }
+
+    /* 퀴즈방은 시작 단추와 다투지 않게 한 발 물러선다 */
+    #quizBtn {
+        background: none; border: 0; color: #9fd0ff; font: inherit; font-size: 13px;
+        text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px;
+    }
+    #quizBtn:hover { color: #ffd166; }
     .qIntro { font-size: 13px; color: #9fd0ff; margin-bottom: 12px; }
     .qIntro b { color: #ffe066; font-size: 15px; }
     .qLvList { display: flex; gap: 9px; justify-content: center; flex-wrap: wrap;
@@ -821,7 +839,8 @@
         .gRow .gl { width: 46px; } .gRow .gt { height: 8px; }
         .cpBuy { margin-top: 6px; padding: 6px; font-size: 11px; }
 
-        .keys { display: none; }                    /* 터치에서는 키 안내가 의미 없다 */
+        .keys, #keysToggle { display: none; }       /* 터치에서는 키 안내가 의미 없다 */
+        .pickLabel { font-size: 10px; margin-bottom: -4px; }
         #modePick .modeBtn { padding: 7px 16px; font-size: 13px; }
         .btn { padding: 9px 26px; font-size: 16px; }
     }
@@ -875,7 +894,12 @@
                animation: pgIn .2s ease-out; }
 @keyframes pgIn { from { opacity: 0; transform: translateY(10px); } }
 
-#stepNav { display: flex; gap: 10px; align-items: center; }
+/* 세 칸 격자 : 양옆 칸의 너비가 같으므로 '다음' 은 늘 화면 한가운데에 온다.
+   예전에는 flex 로 가운데 정렬했는데, 숨긴 '이전' 이 자리를 그대로 차지해
+   '다음' 이 그 절반만큼 오른쪽으로 밀려 있었다. */
+#stepNav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; }
+#stepNav #stepPrev { justify-self: end; margin-right: 10px; }
+#stepNav #stepNext { grid-column: 2; }
 #stepNav .btn.ghost { visibility: hidden; }
 
 /* ---- 코스 고르기 ---- */
@@ -1163,7 +1187,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 86</div>
+<div id="build">버전 87</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="whatsNew" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>무엇이 바뀌었나</b><button id="wnClose">닫기</button></div>
@@ -1229,7 +1253,7 @@
     <div class="titleSign"><div class="titleBoard">
         <div class="title">오장육부 레이싱<span class="titleEn">ORGAN RACING</span></div>
     </div></div>
-    <div class="subtitle">몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성됩니다.</div>
+    <div class="subtitle">몸속 기관을 달려라!</div>
 
     <!-- 셋팅은 한 장에 하나씩. 좌우로 넘긴다. -->
     <div id="steps">
@@ -1265,11 +1289,13 @@
 
       <!-- ─── 3장 : 출발 ─── -->
       <section class="page hidden" data-step="2">
-        <div class="keys">
+        <button id="keysToggle">조작법</button>
+        <div class="keys hidden" id="keysBox">
             <span>W 가속</span><span>S 브레이크 · 계속 누르면 후진</span><span>A / D 조향</span>
             <span style="color:#ffe066">SPACE 드리프트 → 터보 충전</span><span style="color:#ff8a3c">E 터보 발사</span><span>ENTER 아이템</span><span style="color:#7ee081">느려졌을 때 드리프트하면 탈출!</span>
             <span>휠 · 손가락 두 개 = 줌</span><span>M 전체 맵</span>
         </div>
+        <div class="pickLabel">어떻게 달릴까</div>
         <div id="modePick">
         <button class="modeBtn sel" data-mode="1">혼자 하기</button>
         <button class="modeBtn" data-mode="3">타임 어택</button>
@@ -1277,6 +1303,7 @@
     </div>
     <!-- 난이도. 혼자 달릴 때만 뜻이 있다 (타임 어택·온라인에는 봇이 없다) -->
     <div id="lvPick">
+        <div class="pickLabel">난이도 <span class="pl2">· 어려울수록 점수를 더 준다</span></div>
         <div id="lvBtns"></div>
         <div id="lvNote"></div>
     </div>
@@ -1303,8 +1330,8 @@
     </div>
         <div id="goRow">
             <button class="btn" id="startBtn">레이스 시작</button>
-            <button class="btn small" id="quizBtn">퀴즈방</button>
         </div>
+        <button id="quizBtn">퀴즈방에서 점수 벌기</button>
       </section>
     </div>
 
@@ -2044,6 +2071,10 @@ Object.assign(EN, {
 '암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
 '심장': 'Heart', '코': 'Nose', '간': 'Liver',
 '무엇이 바뀌었나': "What's new", '지금 판': 'current', '버전': 'Version',
+'조작법': 'Controls', '조작법 닫기': 'Hide controls',
+'어떻게 달릴까': 'How to race', '난이도': 'Difficulty',
+'· 어려울수록 점수를 더 준다': '· harder pays more',
+'퀴즈방에서 점수 벌기': 'Earn points in the quiz room',
 '9월 9일': 'Sep 9', '8월 19일': 'Aug 19', '8월 15일': 'Aug 15',
 '8월 14일': 'Aug 14', '8월 13일': 'Aug 13',
 '요소는 콩팥에서 걸러져 오줌으로 나갑니다.': 'Urea is filtered by the kidney and leaves as urine.'
@@ -2056,6 +2087,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 87, d: '9월 9일', t: [
+        '출발 화면을 정리했다 — 키 안내 아홉 줄을 접고, 무엇을 고르는 줄인지 적었다',
+        'Cleaned up the start screen — nine key hints folded away, each row now labelled',
+        "'다음' 단추가 가운데에서 오른쪽으로 밀려 있던 것을 고침",
+        "Fixed the 'Next' button sitting right of centre"
+    ] },
     { v: 86, d: '9월 9일', t: [
         '판 번호를 누르면 이 창이 뜬다 — 무엇이 바뀌었는지 폰에서 바로 보려고', 'Tap the version number to open this panel and see what changed'
     ] },
@@ -9874,6 +9911,10 @@ el('langBtn').onclick = () => setLang(LANG === 'en' ? 'ko' : 'en');
 // 저장된 설정이 있으면 그것을, 없으면 기기 언어를 따른다
 setLang(save.lang || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en'));
 
+el('keysToggle').onclick = () => {
+    const box = el('keysBox'), open = box.classList.toggle('hidden');
+    el('keysToggle').textContent = T(open ? '조작법' : '조작법 닫기');
+};
 el('quizBtn').onclick = () => openQuizRoom(true);     // 메뉴에서 : 고른 코스를 따른다
 el('quizAgain').onclick = () => openQuizRoom(false);   // 이어서 : 고르던 계통 유지
 const leaveQuiz = () => {
