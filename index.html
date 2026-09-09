@@ -1143,7 +1143,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260814.0940</div>
+<div id="build">v260909.1130</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -2978,7 +2978,8 @@ const LV_OF = id => LEVELS.find(l => l.id === id) || LEVELS[0];
 function curLevel() { return LV_OF(save.level); }
 
 let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
-             cars: ['rbc'], car: 'rbc', vol: .7, lang: null, level: 'easy' };
+             cars: ['rbc'], car: 'rbc', vol: .7, lang: null, level: 'easy',
+             lv10: true };   // 강화가 10단계 기준이라는 표시 (위 loadSave 참고)
 
 function loadSave() {
     try {
@@ -2987,6 +2988,18 @@ function loadSave() {
             const d = JSON.parse(raw);
             save.points = d.points || 0;
             save.lv = Object.assign({ speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, d.lv || {});
+            /* 강화를 5단계에서 10단계로 잘게 나누면서 단계당 상승폭을 절반으로 줄였다.
+               새로 시작하는 사람은 10단계까지 올리면 예전 5단계와 같은 성능이 된다.
+
+               그런데 이미 올려 둔 저장은 단계 숫자가 그대로 남아 있어서,
+               절반이 된 상승폭으로 다시 계산되어 강화 효과가 반토막 났다.
+               (5단계까지 올렸던 사람은 드리프트 지속이 +140% -> +70% 로 떨어졌다.
+                차가 갑자기 달라졌다고 느낀 원인이 이것이다.)
+
+               그래서 한 번만 단계를 두 배로 올려 예전 성능을 그대로 되돌린다.
+               lv10 표시를 남겨 두 번 올리지 않는다. */
+            if (!d.lv10) for (const k in save.lv) save.lv[k] = clamp(save.lv[k] * 2, 0, 10);
+            save.lv10 = true;
             save.best = d.best || {};
             save.cars = Array.isArray(d.cars) && d.cars.length ? d.cars : ['rbc'];
             if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
