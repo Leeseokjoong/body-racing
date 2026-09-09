@@ -1190,7 +1190,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 88</div>
+<div id="build">버전 89</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -1913,6 +1913,18 @@ Object.assign(EN, {
 '적혈구 루키': 'Red Cell Rookie', '혈소판 터프': 'Platelet Tough',
 '백혈구 가드': 'White Cell Guard', '산소 러너': 'Oxygen Runner',
 '신경 스파크': 'Nerve Spark', 'ATP 하이퍼': 'ATP Hyper',
+'인슐린 셔틀': 'Insulin Shuttle', '콜라겐 프레임': 'Collagen Frame',
+'미토콘드리아 코어': 'Mitochondria Core', 'DNA 나선': 'DNA Helix',
+'세포가 쓰는 에너지 그 자체. 어느 코스에서나 잘 달리는 만능 카트.':
+    'The energy a cell actually spends. An all-rounder that suits any course.',
+'혈당을 나르는 호르몬. 부스터가 눈에 띄게 오래갑니다. 터보를 자주 쓰는 사람에게.':
+    'The hormone that carries blood sugar. Its boost lasts noticeably longer — for turbo users.',
+'몸을 지탱하는 단백질. 거의 안 미끄러지고 드리프트를 아주 길게 뭅니다.':
+    'The protein that holds the body together. Barely slips, and holds a drift a very long time.',
+'세포의 발전소. 튀어 나가는 힘이 압도적이지만 접지력을 포기했습니다.':
+    "The cell's power plant. Overwhelming launch, at the cost of grip.",
+'생명의 설계도. 모든 수치가 최고인 마지막 카트입니다.':
+    'The blueprint of life. Top marks across the board — the last kart.',
 '최고 속도': 'Top Speed', '가속력': 'Acceleration', '접지력': 'Grip',
 '드리프트 지속': 'Drift Hold',
 '더 빨리 달립니다': 'Higher top speed', '더 빨리 속도가 붙습니다': 'Faster acceleration',
@@ -2094,6 +2106,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 89, d: '9월 9일', t: [
+        '자동차 넷을 더했다 — 인슐린·콜라겐·미토콘드리아·DNA',
+        'Four new karts: Insulin, Collagen, Mitochondria and DNA',
+        '위쪽 차들은 더 센 차가 아니라 다른 차다. 코스에 맞춰 갈아탄다',
+        'The top karts are different, not simply stronger — swap them to suit the course',
+        '전부 사기까지 약 120~180판 (예전엔 70~110판)',
+        'Buying everything now takes about 120-180 races (was 70-110)'
+    ] },
     { v: 88, d: '9월 9일', t: [
         '앞으로만 눌러도 차가 알아서 돌던 것을 고침 — 이제 핸들을 잡아야 돈다',
         'Holding accelerate no longer steers for you — the wheel matters now',
@@ -3080,7 +3100,30 @@ const CARS = [
     { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: 'A', motifEn: 'A', color: '#ffd166', sprite: 'green', cost: 2200,
       voice: 'prime', pitch: 1.08, skid: 2, skidPitch: 1.05,   // 전부 최고. 밝으면서 매끈하다
       speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
-      desc: '세포가 쓰는 에너지 그 자체. 모든 수치가 최고인 마지막 카트입니다.' }
+      desc: '세포가 쓰는 에너지 그 자체. 어느 코스에서나 잘 달리는 만능 카트.' },
+
+    /* ── 여기부터는 한 가지가 뾰족한 차들 ──────────────────────────────
+       ATP 위로 그냥 더 센 차를 얹으면 마지막 한 대만 타게 된다.
+       그러면 나머지는 사자마자 창고행이라, 살 이유도 한 번뿐이다.
+       그래서 위쪽은 '더 센 차' 가 아니라 '다른 차' 로 만든다 —
+       미끄러운 코스에는 콜라겐, 직선이 긴 코스에는 미토콘드리아처럼
+       코스마다 갈아타는 재미가 생긴다. 진짜 만능은 맨 마지막 하나뿐이다. */
+    { id: 'insulin', hold: 1.10, name: '인슐린 셔틀', motif: '인', motifEn: 'I', color: '#5fe0c0', sprite: 'green', cost: 3200,
+      voice: 'light', pitch: 1.10, skid: 4, skidPitch: 1.06,
+      speed: 1.12, accel: 1.14, grip: 1.02, boost: 1.42,
+      desc: '혈당을 나르는 호르몬. 부스터가 눈에 띄게 오래갑니다. 터보를 자주 쓰는 사람에게.' },
+    { id: 'collagen', hold: 1.34, name: '콜라겐 프레임', motif: '콜', motifEn: 'C', color: '#e8d5a8', sprite: 'red', cost: 4400,
+      voice: 'heavy', pitch: 0.86, skid: 2, skidPitch: 0.92,
+      speed: 1.10, accel: 1.08, grip: 1.40, boost: 1.06,
+      desc: '몸을 지탱하는 단백질. 거의 안 미끄러지고 드리프트를 아주 길게 뭅니다.' },
+    { id: 'mito', hold: 1.12, name: '미토콘드리아 코어', motif: '미', motifEn: 'M', color: '#ff8a3c', sprite: 'pink', cost: 6000,
+      voice: 'sharp', pitch: 1.18, skid: 3, skidPitch: 1.14,
+      speed: 1.26, accel: 1.44, grip: 1.00, boost: 1.18,
+      desc: '세포의 발전소. 튀어 나가는 힘이 압도적이지만 접지력을 포기했습니다.' },
+    { id: 'dna', hold: 1.30, name: 'DNA 나선', motif: 'D', motifEn: 'D', color: '#9fd0ff', sprite: 'blue', cost: 8500,
+      voice: 'prime', pitch: 1.12, skid: 1, skidPitch: 1.08,
+      speed: 1.34, accel: 1.30, grip: 1.24, boost: 1.32,
+      desc: '생명의 설계도. 모든 수치가 최고인 마지막 카트입니다.' }
 ];
 const carById = id => CARS.find(c => c.id === id) || CARS[0];
 /* 카트 표식 한 글자도 언어를 따른다 */
