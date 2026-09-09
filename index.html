@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 93</div>
+<div id="build">버전 95</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2143,6 +2143,22 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 95, d: '9월 10일', t: [
+        '소장을 다섯 줄로 늘렸다 — 안내 그림보다 더 길고 구불구불하게',
+        'The small intestine is now five winding rows — longer than the guide map',
+        '소화계 한 바퀴가 61초에서 108초로. 대신 2바퀴로 (한 판 216초)',
+        'A digestive lap went from 61s to 108s, so it is now 2 laps (216s a race)',
+        '개인정보처리방침에서 개발자 이름을 뺐다',
+        "Removed the developer's name from the privacy policy"
+    ] },
+    { v: 94, d: '9월 10일', t: [
+        '소화계·배설계·신경계를 훨씬 길고 급하게 — 급커브가 3~4%에서 24~42%로',
+        'Digestive, urinary and nervous are far longer and tighter — hairpins up from 3-4% to 24-42%',
+        '판 시간이 107~145초에서 184~216초로 (순환계가 191초)',
+        'A race now runs 184-216s instead of 107-145s (circulatory is 191s)',
+        '굽이마다 뜻이 있다 — 뇌주름, 소장 융털, 잘록창자 팽대, 콩팥 피라미드',
+        'Every bend means something — brain gyri, intestinal villi, colon haustra, kidney pyramids'
+    ] },
     { v: 93, d: '9월 9일', t: [
         '소화계·배설계·신경계 트랙을 그림 지도대로 다시 짰다',
         'Digestive, urinary and nervous tracks rebuilt to match their illustrated maps',
