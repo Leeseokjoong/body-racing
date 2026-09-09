@@ -1143,7 +1143,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">v260909.1450</div>
+<div id="build">v260909.1830</div>
 
 <div id="touch">
     <!-- 왼손 = 조향, 오른손 = 액션. 게임패드의 관습 그대로다.
@@ -1526,6 +1526,8 @@ const EN = {
 // ── 결과
 '완주!': 'Finished!', '1위로 완주!': '1st place!', '보상': 'Rewards',
 '순위': 'Rank', '기록': 'Time', '최고 속도': 'Top speed', '최고 기록': 'Best',
+'최대 충전!': 'MAX CHARGE!',
+'명중!': 'HIT!', '붙잡았다!': 'GRABBED!',
 '후진': 'Reverse',
 '몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성됩니다.':
     'Race through a living body! Every course is built from how that system actually flows.',
@@ -3457,11 +3459,13 @@ function fireTurbo(k) {
     k.turboFiredAt = raceTime;                           // 발사대 타이밍 판정에 쓰인다
     if (k.air > 0) { boostJump(k); return; }             // 하늘에서는 그대로 추진력이 된다
     if (k.isPlayer) {
-        sfxBoost(); buzz(22 + q * 42);
-        cam.shake = 6 + q * 10; cam.kick = .7 + q * .9;
-        cam.flash = Math.max(cam.flash || 0, q * .5);
+        /* 터지는 순간. 이 게임에서 가장 시원해야 하는 한 순간이다.
+           흔들림·밀림·번쩍임·연기를 한꺼번에 올리고, 속도선도 같이 뻗게 한다. */
+        sfxBoost(); buzz(34 + q * 60);
+        cam.shake = 11 + q * 17; cam.kick = 1.2 + q * 1.5;
+        cam.flash = Math.max(cam.flash || 0, .22 + q * .55);
         popup(k.x, k.y, q > .78 ? '슈퍼 터보!!' : '터보!', q > .78 ? '#ff5a2c' : '#ff8a3c');
-        for (let i = 0; i < 6 + q * 10; i++) addDriftSmoke(k);
+        for (let i = 0; i < 12 + q * 18; i++) addDriftSmoke(k);
     }
 }
 const STEER_SMOOTH = .035;   // 조향 입력이 반영되는 속도. 클수록 부드럽고 덜 예민하다
@@ -3671,11 +3675,24 @@ function updateKart(k, dt) {
             const stage = k.driftCharge >= 78 ? 3 : k.driftCharge >= 45 ? 2 : k.driftCharge >= 18 ? 1 : 0;
             if (stage > (k.driftStage || 0)) {
                 k.driftStage = stage;
+                /* 단이 올라가는 순간을 확실히 알린다.
+                   예전에는 삐 소리 하나와 흔들림 2~6 뿐이라 '차오르고 있다' 는 느낌이 약했다.
+                   이제 단마다 흔들림·번쩍임·불꽃이 함께 커진다 — 3단은 화면이 확 물든다. */
                 playBeep(700 + stage * 260, .05);
-                cam.shake = Math.max(cam.shake, 2 + stage * 1.4);
+                cam.shake = Math.max(cam.shake, 4 + stage * 3.2);
+                cam.kick = Math.max(cam.kick || 0, .12 + stage * .18);
+                cam.flash = Math.max(cam.flash || 0, stage * .12);
+                buzz(8 + stage * 10);
+                for (let i = 0; i < stage * 3; i++) addDriftSmoke(k);
+                if (stage >= 3) popup(k.x, k.y, T('최대 충전!'), '#ff5a2c');
             }
-            // 한계 직전 : 화면이 떨려 '지금이 최대' 라고 알려 준다
-            if (holdMax - k.driftHold < .28) cam.shake = Math.max(cam.shake, 4);
+            /* 한계 직전 : 화면이 계속 떨려 '지금 놓아라' 를 몸으로 알린다.
+               떨림을 시간에 따라 흔들면 '버티고 있다' 는 긴장이 생긴다. */
+            if (holdMax - k.driftHold < .34) {
+                cam.shake = Math.max(cam.shake, 7 + Math.sin(raceTime * 42) * 3);
+            }
+            // 3단으로 물고 있는 동안에는 계속 불꽃이 튄다
+            if (stage >= 3 && Math.random() < .5) addDriftSmoke(k);
         }
     } else if (k.driftCharge > 0) {
         // ── 드리프트를 놓으면 그 자리에서 터지지 않고 '터보'로 쌓인다.
@@ -3686,8 +3703,13 @@ function updateKart(k, dt) {
             if (k.turbo.length < TURBO_MAX) k.turbo.push(q);
             else k.turbo[TURBO_MAX - 1] = Math.max(k.turbo[TURBO_MAX - 1], q);   // 꽉 차면 가장 좋은 것만 남긴다
             if (k.isPlayer) {
-                sfxSkid(.4); buzz(14 + q * 16);
-                cam.shake = 3 + q * 4;
+                /* 모은 것을 손에 쥐는 순간. 여기서 '해냈다' 가 느껴져야
+                   다음 코너에서도 끝까지 물게 된다. */
+                sfxSkid(.4); buzz(20 + q * 34);
+                cam.shake = 6 + q * 9;
+                cam.kick = Math.max(cam.kick || 0, .3 + q * .5);
+                cam.flash = Math.max(cam.flash || 0, .1 + q * .28);
+                for (let i = 0; i < 3 + q * 7; i++) addDriftSmoke(k);
                 k.earned += 8 + Math.round(q * 10);
                 popup(k.x, k.y, k.turbo.length >= TURBO_MAX ? '터보 가득!' : '터보 충전 ' + k.turbo.length,
                       q > .78 ? '#ff5a2c' : '#ffe066');
@@ -4185,7 +4207,18 @@ function updateSkills(dt) {
             if ((k.x - b.x) ** 2 + (k.y - b.y) ** 2 < 52 * 52) {
                 k.vx *= .25; k.vy *= .25; k.hitTime = 1.1;
                 k.ang += (Math.random() - .5) * .8;
-                popup(k.x, k.y, '혈전 명중!', '#ff8a3c');
+                popup(k.x, k.y, T('명중!'), '#ff8a3c');
+                /* 쏜 사람에게도 알린다.
+
+                   예전에는 맞은 자리에만 팝업이 떴다. 그런데 맞는 상대는 대개 화면 밖에 있어서,
+                   쏜 사람은 아무 일도 안 일어난 것처럼 느꼈다. 그래서 이 아이템이 무엇을
+                   하는 것인지 알 수가 없었다. 이제 맞은 순간 쏜 사람 화면에도 표시가 뜬다. */
+                if (b.owner && b.owner.isPlayer) {
+                    cam.kick = Math.max(cam.kick || 0, .5);
+                    cam.flash = Math.max(cam.flash || 0, .2);
+                    popup(b.owner.x, b.owner.y, T('명중!') + ' ' + T(k.name), '#ff8a3c');
+                    playBeep(1400, .09); buzz(26);
+                }
                 if (k.isPlayer) { cam.shake = 14; showToast('혈전에 막혔다!', '혈관이 막히면 피가 못 흐릅니다. 잠시 멈춰 서요.'); }
                 hit = true; break;
             }
@@ -4246,7 +4279,15 @@ function useItemFor(k) {
         k.turboTime = EFFECT_DUR.turbo;
         // 즉시 밀어 준다 — 아이템을 쓴 순간이 확실히 느껴지게
         k.vx += ca * 170; k.vy += sa * 170;
-        if (k.isPlayer) { cam.kick = 1.6; cam.shake = 12; cam.flash = .8; }
+        /* 이 게임에는 가속이 둘이다 — 드리프트로 모은 터보, 그리고 이 아이템.
+           둘 다 그냥 빨라지기만 하면 무엇 때문에 빨라졌는지 알 수 없다.
+           그래서 아이템 쪽에는 이름을 띄워 준다. */
+        if (k.isPlayer) {
+            cam.kick = 1.6; cam.shake = 12; cam.flash = .8;
+            popup(k.x, k.y, T(it.name), '#ffd166');
+            buzz(40);
+            for (let i = 0; i < 10; i++) addDriftSmoke(k);
+        }
 
     } else if (e === 'wbc') {
         // 순위상 가장 가까운 상대 한 대를 붙잡는다
@@ -4263,6 +4304,11 @@ function useItemFor(k) {
             wbcShots.push({ from: k, to: best, t: 0, life: .55 });
             if (k.isPlayer) {
                 cam.flash = .5; sfxBoost();
+                /* 붙잡은 상대도 대개 화면 밖이다. 내 카트 위에도 표시를 띄워
+                   '내가 방금 무언가를 했다' 가 눈에 보이게 한다. */
+                cam.kick = Math.max(cam.kick || 0, .45);
+                popup(k.x, k.y, T('붙잡았다!') + ' ' + T(best.name), '#e8eef5');
+                playBeep(1250, .1); buzz(24);
                 showToast(best.name + ' 포획!', '백혈구가 세균을 잡아먹듯 붙잡았습니다. 화면 가장자리 화살표로 위치를 확인하세요.');
             }
             if (best.isPlayer) {
