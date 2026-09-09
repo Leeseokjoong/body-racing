@@ -1190,7 +1190,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 90</div>
+<div id="build">버전 91</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2106,6 +2106,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 91, d: '9월 9일', t: [
+        '코스가 허공에 뜬 선이 아니라 땅 위에 놓인 섬이 되었다',
+        'Courses now sit on solid ground instead of floating in space',
+        '맵 고르는 화면에서 코스가 훨씬 알아보기 쉬워졌다',
+        'Courses are much easier to read in the course picker'
+    ] },
     { v: 90, d: '9월 9일', t: [
         '열 대가 전부 다르게 생겼다 — 예전에는 같은 카트에 색만 달랐다',
         'All ten karts now look different — before they were one kart in four colours',
@@ -2196,6 +2202,7 @@ function T(s) {
    ========================================================================== */
 const SYSTEMS = {
     circulatory: {
+        island: 'blob',
         id: 'circulatory', name: '순환계 서킷', laps: 5, closed: true, halfWidth: 178,
         grass: ['#2f7a44', '#1f5c33'], accent: '#e04a4a',
         // 도로 아래에 깔리는 큰 기관 그림 (심장·폐는 제대로 된 모양으로)
@@ -2281,6 +2288,7 @@ const SYSTEMS = {
     },
 
     digestive: {
+        island: 'stomach',
         id: 'digestive', name: '소화계 어드벤처', laps: 5, closed: true, halfWidth: 176,
         grass: ['#3f7f5c', '#28603f'], accent: '#e2687e',
         // 소화는 일방통행이지만, 영양소는 순환한다 :
@@ -2387,6 +2395,7 @@ const SYSTEMS = {
     },
 
     respiratory: {
+        island: 'lungs',
         id: 'respiratory', name: '호흡계 서킷', laps: 4, closed: true, halfWidth: 182,
         grass: ['#2c7484', '#1c5563'], accent: '#8fd0e8',
         // 숨의 길 : 들숨은 갈수록 좁아지고(코→기관→기관지→세기관지),
@@ -2465,6 +2474,7 @@ const SYSTEMS = {
         ]
     },
     nervous: {
+        island: 'brain',
         id: 'nervous', name: '신경계 · 뇌 탐험', laps: 4, closed: true, halfWidth: 178,
         grass: ['#443e78', '#2c2856'], accent: '#ffd166',
         // 자극 → 반응의 닫힌 고리. 대뇌 네 개 엽을 지나며 뇌를 탐험한다.
@@ -2541,6 +2551,7 @@ const SYSTEMS = {
         ]
     },
     urinary: {
+        island: 'kidney',
         id: 'urinary', name: '배설계 코스', laps: 4, closed: true, halfWidth: 178,
         grass: ['#2b7d68', '#1b5c4c'], accent: '#5ec2f5',
         // 오줌은 한 번 나가면 끝이지만, 피는 계속 돈다.
@@ -2620,6 +2631,7 @@ const SYSTEMS = {
     }
     ,
     auditory: {
+        island: 'ear',
         id: 'auditory', name: '청각계 나선', laps: 3, closed: true, halfWidth: 178,
         grass: ['#3a4a68', '#26334a'], accent: '#7fd4ff',
         /* 달팽이관은 관 두 개가 나란히 감겨 올라간다.
@@ -2712,6 +2724,7 @@ const SYSTEMS = {
     }
     ,
     visual: {
+        island: 'eye',
         id: 'visual', name: '시각계 그랑프리', laps: 4, closed: true, halfWidth: 178,
         grass: ['#2e3f5c', '#1f2b40'], accent: '#ffd166',
         /* 안구는 고리다. 빛은 동공을 지나 유리체를 곧장 가로질러 뒤쪽 벽(황반)에
@@ -2796,6 +2809,7 @@ const SYSTEMS = {
     }
     ,
     glomerulus: {
+        island: 'kidney',
         id: 'glomerulus', name: '사구체 미로', laps: 4, closed: true, halfWidth: 178,
         grass: ['#5c3a4a', '#40262f'], accent: '#ff8fa8',
         /* 콩팥 하나에 사구체가 백만 개 있다. 그중 하나를 현미경으로 확대했다.
@@ -2865,6 +2879,7 @@ const SYSTEMS = {
         ]
     }    ,
     liver: {
+        island: 'liver',
         id: 'liver', name: '간 헥사곤', laps: 4, closed: true, halfWidth: 178,
         grass: ['#4a3a2c', '#33271c'], accent: '#e8a33d',
         /* 간을 확대하면 육각형 방(간소엽)이 벌집처럼 붙어 있다.
@@ -2932,6 +2947,7 @@ const SYSTEMS = {
         ]
     }    ,
     stomach: {
+        island: 'stomach',
         id: 'stomach', name: '위 주름 스톰', laps: 5, closed: true, halfWidth: 178,
         grass: ['#5c3040', '#3e1f2b'], accent: '#ff7a8a',
         /* 위는 자루다. 오른쪽 큰굽이에는 추벽이라는 큰 주름이 잡히고,
@@ -2991,6 +3007,7 @@ const SYSTEMS = {
         ]
     }    ,
     pancreas: {
+        island: 'pancreas',
         id: 'pancreas', name: '이자 군도', laps: 4, closed: true, halfWidth: 178,
         grass: ['#3a5c50', '#26403a'], accent: '#7ee0b8',
         /* 이자를 확대하면 소화효소의 바다 위에 랑게르한스섬이 점점이 떠 있다.
@@ -3571,8 +3588,108 @@ function buildTrack(sys) {
 
     const checkpoints = sys.flow.map((node, i) => ({ si: Math.min(nodeIdx[i] * SEG_SAMPLES, N - 1), node, num: i + 1 }));
 
+    const island = buildIsland(sys, pts, bounds);
+
     return { sys, laps: sys.laps, pts, N, total, closed, halfWidth: hw, secs, paths,
-             fullPath, bounds, items, hazards, pads, decor, stands, checkpoints };
+             fullPath, bounds, items, hazards, pads, decor, stands, checkpoints, island };
+}
+
+/* ---- 기관 모양 섬 ----
+
+   문제 : 트랙이 초록 허공에 떠 있어서, 달리는 동안 여기가 어느 기관인지 알 수 없었다.
+          맵 고르는 화면의 선만 봐서는 위인지 사구체인지 구별이 안 됐다.
+
+   생각 : 트랙 선 자체를 기관 모양으로 구부리려 했더니, 레이싱하기 좋은 모양과
+          기관처럼 보이는 모양이 서로 싸운다. 둘 다 잃는다.
+          그래서 갈라 놓는다 — 트랙은 달리기 좋게, 기관 모양은 그 아래 땅이 맡는다.
+
+   방법 : 기관마다 바깥선을 극좌표 함수 r(θ) 로 적어 둔다. 트랙을 다 감싸도록
+          키워서 깔면, 트랙이 어떻게 생겼든 땅은 늘 그 기관 모양이다.
+          나중에 그림으로 갈아 끼울 때도 이 자리를 그대로 쓴다. */
+/* 그림이 아직 없을 때 쓰는 바깥선.
+
+   장기 실루엣을 sin·cos 로 흉내 내 봤지만 기관처럼 보이지 않았다 — 뇌는 별이 되고
+   콩팥은 그냥 원이 됐다. 어설픈 기관 모양은 아무 모양보다 나쁘다. 잘못 배우게 된다.
+   그래서 여기서는 '기관인 척' 하지 않는다. 계통마다 조금씩 다른 둥근 땅만 만들고,
+   진짜 실루엣은 assets/island_<이름>.png 가 오면 그때 맡긴다. */
+/* 손으로 따라 그린 기관 바깥선.
+   가운데를 (0,0) 으로 두고 -1 ~ 1 로 적는다. y 는 아래가 양수(화면과 같다).
+   순서대로 이으면 닫힌 고리가 된다. 나중에 그림에서 정확히 따 오면 이 자리를 갈아 끼운다. */
+const ISLAND_PATHS = {
+    /* 아직 비어 있다.
+
+       좌표를 눈대중으로 찍어 뇌를 그려 봤는데 버섯이 나왔다. 눈금 없이 손으로
+       장기 윤곽을 타이핑하는 것은 안 된다 — 세 번 해 보고 접었다.
+       참고 그림(assets/ref_*.png)이 들어오면 거기서 실루엣을 정확히 따서 여기 적는다.
+       그때까지는 아래 blob 이 대신한다. 어설픈 기관 모양보다 그냥 둥근 땅이 낫다. */
+};
+
+const ISLANDS = {
+    blob: (th, seed) => 1
+        + .085 * Math.sin(3 * th + seed)
+        + .050 * Math.sin(5 * th + seed * 2.3)
+        + .030 * Math.sin(7 * th + seed * .7)
+};
+/* -π ~ π 로 접는다 (가우스 봉우리를 고리 위에서 쓰기 위해) */
+function wrap(a) { a = (a + Math.PI * 3) % (Math.PI * 2) - Math.PI; return a; }
+
+/* 트랙을 전부 품는 크기로 기관 바깥선을 만든다.
+   각 트랙 점이 중심에서 어느 방향·얼마나 먼지 재고, 그 방향의 기관 반지름이
+   그보다 크도록 통째로 키운다. 그래서 트랙이 섬 밖으로 삐져나가지 않는다. */
+function buildIsland(sys, pts, bounds) {
+    // 계통 이름에서 씨앗을 만든다 — 같은 맵은 늘 같은 땅, 다른 맵은 다른 땅
+    let seed = 0;
+    for (let i = 0; i < sys.id.length; i++) seed = (seed * 31 + sys.id.charCodeAt(i)) % 997;
+
+    /* 손으로 그린 바깥선은 다각형 그대로 쓴다.
+
+       처음에는 이것을 r(θ) 표로 바꿨더니 뇌줄기처럼 가늘게 튀어나온 데가 뭉개졌다.
+       각도마다 반지름 하나씩만 적으면, 좁고 긴 돌출부는 이웃 각도에 묻혀 사라진다.
+       그래서 각도를 물으면 그때그때 다각형의 변과 실제로 만나는 자리를 찾는다 —
+       모양이 하나도 안 뭉개진다. */
+    const hand = ISLAND_PATHS[sys.island];
+    let shape;
+    if (hand) {
+        shape = th => {
+            const dx = Math.cos(th), dy = Math.sin(th);
+            let far = 0;
+            for (let i = 0; i < hand.length; i++) {
+                const a2 = hand[i], b2 = hand[(i + 1) % hand.length];
+                const ex = b2[0] - a2[0], ey = b2[1] - a2[1];
+                const den = dx * ey - dy * ex;
+                if (Math.abs(den) < 1e-9) continue;
+                const t = (a2[0] * ey - a2[1] * ex) / den;      // 중심에서 몇 배 나간 자리
+                if (t <= 0) continue;
+                const u = (a2[0] * dy - a2[1] * dx) / den;      // 변 위의 어디쯤
+                if (u < 0 || u > 1) continue;
+                far = Math.max(far, t);                          // 오목한 곳은 바깥 교점을 쓴다
+            }
+            return far || .5;
+        };
+    } else {
+        shape = th => ISLANDS.blob(th, seed / 997 * TAU);
+    }
+    const cx = bounds.x + bounds.w / 2, cy = bounds.y + bounds.h / 2;
+    const M = (sys.halfWidth || 178) * 1.5;          // 길 밖 여유 (관중석·풀밭이 놓일 자리)
+    let k = 0;
+    for (const p of pts) {
+        const th = Math.atan2(p.y - cy, p.x - cx);
+        const need = Math.hypot(p.x - cx, p.y - cy) + M;
+        const r = shape(th);
+        if (r > .05) k = Math.max(k, need / r);
+    }
+    /* 손으로 그린 것은 점을 그대로 키워서 내보낸다.
+       각도마다 다시 뽑으면(아래 else) 좁고 긴 돌출부가 도로 뭉개진다 —
+       뇌줄기가 사라지는 것을 여기서 두 번 겪었다. */
+    if (hand) return hand.map(([x, y]) => ({ x: cx + x * k, y: cy + y * k }));
+
+    const N = 320, out = [];
+    for (let i = 0; i < N; i++) {
+        const th = i / N * TAU;
+        const r = shape(th) * k;
+        out.push({ x: cx + Math.cos(th) * r, y: cy + Math.sin(th) * r });
+    }
+    return out;
 }
 
 /* ============================================================================
@@ -3672,6 +3789,18 @@ const ASSIST_TURNING = .5;   // 조향 중에도 유지되는 보조 비율
 const BOT_ASSIST = 2.0;      // 봇이 받는 보조 — 난이도와 무관하게 깔끔한 라인을 돈다
 const CAR_COLORS = ['#d4353f', '#3f74c4', '#2f9e4f', '#e8628e'];
 const AI_NAMES = ['적혈이', '백구', '효소맨'];
+
+/* ---- 섬(기관 모양 땅) 그림 ----
+   수식으로 만든 바깥선은 '기관처럼' 보이지 않는다. 진짜 실루엣은 그림이라야 한다.
+   그림이 있으면 그림을 깔고, 없으면 수식 모양으로 버틴다 — 기관 그림과 같은 방식이다.
+   그림은 위에서 내려다본 기관 하나, 배경 없이(투명), 정사각형이면 된다. */
+const ISLAND_IMAGES = {};
+['brain', 'stomach', 'kidney', 'liver', 'ear', 'eye', 'lungs', 'pancreas'].forEach(key => {
+    const im = new Image();
+    im.onload = () => { im.ready = true; };
+    im.src = 'assets/island_' + key + '.png';
+    ISLAND_IMAGES[key] = im;
+});
 
 /* ---- 블렌더에서 렌더한 기관 이미지 (없으면 코드 그림으로 자동 대체) ---- */
 const ORGAN_IMAGES = {};
@@ -4697,6 +4826,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     const pu = player && !layerOf(player) && track.pts[player.si].open;
     bridgeAlpha = lerp(bridgeAlpha, pu ? .34 : 1, .12);
 
+    drawIsland(g);
     drawDecor(g, inView);
     drawStands(g, inView);
     drawLandmarks(g, inView);
@@ -5049,6 +5179,59 @@ function drawStands(g, inView) {
 /* ---- 도로 밖 = 서킷 바깥 ----
    몸속처럼 그리면 징그러워진다. 그냥 레이싱장 바깥처럼 둔다 —
    타이어 벽, 모래밭, 잔디 무늬. 코스가 인체인 것만으로 컨셉은 충분히 전해진다. */
+/* 기관 모양 땅을 깐다.
+   흙(아래로 밀어 그린 어두운 판) → 풀 → 가장자리 → 안쪽 그늘 순으로 겹친다.
+   흙이 아래로 조금 나와야 '떠 있는 섬' 처럼 두께가 보인다. */
+function drawIsland(g) {
+    const isl = track.island;
+    if (!isl || !isl.length) return;
+
+    /* 그림이 있으면 그것으로 깐다. 수식 바깥선이 차지하던 자리를 그대로 쓰므로
+       트랙과의 관계(어디까지가 땅인가)는 달라지지 않는다. */
+    const img = ISLAND_IMAGES[track.sys.island];
+    if (img && img.ready) {
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        for (const p of isl) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y);
+                               x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+        const w = x1 - x0, h = y1 - y0, S = Math.max(w, h);
+        const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+        g.save();
+        g.globalAlpha = .35; g.translate(0, 80);        // 흙 그늘
+        g.filter = 'brightness(.25)';
+        g.drawImage(img, cx - S / 2, cy - S / 2, S, S);
+        g.filter = 'none'; g.globalAlpha = 1; g.restore();
+        g.drawImage(img, cx - S / 2, cy - S / 2, S, S);
+        return;
+    }
+
+    const path = new Path2D();
+    isl.forEach((p, i) => i ? path.lineTo(p.x, p.y) : path.moveTo(p.x, p.y));
+    path.closePath();
+
+    const DEEP = 90;                                   // 흙이 보이는 두께
+    g.save();
+    // 흙 : 같은 모양을 아래로 밀어 그린다
+    g.save(); g.translate(0, DEEP);
+    g.fillStyle = '#4a3423'; g.fill(path);
+    g.restore();
+    // 흙 옆면이 아래로 갈수록 어두워지게 한 겹 더
+    g.save(); g.translate(0, DEEP * .5);
+    g.fillStyle = '#5c422c'; g.fill(path);
+    g.restore();
+
+    // 풀 : 계통의 색을 그대로 쓴다 (맵마다 땅 빛이 다르다)
+    const b = track.bounds;
+    const grd = g.createLinearGradient(0, b.y, 0, b.y + b.h);
+    grd.addColorStop(0, track.sys.grass[0]);
+    grd.addColorStop(1, track.sys.grass[1]);
+    g.fillStyle = grd; g.fill(path);
+
+    // 가장자리 : 밝은 테를 둘러 땅의 윤곽을 또렷하게
+    g.strokeStyle = 'rgba(255,255,255,.14)'; g.lineWidth = 10; g.stroke(path);
+    g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 4; g.stroke(path);
+    g.restore();
+}
+
 function drawDecor(g, inView) {
     for (const d of track.decor) {
         if (!inView(d.x, d.y)) continue;
@@ -9374,10 +9557,33 @@ function renderCarPick() {
 }
 
 function drawPreview(cv, sys) {
-    const t = buildTrack(sys), g = cv.getContext('2d'), b = t.bounds;
-    const s = Math.min((cv.width - 24) / b.w, (cv.height - 24) / b.h);
+    const t = buildTrack(sys), g = cv.getContext('2d');
+    /* 섬까지 들어가도록 테두리를 잡는다 — 트랙만 기준으로 잡으면 땅이 잘린다 */
+    let ix0 = 1e9, iy0 = 1e9, ix1 = -1e9, iy1 = -1e9;
+    for (const p of (t.island || [])) {
+        ix0 = Math.min(ix0, p.x); iy0 = Math.min(iy0, p.y);
+        ix1 = Math.max(ix1, p.x); iy1 = Math.max(iy1, p.y);
+    }
+    const b = t.island && t.island.length
+        ? { x: ix0, y: iy0, w: ix1 - ix0, h: iy1 - iy0 } : t.bounds;
+    const s = Math.min((cv.width - 16) / b.w, (cv.height - 16) / b.h);
     const ox = (cv.width - b.w * s) / 2 - b.x * s, oy = (cv.height - b.h * s) / 2 - b.y * s;
     g.lineCap = 'round'; g.lineJoin = 'round';
+
+    /* 땅을 먼저 깐다. 코스가 허공에 뜬 선이 아니라 '섬' 으로 보이게 하는 것이
+       고를 때 가장 크게 달라지는 부분이다. */
+    if (t.island && t.island.length) {
+        const ip = new Path2D();
+        t.island.forEach((p, i) => i ? ip.lineTo(p.x * s + ox, p.y * s + oy)
+                                     : ip.moveTo(p.x * s + ox, p.y * s + oy));
+        ip.closePath();
+        g.save(); g.translate(0, 7); g.fillStyle = '#40301f'; g.fill(ip); g.restore();
+        g.save(); g.translate(0, 3); g.fillStyle = '#584127'; g.fill(ip); g.restore();
+        const gr = g.createLinearGradient(0, b.y * s + oy, 0, (b.y + b.h) * s + oy);
+        gr.addColorStop(0, sys.grass[0]); gr.addColorStop(1, sys.grass[1]);
+        g.fillStyle = gr; g.fill(ip);
+        g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 3; g.stroke(ip);
+    }
     const path = new Path2D();
     path.moveTo(t.pts[0].x * s + ox, t.pts[0].y * s + oy);
     for (let i = 1; i < t.N; i++) path.lineTo(t.pts[i].x * s + ox, t.pts[i].y * s + oy);
