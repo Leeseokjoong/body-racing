@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 102</div>
+<div id="build">버전 103</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2144,6 +2144,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 103, d: '9월 10일', t: [
+        '상대 카트가 내 차 성능을 따라온다 — 강화해도 계속 붙는 레이스가 된다',
+        'Rivals now scale with your kart — races stay close as you upgrade',
+        '예전에는 봇만 강화를 못 받아, 끝판에는 내가 64% 빨랐다',
+        'Before, only you got upgrades — by endgame you were 64% faster than any rival',
+        '전설 난이도에서는 상대가 나보다 빠르다. 실력으로 이겨야 한다',
+        'On Legendary the rivals are faster than you — you must out-drive them'
+    ] },
     { v: 102, d: '9월 10일', t: [
         '기어 변속이 다시 들린다 — 다만 예전 낙차의 4분의 1로',
         'Gear shifts are audible again — but at a quarter of the old pitch drop',
@@ -8822,6 +8830,27 @@ function placeOnStart(k, lane) {
     k.cpIndex = 1; k.cpDone = 1;
 }
 
+/* 봇의 최고 속도 배수.
+
+   문제였던 것 :
+     플레이어의 최고 속도에는 upMul.speed() 가 곱해진다. 차를 좋은 걸로 바꾸고
+     강화를 올릴수록 커지는 값이다 — 적혈구 강화0 이면 1.00, DNA 강화10 이면 1.64.
+     그런데 봇은 이 곱이 없어 늘 1.00 근처였다. 끝판에는 플레이어가 64% 빨랐고,
+     한 바퀴 뒤에서 출발해도 다 따라잡혔다.
+
+   고친 방식 :
+     봇도 플레이어와 같은 힘을 바탕으로 삼되, 난이도만큼만 덜거나 더한다.
+     그러면 차를 키운 만큼 상대도 세져서 레이스가 계속 붙는다.
+     '내가 키운 보람' 은 순위가 아니라 랩타임과 등급으로 돌아온다.
+
+   다만 그대로 따라오게 하면 강화가 아무 뜻이 없어지므로, 따라오는 정도를
+   80% 로 둔다 — 키울수록 조금씩 유리해지되, 손 놓고 이기지는 못한다. */
+function botPower(i) {
+    const mine = upMul.speed();                   // 플레이어의 지금 힘 (1.00 ~ 1.64)
+    const follow = 1 + (mine - 1) * .80;          // 80% 만 따라온다
+    return (.93 + i * .035) * curLevel().bot * follow;
+}
+
 function startRace(id, timeAttack) {
     // 모드는 시작할 때 한 번만 정한다. 도중에 바뀌면 기록의 뜻이 흐려진다.
     TA.on = timeAttack !== undefined ? !!timeAttack
@@ -8845,7 +8874,7 @@ function startRace(id, timeAttack) {
     if (!net.on && !TA.on) {
         for (let i = 0; i < 3; i++) {
             const ai = makeKart(false, i + 1, AI_NAMES[i]);
-            ai.maxMul = (.93 + i * .035) * curLevel().bot; ai.aiOffset = (i - 1) * 24;
+            ai.maxMul = botPower(i); ai.aiOffset = (i - 1) * 24;
             karts.push(ai);
         }
     }
