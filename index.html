@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 99</div>
+<div id="build">버전 100</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2091,7 +2091,7 @@ Object.assign(EN, {
 '간에서 독성이 약한 요소로 바뀝니다.': 'The liver turns it into less toxic urea.',
 '암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
 '심장': 'Heart', '코': 'Nose', '간': 'Liver',
-'산소 교환!': 'Oxygen swap!',
+'산소 교환!': 'Oxygen swap!', '버텨!': 'HOLD IT!', '놓쳤다!': 'Lost it!',
 '큰굽이 순환': 'Greater curve loop',
 '융털 지그재그': 'Villi zigzag',
 '대장 테두리': 'Colon rim',
@@ -2144,6 +2144,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 100, d: '9월 10일', t: [
+        '드리프트 한계에서 바로 안 풀린다 — "버텨!" 가 뜨고 0.45초가 더 있다',
+        'Drift no longer auto-releases at the limit — "HOLD IT!" opens a 0.45s window',
+        '버티는 동안 게이지가 두 배로 차서 터보가 0.50에서 0.89까지 커진다',
+        'The gauge fills twice as fast while holding: turbo grows from 0.50 to 0.89',
+        '그러나 끝내 못 놓으면 타이어가 놓쳐 빙글 돌고 모은 것이 전부 날아간다',
+        'Hold too long and you spin out, losing everything you charged'
+    ] },
     { v: 99, d: '9월 10일', t: [
         '항문에서 하늘로 발사! 한 끼가 끝나면 쏘아 올려 다시 입으로',
         'Launch pad at the anus — finish a meal and get shot back to the mouth',
@@ -4028,6 +4036,17 @@ const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움
 //   '드리프트 지속'을 올려야 오래 물 수 있고, 그래야 슈퍼 부스터가 열린다.
 const DRIFT_HOLD = 1.05, DRIFT_FILL = 45;
 const DRIFT_COOLDOWN = .3;   // 한계 뒤 타이어가 다시 물기까지 쉬는 시간(초)
+/* ---- 버티기 ----
+   한계에 닿아도 바로 안 풀린다. 이만큼은 더 물 수 있고, 그동안 게이지가 훨씬 빨리 찬다.
+   여기서 놓으면 큰 보상. 이것마저 넘기면 타이어가 완전히 놓쳐 빙글 돈다.
+
+   왜 이렇게 :
+     한계에서 그냥 자동으로 풀리면 '끝까지 물기' 에 아무 판단이 없다 — 누르고만 있으면 된다.
+     반대로 한계를 넘자마자 스핀이면 실수 한 번에 순위가 통째로 날아가 답답하다.
+     사이에 짧은 창을 두면 '조금만 더 버텨 볼까' 하는 도박이 생기되, 사고는 드물다. */
+const DRIFT_OVER = .45;      // 버티기 창(초)
+const DRIFT_OVER_FILL = 2.1; // 버티는 동안 게이지가 차는 배수
+const DRIFT_MAX_CHARGE = 128;// 버티기로만 닿을 수 있는 게이지 상한 (보통은 100)
 const TURBO_MAX = 3;         // 쌓아둘 수 있는 터보 개수
 
 /* 쌓아둔 터보를 하나 꺼내 터뜨린다. 잘 문 드리프트일수록 세게 나간다. */
@@ -4144,6 +4163,7 @@ function makeKart(isPlayer, ci, name) {
         boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
         trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
         co2: 0,          // 호흡계 전용 : 몸을 돌며 쌓이는 이산화탄소 (0~1)
+        overDrift: false, spinTime: 0,   // 버티기 중인가 / 빙글 도는 남은 시간
         turbo: [], turboCool: 0, aiTurbo: false,
         air: 0, airMax: 0, spin: 0,
         wallHits: 0, hitCool: 0, fullThrottle: 0, driveFrames: 0, lapTimes: [], lastLapAt: 0,
@@ -4156,6 +4176,7 @@ function updateKart(k, dt) {
     let throttle = 0, steerIn = 0, wantDrift = false;
 
     if (k.finished) throttle = 0;
+    else if (k.spinTime > 0) { throttle = 0; steerIn = 0; wantDrift = false; }   // 빙글 도는 중엔 못 움직인다
     else if (k.isPlayer) {
         if (input.gas) throttle = 1;
         if (input.brake) throttle = -1;
@@ -4291,15 +4312,23 @@ function updateKart(k, dt) {
             }
         }
         k.driftHold += dt;
-        if (k.driftHold >= holdMax) {                              // 한계 도달 → 자동으로 놓는다
-            k.drifting = false; k.wasDrifting = false; k.driftLocked = DRIFT_COOLDOWN;
-            if (k.isPlayer) popup(k.x, k.y, '한계!', '#9fd0ff');
+        if (k.driftHold >= holdMax && !k.overDrift) {
+            // 한계 도달 → 바로 안 풀린다. 버티기 창이 열린다.
+            k.overDrift = true;
+            if (k.isPlayer) {
+                popup(k.x, k.y, T('버텨!'), '#ff5a2c');
+                playBeep(1180, .07); buzz(26);
+                cam.flash = Math.max(cam.flash || 0, .3);
+            }
         }
-    } else k.driftHold = 0;
+        if (k.driftHold >= holdMax + DRIFT_OVER) spinOut(k);       // 끝내 못 놓으면 빙글
+    } else { k.driftHold = 0; k.overDrift = false; }
 
     if (k.drifting) {
         vR += k.steer * DRIFT_SLIDE * k.driftAmt * dt;             // 미끄러짐도 서서히
-        k.driftCharge = Math.min(100, k.driftCharge + DRIFT_FILL * dt);
+        // 버티는 중에는 훨씬 빨리 차고, 100 을 넘어 128 까지 간다
+        k.driftCharge = Math.min(k.overDrift ? DRIFT_MAX_CHARGE : 100,
+            k.driftCharge + DRIFT_FILL * dt * (k.overDrift ? DRIFT_OVER_FILL : 1));
 
         if (k.isPlayer) {
             // 게이지가 단을 넘을 때마다 짧게 알려 준다 (파랑 → 노랑 → 빨강)
@@ -4347,7 +4376,7 @@ function updateKart(k, dt) {
                 playBeep(880 + q * 420, .07);
             }
         }
-        k.driftCharge = 0; k.driftStage = 0;
+        k.driftCharge = 0; k.driftStage = 0; k.overDrift = false;
     }
 
     // ── 터보 발사 : 쌓아둔 것을 하나 꺼내 쓴다
@@ -4373,6 +4402,12 @@ function updateKart(k, dt) {
     k.wbcHold = Math.max(0, k.wbcHold - dt);
     k.turboTime = Math.max(0, k.turboTime - dt);
     k.turboCool = Math.max(0, k.turboCool - dt);
+    // 빙글 도는 동안 : 보이는 회전만 돌리고, 조향은 아래에서 막는다
+    if (k.spinTime > 0) {
+        k.spinTime -= dt;
+        k.spin = (k.spin || 0) + dt * 15;
+        if (k.spinTime <= 0) { k.spinTime = 0; k.spin = 0; }
+    }
 
     /* ---- 이산화탄소 ↔ 산소 (호흡계에서만) ----
        온몸을 돌수록 세포가 내놓은 이산화탄소가 쌓인다. 쌓이면 숨이 차 느려진다.
@@ -4814,6 +4849,24 @@ function drawChomp(g, h) {
         g.beginPath(); g.arc(0, 0, R * 1.5, 0, TAU); g.stroke();
     }
     g.restore();
+}
+
+/* 버티기마저 넘기면 타이어가 완전히 놓쳐 그 자리에서 빙글 돈다.
+   모아 둔 게이지는 통째로 날아간다 — 욕심의 대가.
+   방향(ang)은 크게 안 건드린다. 빙글 도는 것은 보이는 회전(spin)으로 표현하고,
+   실제로는 속도만 크게 깎는다. 그래야 벽으로 날아가 판이 끝나 버리지 않는다. */
+function spinOut(k) {
+    k.drifting = false; k.wasDrifting = false;
+    k.driftCharge = 0; k.driftStage = 0; k.driftHold = 0; k.overDrift = false;
+    k.driftLocked = DRIFT_COOLDOWN * 2.2;
+    k.spinTime = .85;
+    k.vx *= .42; k.vy *= .42;
+    if (k.isPlayer) {
+        playBeep(190, .2); buzz(60);
+        cam.shake = Math.max(cam.shake, 16); cam.kick = Math.max(cam.kick || 0, 1.1);
+        popup(k.x, k.y, T('놓쳤다!'), '#ff6b6b');
+        for (let i = 0; i < 14; i++) addDriftSmoke(k);
+    }
 }
 
 /* 폐포를 지나면 이산화탄소를 산소로 바꾼다.
