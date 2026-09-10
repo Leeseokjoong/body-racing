@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 104</div>
+<div id="build">버전 105</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2144,6 +2144,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 105, d: '9월 10일', t: [
+        '호흡계를 5바퀴로 — 145초에서 182초로',
+        'Respiratory is now 5 laps: 145s becomes 182s',
+        '이로써 열한 맵이 모두 154~216초로 고르게 맞았다',
+        'All eleven courses now run an even 154-216 seconds'
+    ] },
     { v: 104, d: '9월 10일', t: [
         '밋밋하던 여섯 맵에 잔굽이를 넣었다 — 청각·시각·사구체·간·위·이자',
         'Added fine bends to six flat courses: auditory, visual, glomerulus, liver, stomach, pancreas',
@@ -2575,7 +2581,9 @@ const SYSTEMS = {
         /* 이산화탄소를 지고 다니다 폐포에서 산소로 바꾼다.
            fill = 가득 차기까지 걸리는 초, boost = 바꿨을 때 부스터 길이 */
         gasSwap: { fill: 26, boost: 1.8 },
-        id: 'respiratory', name: '호흡계 서킷', laps: 4, closed: true, halfWidth: 182,
+        /* 5바퀴 : 한 바퀴가 36초다. 4바퀴면 145초로 다른 맵(185~216초)보다 짧았다.
+           코스 자체는 급커브 35% 로 이미 촘촘해서, 굽이를 더 넣는 대신 바퀴로 맞춘다. */
+        id: 'respiratory', name: '호흡계 서킷', laps: 5, closed: true, halfWidth: 182,
         grass: ['#2c7484', '#1c5563'], accent: '#8fd0e8',
         // 숨의 길 : 들숨은 갈수록 좁아지고(코→기관→기관지→세기관지),
         //           폐포 그물에서 실컷 감았다가, 날숨은 시원하게 뻗어 나간다.
