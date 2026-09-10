@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 101</div>
+<div id="build">버전 102</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2144,6 +2144,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 102, d: '9월 10일', t: [
+        '기어 변속이 다시 들린다 — 다만 예전 낙차의 4분의 1로',
+        'Gear shifts are audible again — but at a quarter of the old pitch drop',
+        '음높이를 아예 안 떨어뜨렸더니 엔진이 터질 것 같아서 되살렸다',
+        'Removing the drop entirely made the engine sound like it was about to blow',
+        '엔진 녹음을 두 겹으로 겹쳐 속도에 따라 소리결이 바뀐다',
+        'Two engine recordings now crossfade, so the tone changes as you speed up'
+    ] },
     { v: 101, d: '9월 10일', t: [
         '엔진 소리를 F1 배기음으로 바꿨다 — 꽥꽥대던 것이 사라졌다',
         'The engine now sounds like an F1 exhaust — no more warbling',
@@ -7206,6 +7214,12 @@ let audioCtx = null;
 const ENGINE_BASE_HZ = 62;          // 재생속도 1 일 때의 초당 점화 횟수
 let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
 let engineBoost = 0;        // 부스터 음높이를 서서히 붙이기 위한 값 (0~1)
+/* 엔진을 두 겹으로 쌓는다.
+     A 겹  느릴 때 (engine1 녹음)
+     B 겹  빠를 때 (engine2 녹음 — 다른 녹음이라 결이 다르다)
+   속도에 따라 둘을 서서히 바꿔 켠다. 한 재료를 1.2옥타브로 늘리기만 하면
+   소리결까지 끌려가 부자연스러운데, 결이 다른 둘을 섞으면 가속하며 소리가 변한다. */
+let engineSrcB = null, engineNormB = null;
 let engineGrowl = null, engineGrowlGain = null, engineNorm = null,
     engineGear = -1, engineShift = 0;
 let windSrc = null, windGain = null;
@@ -7214,7 +7228,7 @@ let windSrc = null, windGain = null;
    assets/sfx_<이름>.mp3 가 있으면 그것을 '재료' 로 쓴다. 없으면 조용히 넘어가고
    코드 합성음이 그대로 쓰인다. 실패해도 게임은 아무 일 없이 굴러간다. */
 const SAMPLE = {};                 // 이름 -> AudioBuffer | null(없음) | undefined(아직 모름)
-const SAMPLE_ON = { skid: false, brake: false, engine: false };   // 엔진은 녹음 고리를 쓴다
+const SAMPLE_ON = { skid: false, brake: false, engineA: false, engineB: false };   // 엔진은 녹음 두 겹
 
 /* 아직 받는 중일 때 또 부르면 그 쪽도 줄을 세워 둔다.
 
@@ -7225,7 +7239,7 @@ const SAMPLE_WAIT = {};                // 이름 -> 받으면 부를 함수들
 
 /* 자산 파일 이름. 대부분 sfx_<이름>.mp3 인데 엔진 고리만 다른 이름을 쓴다
    (sfx_engine.mp3 는 예전 녹음이라 이름이 겹치면 헷갈린다). */
-const SAMPLE_FILE = { engine: 'assets/engine_loop.mp3' };
+const SAMPLE_FILE = { engineA: 'assets/engine_a.mp3', engineB: 'assets/engine_b.mp3' };
 
 function wantSample(name, onReady) {
     const have = SAMPLE[name];
@@ -7369,9 +7383,9 @@ function engineUseCar() {
     if (!audioCtx || !engineNorm) return;
     const c = carById(save.car);
     enginePitch = (c.pitch || 1) * ENGINE_BASE_PITCH;
-    wantSample('engine', buf => {
-        engineSrc = swapLoop(engineSrc, buf, engineNorm, 1);
-    });
+    wantSample('engineA', buf => { engineSrc = swapLoop(engineSrc, buf, engineNorm, 1); });
+    if (engineNormB)
+        wantSample('engineB', buf => { engineSrcB = swapLoop(engineSrcB, buf, engineNormB, 1); });
 }
 
 function updateEngine() {
@@ -7405,6 +7419,18 @@ function updateEngine() {
         engineGrowlGain.connect(masterOut());
 
         engineSrc.start();
+
+        /* B 겹 : 같은 필터를 거치되 자기 세기를 따로 갖는다.
+           A 와 B 의 세기를 반대로 움직여 속도에 따라 서서히 바꿔 켠다. */
+        engineSrcB = audioCtx.createBufferSource();
+        engineSrcB.buffer = engineSrc.buffer;
+        engineSrcB.loop = true;
+        engineNormB = audioCtx.createGain();
+        engineNormB.gain.value = 0;                  // 처음엔 꺼 둔다
+        engineSrcB.connect(engineNormB);
+        engineNormB.connect(engineLP);
+        engineNormB.connect(engineGrowl);
+        engineSrcB.start();
 
         engineUseCar();          // 지금 고른 차의 엔진 녹음을 불러 온다
 
@@ -7443,26 +7469,28 @@ function updateEngine() {
         const gas = !!(player.pad && player.pad.gas);
         load = clamp((gas ? .58 : .10) + v * .34 + (boost ? .22 : 0), .10, 1);
 
-        /* 음높이는 속도에 단조롭게 붙인다.
+        /* ---- 기어와 음높이 ----
 
-           예전에는 기어마다 음높이를 0 으로 되돌렸다 (inGear 를 써서).
-           그래서 기어가 바뀔 때마다 rate 가 1.05 — 거의 한 옥타브 — 씩
-           한 번에 떨어졌다. 실제 주행을 재 보니 1초에 두 번씩 그런 도약이 있었고,
-           한 프레임(1/60초) 만에 1.34 나 튀는 곳도 있었다. 그게 '꽥꽥' 이었다.
+           처음에는 기어마다 음높이를 0 으로 되돌렸다. 그래서 변속할 때마다
+           rate 가 1.05 — 거의 한 옥타브 — 씩 뚝 떨어졌다. 1초에 두 번씩 그랬고,
+           한 프레임 만에 1.34 나 튀는 곳도 있었다. 그게 '꽥꽥' 이었다.
 
-           변속감은 음높이로 내지 않는다. '짧게 힘이 빠지는 것'(engineShift)만으로 낸다 —
-           실제로도 변속은 음높이가 뚝 떨어지는 게 아니라 힘이 한 번 끊기는 것으로 들린다. */
-        rate = .78 + v * 1.12;
+           그래서 도약을 아예 없애 봤더니 이번엔 음높이가 끝없이 올라가
+           '엔진이 터질 것 같은' 소리가 됐다. 실제 차는 변속하면 rpm 이 내려간다.
 
-        /* 기어는 이제 소리의 음높이를 정하지 않고, 변속 느낌을 낼 때만 쓴다.
-           경계에 걸쳐 속도가 오르내려도 오가지 않게 여유(히스테리시스)를 둔다 —
-           예전에는 매 프레임 기어가 뒤집혀 떨렸다. */
+           그래서 가운데를 잡는다 :
+             기어 안에서는  .45 만큼 오르고
+             변속하면       .22 만 내려간다  (= 실제 낙차 .23, 장3도쯤)
+           예전 낙차(.89)의 4분의 1이다. 변속은 들리되 꽥 하지 않는다. */
         const gv = v * 4;
         let gear = engineGear;
         if (gear < 0) gear = Math.min(3, Math.floor(gv));
-        else if (gv > gear + 1.08) gear = Math.min(3, gear + 1);
+        else if (gv > gear + 1.08) gear = Math.min(3, gear + 1);   // 경계에서 떨지 않게 여유를 둔다
         else if (gv < gear - .08) gear = Math.max(0, gear - 1);
         if (gear !== engineGear) { if (engineGear >= 0) engineShift = .12; engineGear = gear; }
+
+        const inGear = clamp(gv - gear, 0, 1);
+        rate = .85 + inGear * .45 + gear * .22;
 
         /* 부스터도 음높이를 계단처럼 올리면 켜고 끌 때마다 '꽥' 한다.
            서서히 붙였다 빠지게 한다. */
@@ -7474,6 +7502,15 @@ function updateEngine() {
 
     // 차마다 기본 음높이가 다르다 — 같은 녹음을 써도 다른 엔진으로 들린다
     engineSrc.playbackRate.setTargetAtTime(rate * enginePitch, t, .07);
+    /* 두 겹 섞기 : 느리면 A, 빠르면 B. 사이에서는 둘이 겹친다.
+       음높이는 둘 다 같이 움직여야 맞물린다. */
+    if (engineSrcB && engineNormB) {
+        engineSrcB.playbackRate.setTargetAtTime(rate * enginePitch, t, .07);
+        const mix = clamp((Math.abs(player.speed || 0) / MAXSPEED - .28) / .40, 0, 1);
+        const base = normFor(engineSrc.buffer);
+        engineNorm.gain.setTargetAtTime(base * Math.sqrt(1 - mix), t, .10);
+        engineNormB.gain.setTargetAtTime(normFor(engineSrcB.buffer) * Math.sqrt(mix), t, .10);
+    }
 
     /* 울림은 늘 깔리고, 으르렁이 밟은 만큼 열린다.
 
