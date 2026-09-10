@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 100</div>
+<div id="build">버전 101</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2144,6 +2144,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 101, d: '9월 10일', t: [
+        '엔진 소리를 F1 배기음으로 바꿨다 — 꽥꽥대던 것이 사라졌다',
+        'The engine now sounds like an F1 exhaust — no more warbling',
+        '기어가 바뀔 때 음높이가 한 옥타브씩 떨어지던 것이 원인이었다',
+        'The cause: pitch dropped nearly an octave at every gear change',
+        '터보에서 나던 부저 같은 소리를 빼고 공기가 터져 나가는 소리로',
+        'The turbo buzz is gone — now it is a burst of air'
+    ] },
     { v: 100, d: '9월 10일', t: [
         '드리프트 한계에서 바로 안 풀린다 — "버텨!" 가 뜨고 0.45초가 더 있다',
         'Drift no longer auto-releases at the limit — "HOLD IT!" opens a 0.45s window',
@@ -7197,6 +7205,7 @@ let audioCtx = null;
    실린더마다 힘을 살짝 다르게 줘서 기계다운 울퉁불퉁함을 남겼다. */
 const ENGINE_BASE_HZ = 62;          // 재생속도 1 일 때의 초당 점화 횟수
 let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
+let engineBoost = 0;        // 부스터 음높이를 서서히 붙이기 위한 값 (0~1)
 let engineGrowl = null, engineGrowlGain = null, engineNorm = null,
     engineGear = -1, engineShift = 0;
 let windSrc = null, windGain = null;
@@ -7205,7 +7214,7 @@ let windSrc = null, windGain = null;
    assets/sfx_<이름>.mp3 가 있으면 그것을 '재료' 로 쓴다. 없으면 조용히 넘어가고
    코드 합성음이 그대로 쓰인다. 실패해도 게임은 아무 일 없이 굴러간다. */
 const SAMPLE = {};                 // 이름 -> AudioBuffer | null(없음) | undefined(아직 모름)
-const SAMPLE_ON = { skid: false, brake: false };   // 엔진은 코드로 만든다
+const SAMPLE_ON = { skid: false, brake: false, engine: false };   // 엔진은 녹음 고리를 쓴다
 
 /* 아직 받는 중일 때 또 부르면 그 쪽도 줄을 세워 둔다.
 
@@ -7214,6 +7223,10 @@ const SAMPLE_ON = { skid: false, brake: false };   // 엔진은 코드로 만든
    새 엔진 녹음이 영영 안 걸리는 일이 여기서 생겼다. */
 const SAMPLE_WAIT = {};                // 이름 -> 받으면 부를 함수들
 
+/* 자산 파일 이름. 대부분 sfx_<이름>.mp3 인데 엔진 고리만 다른 이름을 쓴다
+   (sfx_engine.mp3 는 예전 녹음이라 이름이 겹치면 헷갈린다). */
+const SAMPLE_FILE = { engine: 'assets/engine_loop.mp3' };
+
 function wantSample(name, onReady) {
     const have = SAMPLE[name];
     if (have) { try { onReady(have); } catch (e) {} return have; }   // 이미 있다
@@ -7221,7 +7234,7 @@ function wantSample(name, onReady) {
 
     SAMPLE[name] = null;
     SAMPLE_WAIT[name] = [onReady];
-    fetch('assets/sfx_' + name + '.mp3')
+    fetch(SAMPLE_FILE[name] || ('assets/sfx_' + name + '.mp3'))
         .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('no file')))
         .then(b => new Promise((ok, no) => audioCtx.decodeAudioData(b, ok, no)))
         .then(buf => {
@@ -7335,12 +7348,30 @@ function buildWindBuffer() {                             // 고속에서 얹는 
 /* 지금 고른 차의 엔진 소리로 갈아 끼운다. 차를 바꾸고 판을 새로 시작할 때마다 불린다.
    내려받을 것이 없으니 곧바로 바뀐다 — 첫 판부터 제 소리가 난다. */
 let enginePitch = 1;
+/* 엔진 녹음 고리.
+
+   왜 녹음으로 돌아왔나 :
+     합성음은 사인파 넷을 더해 만든다. 사인의 합은 오르간처럼 들려서
+     아무리 배음을 맞춰도 배기음이 안 된다 — 사용자 표현으로 "소리 자체가 별로".
+
+   예전에 녹음을 버린 이유는 "연결이 부자연스럽다" 였는데, 원인이 둘이었다 :
+     (가) 게임 쪽 음높이가 기어마다 한 옥타브씩 튀었다  → 고쳤다(updateEngine)
+     (나) 쓰던 녹음(engine3)이 1옥타브를 오르내렸다. 그걸 반복시키니 음이 뛰었다.
+   다섯 녹음을 재 보니 engine1 만 121Hz 로 흔들림 ±0.0Hz 였다. 그것으로 바꾼다.
+   assets/engine_loop.mp3 는 engine1 에서 파형이 맞물리는 길이(284ms)를 잘라
+   앞뒤를 겹쳐 이음매를 지운 것이다.
+
+   ENGINE_BASE_PITCH : 묵직하게 깔기 위해 기본 재생속도를 낮춘다.
+   차마다의 pitch 가 여기에 곱해져 무거운 차·가벼운 차가 갈린다. */
+const ENGINE_BASE_PITCH = .72;
+
 function engineUseCar() {
     if (!audioCtx || !engineNorm) return;
     const c = carById(save.car);
-    enginePitch = c.pitch || 1;
-    engineSrc = swapLoop(engineSrc, buildEngineBuffer(ENGINE_VOICE[c.voice] || ENGINE_VOICE.plain),
-                         engineNorm, 1);
+    enginePitch = (c.pitch || 1) * ENGINE_BASE_PITCH;
+    wantSample('engine', buf => {
+        engineSrc = swapLoop(engineSrc, buf, engineNorm, 1);
+    });
 }
 
 function updateEngine() {
@@ -7412,13 +7443,31 @@ function updateEngine() {
         const gas = !!(player.pad && player.pad.gas);
         load = clamp((gas ? .58 : .10) + v * .34 + (boost ? .22 : 0), .10, 1);
 
-        // 기어를 바꾸듯 rpm 이 올랐다 떨어지길 반복 → 한 음으로 붙어 있지 않게 한다
-        const gear = Math.min(3, Math.floor(v * 4));
-        const inGear = clamp(v * 4 - gear, 0, 1);
-        rate = .70 + inGear * 1.05 + gear * .16 + (boost ? .35 : 0);
+        /* 음높이는 속도에 단조롭게 붙인다.
 
-        // 기어가 바뀌는 순간 아주 짧게 힘을 빼면 '변속' 으로 들린다 (클러치를 밟듯)
+           예전에는 기어마다 음높이를 0 으로 되돌렸다 (inGear 를 써서).
+           그래서 기어가 바뀔 때마다 rate 가 1.05 — 거의 한 옥타브 — 씩
+           한 번에 떨어졌다. 실제 주행을 재 보니 1초에 두 번씩 그런 도약이 있었고,
+           한 프레임(1/60초) 만에 1.34 나 튀는 곳도 있었다. 그게 '꽥꽥' 이었다.
+
+           변속감은 음높이로 내지 않는다. '짧게 힘이 빠지는 것'(engineShift)만으로 낸다 —
+           실제로도 변속은 음높이가 뚝 떨어지는 게 아니라 힘이 한 번 끊기는 것으로 들린다. */
+        rate = .78 + v * 1.12;
+
+        /* 기어는 이제 소리의 음높이를 정하지 않고, 변속 느낌을 낼 때만 쓴다.
+           경계에 걸쳐 속도가 오르내려도 오가지 않게 여유(히스테리시스)를 둔다 —
+           예전에는 매 프레임 기어가 뒤집혀 떨렸다. */
+        const gv = v * 4;
+        let gear = engineGear;
+        if (gear < 0) gear = Math.min(3, Math.floor(gv));
+        else if (gv > gear + 1.08) gear = Math.min(3, gear + 1);
+        else if (gv < gear - .08) gear = Math.max(0, gear - 1);
         if (gear !== engineGear) { if (engineGear >= 0) engineShift = .12; engineGear = gear; }
+
+        /* 부스터도 음높이를 계단처럼 올리면 켜고 끌 때마다 '꽥' 한다.
+           서서히 붙였다 빠지게 한다. */
+        engineBoost = lerp(engineBoost, boost ? 1 : 0, .10);
+        rate += engineBoost * .26;
     }
     engineShift = Math.max(0, engineShift - 1 / 60);
     const cut = engineShift > 0 ? .45 : 1;               // 변속 중에는 잠깐 힘이 빠진다
@@ -7905,10 +7954,16 @@ function sfxPickup() {
 function sfxBoost() {
     if (!audioCtx) return;
     if (playSfx('boost', .55)) return;
-    noiseHit(.46, .15, 'bandpass', 260, 4200, 1.4, 1);
-    noiseHit(.55, .09, 'lowpass', 1100, 200);
-    tone(110, .34, .16, 'sawtooth', 0, 420, { punch: 1.7 });
-    tone(220, .28, .07, 'square', .02, 700);
+    /* 공기가 터져 나가는 소리.
+
+       예전에는 톱니 110Hz 와 사각 220Hz 를 깔았다. 낮은 톱니와 사각이 겹치면
+       부저처럼 '빵—' 하고 울린다 — 사용자 표현으로 "방구 소리".
+       음정을 내는 파형을 빼고, 넓은 잡음이 아래에서 위로 훑고 지나가게 한다.
+       아래를 받치는 것은 짧은 사인 한 방뿐 — 음정이 아니라 충격으로만 쓴다. */
+    //           길이  세기   종류        시작Hz 끝Hz   Q  울림
+    noiseHit(.34, .30, 'bandpass', 320, 5500, .9, 1);   // 쉬—익 (아래에서 위로 훑는다)
+    noiseHit(.55, .07, 'lowpass', 2600, 2600);          // 뒤에 남는 바람
+    tone(76, .10, .22, 'sine', 0, 0, { punch: 2.2 });   // 툭 (음정이 아니라 몸통을 치는 충격)
 }
 
 /* 완주 팡파레 — 나팔 넷이 화음을 쌓고 마지막에 다 함께 터진다 */
