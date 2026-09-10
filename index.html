@@ -1192,7 +1192,7 @@
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
 </div>
-<div id="build">버전 98</div>
+<div id="build">버전 99</div>
 <!-- 판 번호를 누르면 뜨는 변경 내역. 폰에서 무엇이 바뀌었는지 바로 보려고 만들었다. -->
 <div id="keysWin" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>조작법</b><button id="keysClose">닫기</button></div>
@@ -2091,6 +2091,7 @@ Object.assign(EN, {
 '간에서 독성이 약한 요소로 바뀝니다.': 'The liver turns it into less toxic urea.',
 '암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
 '심장': 'Heart', '코': 'Nose', '간': 'Liver',
+'산소 교환!': 'Oxygen swap!',
 '큰굽이 순환': 'Greater curve loop',
 '융털 지그재그': 'Villi zigzag',
 '대장 테두리': 'Colon rim',
@@ -2143,6 +2144,18 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 99, d: '9월 10일', t: [
+        '항문에서 하늘로 발사! 한 끼가 끝나면 쏘아 올려 다시 입으로',
+        'Launch pad at the anus — finish a meal and get shot back to the mouth',
+        '소화샘이 소화액을 뿜는다 — 침샘 아밀레이스, 위샘 펩신, 장샘 펩티데이스',
+        'Digestive glands now squirt: salivary amylase, gastric pepsin, intestinal peptidase',
+        '입에 어금니가 박자에 맞춰 내리찍는다. 올라가 있을 때 지나가세요',
+        'Molars stomp in rhythm at the mouth — slip past while they are up',
+        '소장 벽에 융털이 돋았다',
+        'Villi now line the small intestine walls',
+        '호흡계: 달릴수록 이산화탄소가 쌓여 숨이 차고, 폐포에서 산소로 바꾸면 터진다',
+        'Respiratory: CO2 builds up and slows you; swap it for oxygen at the alveoli for a burst'
+    ] },
     { v: 98, d: '9월 10일', t: [
         '소화계 대장 게이트가 막혀 있던 것을 고침 — 직각으로 꺾이던 곳을 반원으로',
         'Fixed the blocked colon gate in the digestive course — the right-angle turn is now a half circle',
@@ -2402,6 +2415,10 @@ const SYSTEMS = {
         ],
         flow: [
             { name: '입', at: [700, 600], color: '#f0a5a5', role: '씹기', blob: 300,
+              chomp: { count: 6, from: 5, gap: 8, period: 1.9, down: .5, side: .42,
+                       kind: { icon: '어금니', name: '어금니', color: '#efe9d8', r: 44, slow: .3, spin: false,
+                               desc: '음식을 잘게 부수는 이. 내려올 때 깔리면 크게 느려집니다 — 박자를 읽고 지나가세요!' } },
+              pump: { power: .5, label: '침샘 — 아밀레이스!', desc: '침 속 아밀레이스가 녹말을 엿당으로 자릅니다. 밥을 오래 씹으면 단맛이 나는 이유!' },
               info: '이와 혀가 음식을 잘게 부수고 침(아밀레이스)이 녹말을 자르기 시작합니다.',
               seg: { name: '식도', color: '#e88a8a', wMul: .9,
                      desc: '목구멍에서 위까지 25cm. 근육이 물결치며 음식을 밀어 내립니다' },
@@ -2416,6 +2433,7 @@ const SYSTEMS = {
                    [2736, 1372]] },
 
             { name: '위', at: [2850, 1450], color: '#e2687e', role: '소화액 분비', blob: 0,
+              pump: { power: .85, label: '위샘 — 펩신!', desc: '위샘에서 위액이 쏟아집니다. pH 2 위산이 펩신을 깨워 단백질을 자릅니다.' },
               info: '위산(pH 2)과 펩신이 단백질을 녹입니다. 위벽이 안 녹는 건 점액 덕분!',
               seg: { name: '큰굽이 순환', color: '#d95c73', wMul: 1.15,
                      desc: '위의 바깥 굽이를 크게 돕니다. 넓고 빠른 구간 — 여기서 터보를!' },
@@ -2429,8 +2447,9 @@ const SYSTEMS = {
                    [1263, 2451], [1281, 2601]] },
 
             { name: '소장', at: [1300, 2750], color: '#f2c94c', role: '영양소 흡수', blob: 0,
+              pump: { power: .7, label: '장샘 · 이자액 — 펩티데이스!', desc: '이자액과 장액이 마지막으로 잘라 아미노산까지 만듭니다. 여기서 영양소가 흡수됩니다.' },
               info: '길이 6~7m. 융털이 빽빽해서 펼치면 테니스장만 한 넓이로 영양소를 빨아들입니다.',
-              seg: { name: '융털 지그재그', color: '#e8b93a', wMul: .72,
+              seg: { name: '융털 지그재그', color: '#e8b93a', wMul: .72, villi: true,
                      desc: '좁고 구불구불한 소장 속. 좌우 연타 드리프트 구간!' },
               via: [[1446, 2771], [1589, 2726], [1727, 2737], [1862, 2802], [1996, 2747],
                    [2126, 2696], [2255, 2771], [2383, 2791], [2512, 2713], [2640, 2725],
@@ -2469,6 +2488,7 @@ const SYSTEMS = {
                    [1378, 5911], [1244, 5932]] },
 
             { name: '직장 · 항문', at: [1100, 5900], color: '#8a6242', role: '배출', blob: 0,
+              launch: { label: '발사! 다음 끼니로', desc: '한 끼가 몸을 다 지났습니다. 하늘로 솟아 다시 입으로!' },
               info: '굳은 찌꺼기가 모였다가 밖으로 나갑니다. 한 끼가 여기까지 오는 데 하루쯤 걸립니다.',
               seg: { name: '다음 끼니로 점프!', color: '#7fc4e8', wMul: 1.0, jump: true,
                      desc: '하늘길로 날아 다시 식탁으로! 착지하면 새 끼니가 시작됩니다' },
@@ -2512,6 +2532,9 @@ const SYSTEMS = {
 
     respiratory: {
         island: 'lungs',
+        /* 이산화탄소를 지고 다니다 폐포에서 산소로 바꾼다.
+           fill = 가득 차기까지 걸리는 초, boost = 바꿨을 때 부스터 길이 */
+        gasSwap: { fill: 26, boost: 1.8 },
         id: 'respiratory', name: '호흡계 서킷', laps: 4, closed: true, halfWidth: 182,
         grass: ['#2c7484', '#1c5563'], accent: '#8fd0e8',
         // 숨의 길 : 들숨은 갈수록 좁아지고(코→기관→기관지→세기관지),
@@ -2549,7 +2572,7 @@ const SYSTEMS = {
             { name: '폐포', at: [2120, 2880], color: '#f2a0c0', role: '기체 교환', blob: 0,
               chamber: { w: 360, h: 350, wall: 34, tint: '#f7b8d0' },
               info: '포도송이 모양의 작은 공기주머니. 여기서 산소와 이산화탄소가 자리를 바꿉니다.',
-              seg: { name: '폐포 모세혈관', color: '#e2707a', wMul: .7,
+              seg: { oxygen: true, name: '폐포 모세혈관', color: '#e2707a', wMul: .7,
                      desc: '폐포 송이송이를 그물처럼 감고 도는 아주 가는 혈관' },
               // 포도송이를 하나하나 감아 도는 그물망 — 이 코스에서 드리프트가 가장 많이 나오는 구간
               via: [[2262, 2943], [2381, 3037], [2478, 3140], [2611, 3212], [2752, 3207],
@@ -3752,6 +3775,22 @@ function buildTrack(sys) {
         // si 를 함께 남긴다 — 발사대는 원이 아니라 도로를 가로지르는 '문'이어야 한다
         pads.push(on(pts[si], 0, { si, ang: pts[si].ang, power: 1, launch: node.launch, node }));
     });
+    /* 이빨처럼 박자에 맞춰 내리찍는 장애물.
+       가만히 있는 장애물과 달리 **내려와 있는 동안에만** 부딪힌다.
+       그래서 피하는 게 아니라 '박자를 읽고 지나가는' 구간이 된다. */
+    sys.flow.forEach((node, i) => {
+        if (!node.chomp) return;
+        const c = node.chomp;
+        const base = nodeIdx[i] * SEG_SAMPLES;
+        for (let j = 0; j < c.count; j++) {
+            const si = Math.min(base + c.from + j * c.gap, N - 1);
+            const off = (j % 2 ? 1 : -1) * pts[si].hw * (c.side || .40);
+            hazards.push(on(pts[si], off, {
+                kind: c.kind, alive: true, respawn: 0, ph: rng() * TAU,
+                chomp: c, phase: (j / c.count) * c.period
+            }));
+        }
+    });
     sys.flow.forEach((node, i) => {
         if (!node.pump) return;
         const base = nodeIdx[i] * SEG_SAMPLES;
@@ -3777,6 +3816,29 @@ function buildTrack(sys) {
         if (Math.sqrt(near) > hw + 110)
             decor.push({ x, y, r: 16 + rng() * 30, kind: rng(), hue: rng(), ph: rng() * TAU });
     }
+
+    /* 융털 : 소장 안쪽 벽에 빽빽한 손가락 돌기.
+       도로 양쪽 가장자리를 따라 촘촘히 돋게 한다. 이게 있어야 '소장 속' 으로 보인다.
+       (표면적을 넓혀 영양소를 빨아들이는 구조 — 펼치면 테니스장 넓이) */
+    sys.flow.forEach((node, i) => {
+        if (!node.seg || !node.seg.villi) return;
+        const from = nodeIdx[i] * SEG_SAMPLES;
+        const to = Math.min(nodeIdx[i + 1] !== undefined ? nodeIdx[i + 1] * SEG_SAMPLES : N, N);
+        for (let k2 = from; k2 < to; k2 += 3) {
+            const p = pts[k2 % N];
+            for (const side of [-1, 1]) {
+                /* 벽 바깥에 세운다. 꾸밈은 도로보다 먼저 그려지므로
+                   가장자리(1.0)에 두면 도로와 벽에 통째로 덮여 안 보인다. */
+                decor.push({
+                    x: p.x - p.dy * p.hw * side * 1.30,
+                    y: p.y + p.dx * p.hw * side * 1.30,
+                    r: 17 + rng() * 10, villi: true, ang: p.ang + side * Math.PI / 2,
+                    ph: rng() * TAU
+                });
+            }
+        }
+    });
+
 
     
 /* ---- 관중석 ----
@@ -4081,6 +4143,7 @@ function makeKart(isPlayer, ci, name) {
         wasDrifting: false, driftStage: 0, driftLocked: 0,
         boostTime: 0, shieldTime: 0, starTime: 0, hitTime: 0, topSpeed: 0,
         trapTime: 0, stickyTime: 0, blindTime: 0, turboTime: 0, wbcHold: 0, earned: 0,
+        co2: 0,          // 호흡계 전용 : 몸을 돌며 쌓이는 이산화탄소 (0~1)
         turbo: [], turboCool: 0, aiTurbo: false,
         air: 0, airMax: 0, spin: 0,
         wallHits: 0, hitCool: 0, fullThrottle: 0, driveFrames: 0, lapTimes: [], lastLapAt: 0,
@@ -4114,6 +4177,8 @@ function updateKart(k, dt) {
     const boosting = k.boostTime > 0 || k.starTime > 0;
     const up = k.isPlayer ? upMul : null;
     let maxSp = MAXSPEED * (k.maxMul + (k.rubber || 0)) * (boosting ? (k.turboTime > 0 ? 1.58 : 1.42) : 1);
+    // 이산화탄소가 가득 차면 숨이 차서 최고 속도가 준다 (최대 14%)
+    if (k.co2 > 0) maxSp *= 1 - k.co2 * .14;
     if (up) maxSp *= up.speed();
     if (k.offroad && k.starTime <= 0) maxSp = Math.min(maxSp, OFFROAD_MAX);
     // ── 드리프트로 파훼 : 미끄러뜨리면 붙잡힘·끈적임을 떨쳐낸다
@@ -4308,6 +4373,17 @@ function updateKart(k, dt) {
     k.wbcHold = Math.max(0, k.wbcHold - dt);
     k.turboTime = Math.max(0, k.turboTime - dt);
     k.turboCool = Math.max(0, k.turboCool - dt);
+
+    /* ---- 이산화탄소 ↔ 산소 (호흡계에서만) ----
+       온몸을 돌수록 세포가 내놓은 이산화탄소가 쌓인다. 쌓이면 숨이 차 느려진다.
+       폐포에 닿아 산소로 바꾸면 다시 가벼워진다 — 그게 호흡의 이유 그 자체다. */
+    if (track && track.sys.gasSwap) {
+        const p = track.pts[k.si];
+        const inLung = p && p.sec !== undefined && track.secs[p.sec] &&
+                       track.secs[p.sec].node.seg && track.secs[p.sec].node.seg.oxygen;
+        if (inLung) swapGas(k);
+        else k.co2 = Math.min(1, k.co2 + dt / track.sys.gasSwap.fill);
+    } else k.co2 = 0;
     // AI 는 쌓이면 곧바로 쓴다 (사람만 아껴 쓰는 재미를 갖는다)
     if (!k.isPlayer) k.aiTurbo = k.turbo.length > 0;
     k.hitCool = Math.max(0, k.hitCool - dt);
@@ -4689,9 +4765,77 @@ function checkPickups(k) {
     }
 }
 
+/* 내리찍는 장애물이 지금 내려와 있는가 (0 = 완전히 올라감, 1 = 완전히 내려옴) */
+function chompAt(h) {
+    const c = h.chomp;
+    const t = (raceTime + h.phase) % c.period;
+    if (t < c.down) return 1;                                  // 내려와 있다
+    const up = c.period - c.down;
+    const u = (t - c.down) / up;                               // 올라갔다 내려오는 사이
+    return u < .5 ? 1 - u * 2 : (u - .5) * 2;                  // 올라감 → 내려옴
+}
+
+/* 내리찍는 이빨을 그린다.
+   올라가 있을 때는 작고 흐리게, 바닥에는 '여기 떨어진다' 는 그림자를 남긴다.
+   그래야 박자를 읽고 지나갈 수 있다 — 안 보이면 그냥 운이 된다. */
+function drawChomp(g, h) {
+    const f = chompAt(h);                       // 0 = 위, 1 = 아래
+    const R = h.kind.r;
+    g.save(); g.translate(h.x, h.y);
+    // 바닥 그림자 : 내려올수록 진하고 작아진다
+    g.globalAlpha = .18 + f * .42;
+    g.fillStyle = '#000';
+    g.beginPath(); g.ellipse(4, 10, R * (1.5 - f * .5), R * (.7 - f * .22), 0, 0, TAU); g.fill();
+    g.globalAlpha = 1;
+    // 이빨 : 위에 떠 있을수록 크게 보인다 (높이 표현)
+    const sc = 1.5 - f * .5;
+    const lift = (1 - f) * R * 1.5;
+    g.translate(0, -lift); g.scale(sc, sc);
+    const grd = g.createLinearGradient(0, -R, 0, R);
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, shade(h.kind.color, -.28));
+    g.fillStyle = grd;
+    g.beginPath();                              // 어금니 : 위는 네모, 아래는 뾰족한 뿌리 둘
+    g.moveTo(-R * .78, -R * .72);
+    g.lineTo(R * .78, -R * .72);
+    g.quadraticCurveTo(R * .92, R * .1, R * .5, R * .34);
+    g.lineTo(R * .3, R * .95);
+    g.lineTo(R * .1, R * .38);
+    g.lineTo(-R * .1, R * .38);
+    g.lineTo(-R * .3, R * .95);
+    g.lineTo(-R * .5, R * .34);
+    g.quadraticCurveTo(-R * .92, R * .1, -R * .78, -R * .72);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#8a7f6a'; g.lineWidth = 3.5; g.stroke();
+    // 씹는 면 홈
+    g.strokeStyle = 'rgba(120,110,95,.55)'; g.lineWidth = 2.5;
+    g.beginPath(); g.moveTo(-R * .45, -R * .3); g.lineTo(R * .45, -R * .3); g.stroke();
+    if (f > .96) {                              // 막 내리찍은 순간 : 충격 표시
+        g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = 4;
+        g.beginPath(); g.arc(0, 0, R * 1.5, 0, TAU); g.stroke();
+    }
+    g.restore();
+}
+
+/* 폐포를 지나면 이산화탄소를 산소로 바꾼다.
+   많이 지고 왔을수록 크게 보상한다 — 참았다가 바꾸는 맛이 나게. */
+function swapGas(k) {
+    if (!track.sys.gasSwap || k.co2 < .12) return;
+    const q = k.co2;
+    k.co2 = 0;
+    k.boostTime = Math.max(k.boostTime, track.sys.gasSwap.boost * (.4 + q * .9));
+    if (k.isPlayer) {
+        sfxBoost(); buzz(20 + q * 40);
+        cam.shake = Math.max(cam.shake, 6 + q * 10);
+        cam.flash = Math.max(cam.flash || 0, .15 + q * .3);
+        popup(k.x, k.y, T('산소 교환!') + ' +' + Math.round(q * 100) + '%', '#6ec6f2');
+        for (let i = 0; i < 6 + q * 10; i++) addDriftSmoke(k);
+    }
+}
+
 function checkHazards(k) {
     for (const h of track.hazards) {
         if (!h.alive) { h.respawn -= 1 / 60; if (h.respawn <= 0) h.alive = true; continue; }
+        if (h.chomp && chompAt(h) < .92) continue;             // 올라가 있으면 지나갈 수 있다
         if ((h.x - k.x) ** 2 + (h.y - k.y) ** 2 < (h.kind.r + 22) ** 2) {
             if (k.starTime > 0) {
                 h.alive = false; h.respawn = 6;
@@ -5465,9 +5609,26 @@ function drawIsland(g) {
 }
 
 function drawDecor(g, inView) {
+    const vt = performance.now() / 1000;
     for (const d of track.decor) {
         if (!inView(d.x, d.y)) continue;
         const R = d.r;
+
+        if (d.villi) {
+            /* 융털 : 도로 바깥을 향해 뻗은 손가락. 소화액 흐름에 살랑거린다. */
+            const sway = Math.sin(vt * 2.1 + d.ph) * .22;
+            g.save(); g.translate(d.x, d.y); g.rotate(d.ang + sway);
+            g.fillStyle = '#e8a0a8';
+            g.beginPath();
+            g.moveTo(-R * .42, 0);
+            g.quadraticCurveTo(-R * .34, -R * 1.5, 0, -R * 1.9);
+            g.quadraticCurveTo(R * .34, -R * 1.5, R * .42, 0);
+            g.closePath(); g.fill();
+            g.fillStyle = 'rgba(255,255,255,.28)';
+            g.beginPath(); g.ellipse(-R * .12, -R * 1.35, R * .16, R * .34, 0, 0, TAU); g.fill();
+            g.restore();
+            continue;
+        }
 
         if (d.kind < .34) {
             // 타이어 벽 : 서킷 바깥의 완충재
@@ -6521,6 +6682,7 @@ function drawHazards(g, inView) {
     const t = performance.now() / 900;
     for (const h of track.hazards) {
         if (!h.alive || !inView(h.x, h.y)) continue;
+        if (h.chomp) { drawChomp(g, h); continue; }
         g.save(); g.translate(h.x, h.y);
         g.fillStyle = 'rgba(0,0,0,.24)';
         g.beginPath(); g.ellipse(5, 14, h.kind.r, h.kind.r * .5, 0, 0, TAU); g.fill();
