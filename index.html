@@ -2451,6 +2451,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 125, d: '9월 11일', t: [
+        '완주 무대에서 오른쪽을 보는 차(타이탄 프레임 · 슈가 러시 · 파워 리액터)가 뒤로 달리는 것처럼 보이던 것을 고쳤다 — 도로가 차 방향에 맞춰 흐른다',
+        'On the finish stage, karts facing right no longer look like they are reversing: the road now scrolls to match the kart direction'
+    ] },
     { v: 124, d: '9월 11일', t: [
         '스킨 뽑기 캡슐을 세포 모양으로 — 뽑으면 핵이 둘로 갈라지는 세포 분열로 열린다',
         'The skin capsule is now a cell that opens by dividing in two'
@@ -10576,11 +10580,15 @@ function drawVictory(g) {
     g.fillStyle = grd; g.fillRect(0, 0, VW, VH);
 
     const sc = victory.scroll;
+    /* 땅이 흐르는 방향 : 왼쪽을 보는 차면 오른쪽으로(+1), 오른쪽을 보는 차면 왼쪽으로(-1).
+       예전에는 늘 +1 이라 콜라겐 · 인슐린 · 미토가 뒤로 달리는 것처럼 보였다 (사용자 "통계에서 자동차 방향 틀린 애들 있어").
+       그림이 아직 없어 코드로 그리는 옆모습은 왼쪽을 보게 뒤집어 그리므로 +1. */
+    const vDir = (sideImg(player.sprite).ready && !SIDE_FACES_LEFT.has(player.sprite)) ? -1 : 1;
     g.save();
     g.globalAlpha = .16; g.fillStyle = '#fff';
     for (let i = -1; i < VW / 120 + 2; i++) {
-        const x = ((i * 120 + sc * .35) % (VW + 240) + VW + 240) % (VW + 240) - 120;
-        g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 44, 0); g.lineTo(x - 16, VH); g.lineTo(x - 60, VH);
+        const x = ((i * 120 + sc * .35 * vDir) % (VW + 240) + VW + 240) % (VW + 240) - 120;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 44 * vDir, 0); g.lineTo(x - 16 * vDir, VH); g.lineTo(x - 60 * vDir, VH);
         g.closePath(); g.fill();
     }
     g.restore();
@@ -10597,10 +10605,10 @@ function drawVictory(g) {
     // 흐르는 중앙선
     g.save();
     g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 6;
-    g.setLineDash([46, 40]); g.lineDashOffset = -sc;
+    g.setLineDash([46, 40]); g.lineDashOffset = -sc * vDir;
     g.beginPath(); g.moveTo(0, roadY + roadH / 2); g.lineTo(VW, roadY + roadH / 2); g.stroke();
     // 가장자리 발광 라인
-    g.setLineDash([26, 64]); g.lineDashOffset = sc * 1.4;
+    g.setLineDash([26, 64]); g.lineDashOffset = -sc * 1.4 * vDir;     // 예전에는 중앙선과 반대로 흘렀다
     g.strokeStyle = '#eaf6ff'; g.lineWidth = 4;
     g.beginPath(); g.moveTo(0, roadY + 6); g.lineTo(VW, roadY + 6);
     g.moveTo(0, roadY + roadH - 14); g.lineTo(VW, roadY + roadH - 14); g.stroke();
