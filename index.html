@@ -2426,6 +2426,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 123, d: '9월 11일', t: [
+        '차 그림자를 차 모양대로 — 차 방향으로 돌고 땅에 붙어서, 차가 공중에 떠 보이지 않는다',
+        'Kart shadows now follow the kart shape and rotation, so karts sit on the road instead of floating'
+    ] },
     { v: 122, d: '9월 11일', t: [
         '차마다 전용 그림 스킨 44종 — 사신(청룡 · 백호 · 주작 · 현무) 문양 36종과 색 스킨 8종. 전설 스킨은 차 밑에 네온 빛',
         '44 kart-exclusive drawn skins: 36 Four Guardians patterns (Dragon, Tiger, Bird, Tortoise) and 8 color skins. Legendary skins glow neon underneath',
@@ -7633,7 +7637,32 @@ function drawLabels(g, zoom) {
 
 /* ---- 가짜 3D 카트 : 아랫면(섀시) 위에 윗면을 어긋나게 얹어 높이를 만든다 ----
    어긋나는 방향은 화면 중심에서 멀어질수록 커진다 (원근 카메라 흉내) */
-const KART_H = 18, KS = 1.8;      // 차 높이 / 카트 크기 배율
+/* 차 높이를 18 → 7 로 (버전 123). 그림 카트는 위에서 본 그림에 이미 입체감이 있어서,
+   윗면을 18px 이나 띄우면 동그란 그림자와 떨어져 공중에 떠 보였다 (사용자 "자동차가 공중에 떠 보이는 것 같아"). */
+const KART_H = 7, KS = 1.8;      // 차 높이 / 카트 크기 배율
+
+/* 차 그림자 — 차 그림의 모양을 그대로 검게 · 흐리게 만든 것. 차 종류마다 한 장만 만든다.
+   예전에는 64×44 짜리 동그라미가 차 방향과 상관없이 오른쪽 아래에 떠 있었다. */
+const KART_SHADOWS = {};
+const SHADOW_N = 192, SHADOW_PAD = 28;
+function kartShadow(sprite) {
+    const im = KART_SPRITES[sprite];
+    if (!im || !im.ready) return null;
+    if (KART_SHADOWS[sprite] !== undefined) return KART_SHADOWS[sprite];
+    let c = null;
+    try {
+        c = document.createElement('canvas');
+        c.width = c.height = SHADOW_N + SHADOW_PAD * 2;
+        const g2 = c.getContext('2d');
+        g2.filter = 'blur(6px)';                                   // 흐린 가장자리 (filter 가 없는 브라우저는 또렷한 그림자)
+        g2.drawImage(im, SHADOW_PAD, SHADOW_PAD, SHADOW_N, SHADOW_N);
+        g2.filter = 'none';
+        g2.globalCompositeOperation = 'source-in';                 // 모양은 두고 색만 검게
+        g2.fillStyle = '#000'; g2.fillRect(0, 0, c.width, c.height);
+    } catch (e) { c = null; }
+    KART_SHADOWS[sprite] = c;
+    return c;
+}
 
 function drawKart(g, k, lift = 0) {
     const bounce = Math.sin(k.wobble) * 1.2;
@@ -7645,20 +7674,33 @@ function drawKart(g, k, lift = 0) {
         airScale = 1 + Math.sin(t * Math.PI) * .35;
     }
     lift += airH;
-    const ox = clamp((k.x - cam.x) * .035, -14, 14);
-    const oy = clamp((k.y - cam.y) * .035, -14, 14) - KART_H;
+    /* 원근 흉내로 윗면을 화면 가장자리 쪽으로 어긋나게 — 14px 까지 벌어지면 그림자와 떨어져 보여 5px 로 줄였다 */
+    const ox = clamp((k.x - cam.x) * .012, -5, 5);
+    const oy = clamp((k.y - cam.y) * .012, -5, 5) - KART_H;
     const sk = k.skin ? skinById(k.skin) : null;
     if (sk && sk.trail) skinTrail(g, k, sk, lift);      // 전설 스킨 궤적 (땅 위, 차 뒤로)
 
     g.save();
     g.translate(k.x, k.y - lift);
 
-    // 그림자 — 광원은 항상 왼쪽 위. 높이 뜰수록 작고 흐려진다.
+    // 그림자 — 광원은 항상 왼쪽 위. 차 모양 그대로 땅에 붙이고, 높이 뜰수록 작고 흐려진다.
     const shA = airH > 0 ? clamp(1 - airH / 240, .18, 1) : 1;
-    g.save(); g.globalAlpha = .34 * shA;
-    g.fillStyle = '#000';
-    g.beginPath(); g.ellipse(11, 16 + lift * .6 + airH, 32 * shA, 22 * shA, 0, 0, TAU); g.fill();
-    g.restore();
+    const shImg = KART_SPRITES[k.sprite] && KART_SPRITES[k.sprite].ready ? kartShadow(k.sprite) : null;
+    if (shImg) {
+        const S = 150, pad = SHADOW_PAD * S / SHADOW_N, sc = shA * (1 + airH / 900);
+        g.save();
+        g.translate(4 + airH * .3, 6 + lift * .6 + airH);          // 땅으로 되돌리고 오른쪽 아래로 조금
+        g.rotate(k.ang + (k.spin || 0));
+        g.scale(sc, sc);
+        g.globalAlpha = .55 * shA;
+        g.drawImage(shImg, -S / 2 - pad, -S / 2 - pad, S + pad * 2, S + pad * 2);
+        g.restore();
+    } else {
+        g.save(); g.globalAlpha = .34 * shA;
+        g.fillStyle = '#000';
+        g.beginPath(); g.ellipse(6, 9 + lift * .6 + airH, 32 * shA, 22 * shA, 0, 0, TAU); g.fill();
+        g.restore();
+    }
 
     // 부스터 불꽃 (지면 높이)
     if (k.boostTime > 0 || k.starTime > 0) {
