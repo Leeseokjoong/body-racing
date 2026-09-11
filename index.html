@@ -825,13 +825,37 @@
                         display: flex; flex-direction: column; }
     .skHead { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #ffe066; margin-bottom: 6px; }
     .skHead b { font-weight: 900; }
-    .skStage { position: relative; height: 250px; display: flex; align-items: center; justify-content: center; }
-    .skCap { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #1a2230;
-             background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.85) 0 7%, transparent 8%),
-                         linear-gradient(180deg, #ff5a7a 0 47%, #1a2230 47% 53%, #eef3f8 53% 100%);
-             box-shadow: inset 0 -8px 0 rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.45);
+    /* 250px 이면 등급 · 그림 · 이름 · 설명 두 줄 · '새 스킨! · 차를 사면 탈 수 있어요' · 버튼이 넘쳐 위아래 테두리에 걸쳤다 (버전 124) */
+    .skStage { position: relative; height: 290px; display: flex; align-items: center; justify-content: center; }
+    /* 뽑기 창이 열려 있으면 왼쪽 아래 버전 글자를 숨긴다 — 작은 폰에서 확률 글자 위에 겹쳤다 */
+    body:has(#skinShop:not(.hidden)) #build { display: none; }
+    /* 뽑기 캡슐 = 세포 하나 (버전 124). 예전 모양(위 빨강 · 검은 띠 · 아래 흰색)은 포켓몬 몬스터볼과 같아서 바꿨다.
+       뽑으면 세포가 옆으로 늘어나며 핵이 둘로 갈라지고(세포 분열) 등급 색으로 번쩍인다. */
+    .skCap { position: relative; width: 120px; height: 120px; border-radius: 50%; border: 4px solid rgba(255,150,175,.95);
+             background: radial-gradient(circle at 36% 30%, rgba(255,255,255,.6) 0 7%, transparent 8%),
+                         radial-gradient(circle at 50% 50%, rgba(255,170,190,.18) 0 50%, rgba(255,110,140,.45) 72%, rgba(230,60,100,.85) 100%);
+             box-shadow: 0 0 18px rgba(255,90,130,.45), inset 0 0 20px rgba(255,255,255,.22);
              animation: skFloat 1.8s ease-in-out infinite alternate; }
-    .skCap.shake { animation: skShake .95s ease-in-out forwards; }
+    .skCap::before, .skCap::after {                     /* 핵 (분열하면 둘) */
+             content: ''; position: absolute; left: 50%; top: 50%; width: 36%; height: 36%; border-radius: 50%;
+             background: radial-gradient(circle at 38% 34%, #d9a2ff 0 18%, #9a4fe0 50%, #5b22a8 100%);
+             box-shadow: 0 0 10px rgba(170,90,255,.55); transform: translate(-50%, -50%); }
+    .skCap::after { opacity: 0; }
+    .skCap.shake { animation: skDivide .95s ease-in-out forwards; }
+    .skCap.shake::before { animation: skNucA .95s ease-in-out forwards; }
+    .skCap.shake::after { animation: skNucB .95s ease-in-out forwards; }
+    @keyframes skDivide {
+        0%   { transform: scale(1, 1); }
+        18%  { transform: scale(1.07, .94); }
+        36%  { transform: scale(.95, 1.06); }
+        60%  { transform: scale(1.22, .9); }
+        82%  { transform: scale(1.42, .82); box-shadow: 0 0 34px 10px var(--tc, #fff); }
+        100% { transform: scale(1.52, .78); box-shadow: 0 0 60px 22px var(--tc, #fff); filter: brightness(1.7); }
+    }
+    @keyframes skNucA { 0% { transform: translate(-50%, -50%); } 45% { transform: translate(-50%, -50%) scale(1.35, .9); }
+                        100% { transform: translate(-118%, -50%) scale(.78); } }
+    @keyframes skNucB { 0%, 40% { opacity: 0; transform: translate(-50%, -50%); } 45% { opacity: 1; transform: translate(-50%, -50%) scale(1.35, .9); }
+                        100% { opacity: 1; transform: translate(18%, -50%) scale(.78); } }
     .skCap.pop { display: none; }
     @keyframes skFloat { from { transform: translateY(-4px); } to { transform: translateY(5px); } }
     @keyframes skShake {
@@ -845,7 +869,8 @@
               gap: 3px; text-align: center; border: 3px solid var(--tc, #c3ccd6); border-radius: 14px;
               background: rgba(0,0,0,.35); box-shadow: inset 0 0 40px -6px var(--tc, #c3ccd6); animation: skReveal .4s ease-out; }
     @keyframes skReveal { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .skCard img { width: 110px; height: 110px; object-fit: contain; }
+    /* 110px 이면 등급 · 이름 · 설명 · '이 차에 입히기' 까지 합쳐 칸(250px)을 넘쳐, 버튼이 카드 테두리에 걸쳤다 */
+    .skCard img { width: 88px; height: 88px; object-fit: contain; }
     .skTier { font-size: 12px; font-weight: 900; letter-spacing: 2px; color: var(--tc); }
     .skName { font-size: 16px; font-weight: 900; color: #fff; }
     .skFact { font-size: 11.5px; color: #cfe6ff; line-height: 1.45; max-width: 340px; padding: 0 10px; }
@@ -2426,6 +2451,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 124, d: '9월 11일', t: [
+        '스킨 뽑기 캡슐을 세포 모양으로 — 뽑으면 핵이 둘로 갈라지는 세포 분열로 열린다',
+        'The skin capsule is now a cell that opens by dividing in two'
+    ] },
     { v: 123, d: '9월 11일', t: [
         '차 그림자를 차 모양대로 — 차 방향으로 돌고 땅에 붙어서, 차가 공중에 떠 보이지 않는다',
         'Kart shadows now follow the kart shape and rotation, so karts sit on the road instead of floating'
