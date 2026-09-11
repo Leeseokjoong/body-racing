@@ -2173,6 +2173,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 111, d: '9월 11일', t: [
+        '차마다 엔진 소리가 다르다 — 레이싱 · 스포츠카 · 마후라 · 터보 · 오토바이 · 슈퍼카 여섯 가지',
+        'Each kart has its own engine sound: racing, sports car, big muffler, turbo, motorbike and supercar',
+        '엔진이 녹음 세 겹이라 가속하면 소리 결이 공회전 → 중간 → 고회전으로 바뀐다',
+        'Engines blend three recordings, so the tone moves from idle to mid to high revs as you speed up',
+        'ATP · DNA 카트는 출발 전에 부앙부앙, 출발하는 순간 울부짖는다',
+        'ATP and DNA karts rev before the start and howl as they launch'
+    ] },
     { v: 110, d: '9월 11일', t: [
         '배설계 콩팥을 제대로 — 달걀 네 개로 보이던 것을 강낭콩 두 개로',
         'Urinary kidneys fixed: two proper beans instead of what looked like four eggs',
@@ -7353,15 +7361,16 @@ let audioCtx = null;
    재생 속도로 rpm 을, 로우패스로 액셀 밟는 정도를 표현한다.
    실린더마다 힘을 살짝 다르게 줘서 기계다운 울퉁불퉁함을 남겼다. */
 const ENGINE_BASE_HZ = 62;          // 재생속도 1 일 때의 초당 점화 횟수
-let engineSrc = null, engineGain = null, engineLP = null, engineBody = null;
+let engineGain = null, engineLP = null, engineBody = null;
 let engineBoost = 0;        // 부스터 음높이를 서서히 붙이기 위한 값 (0~1)
-/* 엔진을 두 겹으로 쌓는다.
-     A 겹  느릴 때 (engine1 녹음)
-     B 겹  빠를 때 (engine2 녹음 — 다른 녹음이라 결이 다르다)
-   속도에 따라 둘을 서서히 바꿔 켠다. 한 재료를 1.2옥타브로 늘리기만 하면
-   소리결까지 끌려가 부자연스러운데, 결이 다른 둘을 섞으면 가속하며 소리가 변한다. */
-let engineSrcB = null, engineNormB = null;
-let engineGrowl = null, engineGrowlGain = null, engineNorm = null,
+/* 엔진을 세 겹으로 쌓는다 — 한 차 소리의 결이 다른 녹음 셋.
+     0 겹  공회전 결     1 겹  중간 결     2 겹  고회전 결
+   음높이(rpm)에 따라 서서히 넘겨 켠다. 한 재료를 1.2옥타브로 늘리기만 하면
+   소리결까지 끌려가 부자연스러운데, 결이 다른 녹음을 섞으면 가속하며 소리가 변한다. */
+const engineSrcs = [null, null, null], engineNorms = [null, null, null];
+let engineFix = [1, 1, 1];          // 겹마다 기본음 보정
+let engineFlavor = '';               // 지금 걸린 차 소리 (ENGINE_SOUND 의 값)
+let engineGrowl = null, engineGrowlGain = null,
     engineGear = -1, engineShift = 0;
 let windSrc = null, windGain = null;
 
@@ -7369,7 +7378,7 @@ let windSrc = null, windGain = null;
    assets/sfx_<이름>.mp3 가 있으면 그것을 '재료' 로 쓴다. 없으면 조용히 넘어가고
    코드 합성음이 그대로 쓰인다. 실패해도 게임은 아무 일 없이 굴러간다. */
 const SAMPLE = {};                 // 이름 -> AudioBuffer | null(없음) | undefined(아직 모름)
-const SAMPLE_ON = { skid: false, brake: false, engineA: false, engineB: false };   // 엔진은 녹음 두 겹
+const SAMPLE_ON = { skid: false, brake: false };
 
 /* 아직 받는 중일 때 또 부르면 그 쪽도 줄을 세워 둔다.
 
@@ -7378,9 +7387,9 @@ const SAMPLE_ON = { skid: false, brake: false, engineA: false, engineB: false };
    새 엔진 녹음이 영영 안 걸리는 일이 여기서 생겼다. */
 const SAMPLE_WAIT = {};                // 이름 -> 받으면 부를 함수들
 
-/* 자산 파일 이름. 대부분 sfx_<이름>.mp3 인데 엔진 고리만 다른 이름을 쓴다
+/* 자산 파일 이름. 대부분 sfx_<이름>.mp3 인데 엔진 녹음만 engine_<이름>.mp3 를 쓴다
    (sfx_engine.mp3 는 예전 녹음이라 이름이 겹치면 헷갈린다). */
-const SAMPLE_FILE = { engineA: 'assets/engine_a.mp3', engineB: 'assets/engine_b.mp3' };
+const sampleUrl = name => name.startsWith('engine_') ? 'assets/' + name + '.mp3' : 'assets/sfx_' + name + '.mp3';
 
 function wantSample(name, onReady) {
     const have = SAMPLE[name];
@@ -7389,7 +7398,7 @@ function wantSample(name, onReady) {
 
     SAMPLE[name] = null;
     SAMPLE_WAIT[name] = [onReady];
-    fetch(SAMPLE_FILE[name] || ('assets/sfx_' + name + '.mp3'))
+    fetch(sampleUrl(name))
         .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('no file')))
         .then(b => new Promise((ok, no) => audioCtx.decodeAudioData(b, ok, no)))
         .then(buf => {
@@ -7420,7 +7429,8 @@ function bufRms(buf) {
     for (let i = 0; i < d.length; i += 7) { sum += d[i] * d[i]; n++; }   // 7칸마다 훑으면 충분하다
     return Math.sqrt(sum / Math.max(1, n));
 }
-function normFor(buf) { return clamp(REF_RMS / Math.max(1e-4, bufRms(buf)), .15, 14); }
+/* 매 프레임 세 겹을 다시 재면 헛수고라 버퍼에 적어 둔다 */
+function normFor(buf) { return buf._norm || (buf._norm = clamp(REF_RMS / Math.max(1e-4, bufRms(buf)), .15, 14)); }
 
 /* 돌고 있는 반복음의 재료만 갈아 끼운다 (이어진 곳은 그대로 두고 소스만 교체) */
 function swapLoop(oldSrc, buf, norm, rate) {
@@ -7501,7 +7511,7 @@ function buildWindBuffer() {                             // 고속에서 얹는 
 }
 
 /* 지금 고른 차의 엔진 소리로 갈아 끼운다. 차를 바꾸고 판을 새로 시작할 때마다 불린다.
-   내려받을 것이 없으니 곧바로 바뀐다 — 첫 판부터 제 소리가 난다. */
+   녹음은 메뉴에서 차를 고를 때 미리 받아 둔다(preloadOneShots) — 첫 판부터 제 소리가 난다. */
 let enginePitch = 1;
 /* 엔진 녹음 고리.
 
@@ -7520,25 +7530,54 @@ let enginePitch = 1;
    차마다의 pitch 가 여기에 곱해져 무거운 차·가벼운 차가 갈린다. */
 const ENGINE_BASE_PITCH = .72;
 
+/* ---- 차마다 다른 엔진 소리 (2026-09-11) ----
+   사용자 : "차마다 소리를 다르게 하는거야". 차의 소리 성격(voice) 여섯에 녹음 한 벌씩.
+   한 벌 = 결이 다른 반복음 셋 (공회전 · 중간 · 고회전). 일레븐랩스로 만들었다 — tools/make-engine.mjs.
+   일레븐랩스는 rpm 을 적어도 음높이가 거의 같게 내므로, 셋은 'rpm 이 다른 녹음' 이 아니라
+   '결이 다른 녹음' 이다. 음높이는 아래 기어 곡선이 맡고, 녹음마다 기본음 차이만 ENGINE_FIX 로 맞춘다.
+     heavy  혈소판 · 콜라겐   muffler  거대한 머플러 굉음
+     guard  백혈구            car      V8 스포츠카
+     plain  적혈구 루키       race     레이싱 고회전 (사용자가 마음에 들어 한 소리 — 첫 차라 가장 많이 듣는다)
+     light  산소 · 인슐린     turbo    작은 터보 스포츠카
+     sharp  신경 · 미토콘드리아  bike  튜닝 오토바이
+     prime  ATP · DNA         street   V10 슈퍼카 붕붕 — 출발 전 부앙부앙, 출발할 때 울부짖음
+   B(레이싱)와 붕붕을 한 소리로 섞는 안은 버렸다 — 사용자 "b와 붕붕 조합하면 이상해지지". */
+const ENGINE_SOUND = { heavy: 'muffler', guard: 'car', plain: 'race', light: 'turbo', sharp: 'bike', prime: 'street' };
+const ENGINE_FIX = {        // 가운데 녹음에 맞춘 기본음 보정 (공회전 · 중간 · 고회전), engine3b.js 가 잰 값
+    car:   [.995, 1, .939], race:  [.939, 1, 1.228], muffler: [.806, 1, .8],
+    street: [.925, 1, 1.25], bike: [1, 1, 1.158],    turbo:   [.8, 1, .8]
+};
+const ENGINE_REVS = { street: true };      // 한 번 소리(부앙부앙 · 출발 울부짖음)가 있는 차 소리
+const ENGINE_LEVELS = ['idle', 'mid', 'high'];
+const engineFlavorOf = c => ENGINE_SOUND[c && c.voice] || 'race';
+
 function engineUseCar() {
-    if (!audioCtx || !engineNorm) return;
+    if (!audioCtx || !engineNorms[0]) return;
     const c = carById(save.car);
     enginePitch = (c.pitch || 1) * ENGINE_BASE_PITCH;
-    wantSample('engineA', buf => { engineSrc = swapLoop(engineSrc, buf, engineNorm, 1); });
-    if (engineNormB)
-        wantSample('engineB', buf => { engineSrcB = swapLoop(engineSrcB, buf, engineNormB, 1); });
+    const fl = engineFlavorOf(c);
+    engineFlavor = fl;
+    engineFix = ENGINE_FIX[fl] || [1, 1, 1];
+    ENGINE_LEVELS.forEach((lv, k) => {
+        wantSample('engine_' + fl + '_' + lv, buf => {
+            if (engineFlavor !== fl) return;        // 받는 사이에 차를 바꿨다 — 옛 차 소리는 버린다
+            engineSrcs[k] = swapLoop(engineSrcs[k], buf, engineNorms[k], 1);
+        });
+    });
+    if (ENGINE_REVS[fl]) { wantSample('engine_rev1', () => {}); wantSample('engine_rev3', () => {}); }
+}
+
+/* 붕붕 차의 한 번 소리. 아직 못 받았으면 이번엔 조용히 넘어간다 */
+function engineRev(name, vol) {
+    if (!audioCtx || !ENGINE_REVS[engineFlavor] || !SAMPLE[name]) return;
+    playOne(name, vol);
 }
 
 function updateEngine() {
     if (!audioCtx) return;
     const active = (state === 'race' || state === 'countdown') && player;
 
-    if (!engineSrc) {
-        engineSrc = audioCtx.createBufferSource();
-        engineSrc.buffer = buildEngineBuffer();
-        engineSrc.loop = true;
-        engineNorm = audioCtx.createGain();
-        engineNorm.gain.value = normFor(engineSrc.buffer);
+    if (!engineNorms[0]) {
         /* 한 겹으로 만들면 저역을 열 땐 먹먹하고 고역을 열 땐 윙윙거린다.
            그래서 같은 점화음을 두 갈래로 나눈다.
              울림  늘 깔려 있는 저음. 배 속을 울리는 몸통.
@@ -7549,29 +7588,27 @@ function updateEngine() {
         engineBody.type = 'peaking'; engineBody.frequency.value = 165;
         engineBody.Q.value = 1.1; engineBody.gain.value = 6;
         engineGain = audioCtx.createGain(); engineGain.gain.value = 0;
-        engineSrc.connect(engineNorm);
-        engineNorm.connect(engineLP); engineLP.connect(engineBody);
+        engineLP.connect(engineBody);
         engineBody.connect(engineGain); engineGain.connect(masterOut());
 
         engineGrowl = audioCtx.createBiquadFilter();               // 으르렁
         engineGrowl.type = 'bandpass'; engineGrowl.frequency.value = 500; engineGrowl.Q.value = 1.15;
         engineGrowlGain = audioCtx.createGain(); engineGrowlGain.gain.value = 0;
-        engineNorm.connect(engineGrowl); engineGrowl.connect(engineGrowlGain);
+        engineGrowl.connect(engineGrowlGain);
         engineGrowlGain.connect(masterOut());
 
-        engineSrc.start();
-
-        /* B 겹 : 같은 필터를 거치되 자기 세기를 따로 갖는다.
-           A 와 B 의 세기를 반대로 움직여 속도에 따라 서서히 바꿔 켠다. */
-        engineSrcB = audioCtx.createBufferSource();
-        engineSrcB.buffer = engineSrc.buffer;
-        engineSrcB.loop = true;
-        engineNormB = audioCtx.createGain();
-        engineNormB.gain.value = 0;                  // 처음엔 꺼 둔다
-        engineSrcB.connect(engineNormB);
-        engineNormB.connect(engineLP);
-        engineNormB.connect(engineGrowl);
-        engineSrcB.start();
+        /* 세 겹 : 같은 필터를 거치되 겹마다 자기 세기를 갖는다.
+           녹음이 도착하기 전에는 합성음을 걸어 두고, 도착하면 겹마다 갈아 끼운다(swapLoop). */
+        const synth = buildEngineBuffer();
+        for (let k = 0; k < 3; k++) {
+            const src = audioCtx.createBufferSource();
+            src.buffer = synth; src.loop = true;
+            const norm = audioCtx.createGain();
+            norm.gain.value = k === 0 ? normFor(synth) : 0;
+            src.connect(norm); norm.connect(engineLP); norm.connect(engineGrowl);
+            src.start();
+            engineSrcs[k] = src; engineNorms[k] = norm;
+        }
 
         engineUseCar();          // 지금 고른 차의 엔진 녹음을 불러 온다
 
@@ -7597,7 +7634,10 @@ function updateEngine() {
     const boost = player.boostTime > 0 || player.starTime > 0;
     let load, rate;                                       // load = 액셀을 밟은 정도
 
-    if (state === 'countdown') {
+    if (state === 'countdown' && ENGINE_REVS[engineFlavor] && SAMPLE.engine_rev1) {
+        // 붕붕 차 : 서서 부앙부앙은 녹음(engine_rev1)이 맡고, 엔진은 공회전으로 낮게 깔린다
+        load = .3; rate = .62;
+    } else if (state === 'countdown') {
         // 출발 전 공회전 : 밟았다 놓기를 반복하는 '부릉— 부릉—'
         const rev = Math.pow(Math.max(0, Math.sin(performance.now() / 340)), 2.4);
         load = .25 + rev * .75;
@@ -7641,16 +7681,19 @@ function updateEngine() {
     engineShift = Math.max(0, engineShift - 1 / 60);
     const cut = engineShift > 0 ? .45 : 1;               // 변속 중에는 잠깐 힘이 빠진다
 
-    // 차마다 기본 음높이가 다르다 — 같은 녹음을 써도 다른 엔진으로 들린다
-    engineSrc.playbackRate.setTargetAtTime(rate * enginePitch, t, .07);
-    /* 두 겹 섞기 : 느리면 A, 빠르면 B. 사이에서는 둘이 겹친다.
-       음높이는 둘 다 같이 움직여야 맞물린다. */
-    if (engineSrcB && engineNormB) {
-        engineSrcB.playbackRate.setTargetAtTime(rate * enginePitch, t, .07);
-        const mix = clamp((Math.abs(player.speed || 0) / MAXSPEED - .28) / .40, 0, 1);
-        const base = normFor(engineSrc.buffer);
-        engineNorm.gain.setTargetAtTime(base * Math.sqrt(1 - mix), t, .10);
-        engineNormB.gain.setTargetAtTime(normFor(engineSrcB.buffer) * Math.sqrt(mix), t, .10);
+    /* 세 겹 섞기 — 음높이(= rpm)에 따라 공회전 → 중간 → 고회전 결로 서서히 넘어간다.
+       세기는 같은 힘 곡선(cos · sin)이라 넘어가는 사이에 소리가 꺼지거나 커지지 않는다.
+       미리듣기(engine3b.js)와 같은 곡선. 겹마다 음높이는 같이 움직이고 기본음 보정만 곱한다.
+       차마다 기본 음높이(enginePitch)도 다르다 — 같은 녹음을 쓰는 두 차도 다른 엔진으로 들린다. */
+    const sp3 = clamp((rate - .62) / (1.96 - .62), 0, 1);
+    const w3 = [0, 0, 0];
+    if (sp3 < .45) { const u = sp3 / .45 * Math.PI / 2; w3[0] = Math.cos(u); w3[1] = Math.sin(u); }
+    else { const u = (sp3 - .45) / .55 * Math.PI / 2; w3[1] = Math.cos(u); w3[2] = Math.sin(u); }
+    for (let k = 0; k < 3; k++) {
+        const src = engineSrcs[k], norm = engineNorms[k];
+        if (!src || !norm) continue;
+        src.playbackRate.setTargetAtTime(rate * enginePitch * engineFix[k], t, .07);
+        norm.gain.setTargetAtTime(normFor(src.buffer) * w3[k], t, .10);
     }
 
     /* 울림은 늘 깔리고, 으르렁이 밟은 만큼 열린다.
@@ -7822,9 +7865,14 @@ function preloadOneShots() {
        그동안 첫 드리프트가 합성음으로 나가 버린다.
        메뉴에서 차를 고르는 동안 미리 받아 두면 첫 판부터 제 소리가 난다.
 
-       엔진은 코드로 만들므로 받을 것이 없다 — 그래서 첫 판부터 곧바로 제 소리가 난다. */
+       엔진 녹음(세 겹, 붕붕 차는 한 번 소리 둘)도 같은 이유로 여기서 받는다. */
     const c = carById(save.car);
     if (c) wantSample('skid' + (c.skid || 1), () => {});
+    if (c) {
+        const fl = engineFlavorOf(c);
+        ENGINE_LEVELS.forEach(lv => wantSample('engine_' + fl + '_' + lv, () => {}));
+        if (ENGINE_REVS[fl]) { wantSample('engine_rev1', () => {}); wantSample('engine_rev3', () => {}); }
+    }
 }
 
 function playOne(name, vol = 1, rate = 1) {
@@ -9927,11 +9975,11 @@ function loop(now) {
     if (state === 'countdown') {
         countdown -= dt;
         const n = Math.ceil(countdown);
-        if (n !== countShown) { countShown = n; if (n > 0) sfxCount(); }
+        if (n !== countShown) { countShown = n; if (n > 0) sfxCount(); if (n === 3) engineRev('engine_rev1', .28); }
         el('bigMsg').textContent = n > 0 ? n : 'GO!';
         el('bigMsg').style.opacity = 1;
         if (!audioCtx) playBeep(1, .01);
-        if (countdown <= 0) { state = 'race'; sfxGo(); setTimeout(() => el('bigMsg').style.opacity = 0, 550); }
+        if (countdown <= 0) { state = 'race'; sfxGo(); engineRev('engine_rev3', .30); setTimeout(() => el('bigMsg').style.opacity = 0, 550); }
         karts.forEach(updateProgress);
     } else if (state === 'race') {
         raceTime += dt;
