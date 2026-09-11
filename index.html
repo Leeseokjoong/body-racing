@@ -2105,6 +2105,15 @@ Object.assign(EN, {
 '남은 물을 빨아들이고 나머지를 내보냅니다.': 'It absorbs the remaining water and sends the rest out.',
 
 // ── 호흡계
+'왼쪽 세기관지': 'Left bronchioles', '공기주머니': 'Air sacs', '가로막': 'Diaphragm', '오른쪽 폐': 'Right lung', '코로 나감': 'Out through the nose',
+'왼쪽 폐 속으로 갈라지며 파고드는 가는 길': 'A narrow path branching deep into the left lung',
+'포도송이 모양의 작은 공기주머니. 폐 하나에 수억 개가 있어 표면적이 아주 넓습니다.': 'Tiny grape-like air sacs. Each lung has hundreds of millions, so the surface area is huge.',
+'폐 아래의 돔 모양 근육. 들숨에 내려가고 날숨에 올라갑니다': 'The dome-shaped muscle under the lungs. It moves down as you breathe in and up as you breathe out',
+'오른쪽 폐는 세 덩어리, 왼쪽 폐는 심장 자리 때문에 두 덩어리로 조금 작습니다.': 'The right lung has three lobes; the left has two and is a little smaller to make room for the heart.',
+'폐포 송이송이를 그물처럼 감고 올라가는 아주 가는 혈관': 'Tiny blood vessels wrapping the air sacs like a net as you climb',
+'연골 고리가 받쳐 주어 찌그러지지 않는 곧은 공기 길': 'A straight airway held open by rings of cartilage',
+'기관이 좌우 폐로 갈라지는 지점. 여기서부터 나뭇가지처럼 점점 가늘어집니다.': 'Where the trachea splits toward both lungs. From here it branches like a tree and gets narrower.',
+'가로막은 올라가고 갈비뼈는 내려가며 가슴 속 공간이 좁아져 공기가 밀려 나갑니다.': 'The diaphragm rises and the ribs drop, so the chest gets smaller and air is pushed out.',
 '산소와 이산화탄소가 교환되는 곳은?': 'Where are oxygen and carbon dioxide exchanged?',
 '표면적이 아주 넓어 기체 교환에 유리합니다.': 'Their huge surface area makes gas exchange easy.',
 '들숨을 쉴 때 가로막은?': 'When you breathe in, the diaphragm...',
@@ -2209,6 +2218,16 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 115, d: '9월 11일', t: [
+        '호흡계 서킷을 새로 만들었다 — 교과서 그림처럼 코 → 기관 → 기관지 → 왼쪽 폐 → 가로막 → 오른쪽 폐 → 날숨',
+        'Respiratory circuit rebuilt like the textbook picture: nose, trachea, bronchi, left lung, diaphragm, right lung, exhale',
+        '숨을 쉬면 폐가 부풀고, 가로막이 내려가고, 갈비뼈가 올라간다',
+        'As it breathes, the lungs inflate, the diaphragm moves down and the ribs rise',
+        '너무 꼬불거리던 길을 정리했다 — 폐 속만 지그재그, 기관 · 가로막 · 날숨 길은 시원하게',
+        'Much less twisty: zigzags only inside the lungs, with open straights elsewhere',
+        '날숨 설명을 바로잡았다 — 날숨에 갈비뼈는 내려간다',
+        'Fixed the exhale explanation: the ribs move down when you breathe out'
+    ] },
     { v: 114, d: '9월 11일', t: [
         '신경 · 백혈구 · 산소 · ATP · DNA 카트를 가상 팀 포뮬러카로 바꿨다 — 실제 차를 닮은 그림을 뺐다',
         'Nerve, White Blood Cell, Oxygen, ATP and DNA karts are now fictional formula cars (no real-car look-alikes)',
@@ -2736,70 +2755,70 @@ const SYSTEMS = {
            코스 자체는 급커브 35% 로 이미 촘촘해서, 굽이를 더 넣는 대신 바퀴로 맞춘다. */
         id: 'respiratory', name: '호흡계 서킷', laps: 5, closed: true, halfWidth: 182,
         grass: ['#2c7484', '#1c5563'], accent: '#8fd0e8',
-        // 숨의 길 : 들숨은 갈수록 좁아지고(코→기관→기관지→세기관지),
-        //           폐포 그물에서 실컷 감았다가, 날숨은 시원하게 뻗어 나간다.
+        /* 2026-09-11 다시 만듦 — 사용자가 준 교과서 그림(몸 앞모습 : 코 · 기관 · 기관지 · 폐 · 가로막) 그대로.
+           코로 들어와 기관을 곧게 내려가고, 기관지에서 왼쪽 폐로 들어가 세기관지를 지그재그로 내려간 뒤,
+           가로막을 따라 오른쪽 폐로 건너가 폐포 모세혈관을 타고 올라가 산소를 바꾸고, 날숨 길로 코에 돌아온다.
+           예전 코스는 방향 전환 44번(순환계 18번)으로 너무 꼬불거렸다 — 폐 안만 지그재그, 나머지는 시원하게.
+           좌표 기준 : 몸 가운데 x = 2200. 왼쪽 폐 x 700~1950, 오른쪽 폐 x 2450~3700, 폐 y 1500~3650, 가로막 길 y ≈ 4000. */
         landmarks: [
-            { type: 'lungs', at: [2100, 2900], r: 1150 }
+            { type: 'chest', at: [2200, 2300], r: 2100 }
         ],
         flow: [
-            { name: '코 · 입', at: [640, 520], color: '#f0b8a0', role: '공기 흡입', blob: 260,
+            { name: '코 · 입', at: [2900, 620], color: '#f0b8a0', role: '공기 흡입', blob: 260,
               info: '코털과 점액이 먼지를 거르고, 공기를 따뜻하고 촉촉하게 만들어 줍니다.',
               seg: { name: '인두 · 후두', color: '#e0a68e', wMul: .72, tunnel: true,
                      desc: '목구멍의 좁은 통로. 음식은 식도로, 공기는 기관으로 갈라집니다' },
-              via: [[666, 670], [707, 820], [716, 963], [736, 1116]] },
+              via: [[2700, 540], [2480, 600], [2320, 760], [2220, 960]] },
 
-            { name: '기관', at: [760, 1260], color: '#c9d6e8', role: '공기 길', blob: 0,
+            { name: '기관', at: [2200, 1200], color: '#c9d6e8', role: '공기 길', blob: 0,
               chamber: { w: 260, h: 250, wall: 44, tint: '#dce6f2' },
               pump: { power: .6, label: '들숨!', desc: '가로막이 내려가며 공기가 쑥 빨려 들어옵니다.' },
               info: '고리 모양 연골이 있어 눌려도 찌그러지지 않는 튼튼한 공기 통로입니다.',
               seg: { name: '기관', color: '#c9d6e8', wMul: .95,
-                     desc: '연골 고리가 받쳐 주어 절대 찌그러지지 않는 공기 길' },
-              via: [[794, 1417], [834, 1569], [886, 1724], [949, 1868]] },
+                     desc: '연골 고리가 받쳐 주어 찌그러지지 않는 곧은 공기 길' },
+              via: [[2200, 1450], [2200, 1700], [2170, 1930]] },
 
-            { name: '기관지', at: [1020, 2000], color: '#a8c0da', role: '좌우 분기', blob: 240,
-              info: '기관이 좌우 폐로 갈라지는 지점. 여기서부터 점점 가늘어집니다.',
-              seg: { name: '세기관지', color: '#a8c0da', wMul: .62,
-                     desc: '나뭇가지처럼 자꾸 갈라지며 점점 가늘어지는 길' },
-              /* 이웃 고리끼리 도로 폭보다 가까웠던 것을 벌렸다 (relax.js, 겹침 1289 → 0). */
-              via: [[1100, 2143], [1191, 2246], [1343, 2287], [1439, 2370], [1480, 2473],
-                    [1431, 2582], [1281, 2643], [1159, 2702], [1029, 2764], [930, 2877],
-                    [916, 3019], [1004, 3138], [1138, 3212], [1276, 3222], [1397, 3157],
-                    [1486, 3074], [1505, 2966], [1529, 2858], [1617, 2793], [1726, 2809],
-                    [1788, 2900], [1793, 3010], [1759, 3114], [1699, 3237], [1643, 3335],
-                    [1666, 3454], [1742, 3550], [1894, 3578], [2025, 3521], [2093, 3389],
-                    [2106, 3280], [2065, 3163], [2092, 3021]] },
+            { name: '기관지', at: [2020, 2130], color: '#a8c0da', role: '좌우 분기', blob: 240,
+              info: '기관이 좌우 폐로 갈라지는 지점. 여기서부터 나뭇가지처럼 점점 가늘어집니다.',
+              seg: { name: '왼쪽 세기관지', color: '#a8c0da', wMul: .62,
+                     desc: '왼쪽 폐 속으로 갈라지며 파고드는 가는 길' },
+              /* 판 시간 140초로 짧고 밋밋했다(순환계 187초) → 세 번이던 지그재그를 다섯 번으로. 줄 간격 ≈ 440 (도로 폭 226) */
+              via: [[1780, 1900], [1350, 1830], [950, 1880], [800, 2080], [1000, 2300],
+                    [1450, 2320], [1720, 2400], [1880, 2580], [1700, 2760], [1250, 2780],
+                    [950, 2830], [800, 3030], [1000, 3200], [1450, 3220], [1780, 3260],
+                    [1880, 3440], [1650, 3600], [1250, 3620], [950, 3650]] },
 
-            { name: '폐포', at: [2120, 2880], color: '#f2a0c0', role: '기체 교환', blob: 0,
+            { name: '폐포', at: [720, 3880], color: '#f2a0c0', role: '공기주머니', blob: 0,
               chamber: { w: 360, h: 350, wall: 34, tint: '#f7b8d0' },
-              info: '포도송이 모양의 작은 공기주머니. 여기서 산소와 이산화탄소가 자리를 바꿉니다.',
-              seg: { oxygen: true, name: '폐포 모세혈관', color: '#e2707a', wMul: .7,
-                     desc: '폐포 송이송이를 그물처럼 감고 도는 아주 가는 혈관' },
-              // 포도송이를 하나하나 감아 도는 그물망 — 이 코스에서 드리프트가 가장 많이 나오는 구간
-              /* 이웃 고리끼리 도로 폭보다 가까웠던 것을 벌렸다 (relax.js, 겹침 1289 → 0). */
-              via: [[2244, 2967], [2368, 3055], [2475, 3146], [2611, 3212], [2752, 3207],
-                    [2869, 3126], [2907, 3000], [2837, 2873], [2710, 2822], [2589, 2794],
-                    [2482, 2726], [2457, 2602], [2533, 2491], [2668, 2434], [2793, 2466],
-                    [2914, 2551], [3019, 2647], [3144, 2713], [3268, 2733], [3380, 2657],
-                    [3395, 2545], [3323, 2408], [3202, 2352], [3096, 2310], [2997, 2202],
-                    [2967, 2079], [3057, 1957], [3196, 1910], [3303, 1948], [3362, 2041],
-                    [3428, 2129], [3532, 2164], [3638, 2133], [3693, 2038], [3676, 1929]] },
+              info: '포도송이 모양의 작은 공기주머니. 폐 하나에 수억 개가 있어 표면적이 아주 넓습니다.',
+              seg: { name: '가로막', color: '#d99a82', wMul: 1.1,
+                     desc: '폐 아래의 돔 모양 근육. 들숨에 내려가고 날숨에 올라갑니다' },
+              /* 폐 맨 아랫줄과 가로막 길 사이가 380 이라 양쪽 모서리가 급한 머리핀이 되어 길이 접혔다(갇힘 1, 게이트 10/15)
+                 → 가로막 길을 내려 간격 510, 모서리 지점을 바깥 아래로 빼서 크게 돈다 */
+              via: [[900, 4110], [1350, 4190], [1900, 4160], [2500, 4160], [3050, 4190], [3500, 4110]] },
 
-            { name: '산소 교환', at: [3660, 1820], color: '#e04a4a', role: '혈액에 전달', blob: 250,
+            { name: '오른쪽 폐', at: [3680, 3880], color: '#e88aa8', role: '오른쪽 폐', blob: 240,
+              info: '오른쪽 폐는 세 덩어리, 왼쪽 폐는 심장 자리 때문에 두 덩어리로 조금 작습니다.',
+              seg: { oxygen: true, name: '폐포 모세혈관', color: '#e2707a', wMul: .66,
+                     desc: '폐포 송이송이를 그물처럼 감고 올라가는 아주 가는 혈관' },
+              via: [[3450, 3650], [3150, 3620], [2750, 3600], [2520, 3440], [2620, 3260], [2950, 3220],
+                    [3400, 3200], [3600, 3030], [3450, 2830], [3150, 2780], [2700, 2760],
+                    [2520, 2580], [2680, 2400], [2950, 2320], [3400, 2300], [3600, 2080],
+                    [3450, 1880], [3100, 1830], [2800, 1870]] },
+
+            { name: '산소 교환', at: [2640, 1960], color: '#e04a4a', role: '혈액에 전달', blob: 250,
               info: '산소는 혈액으로, 이산화탄소는 폐포로. 농도 차이 때문에 저절로 이동합니다.',
               seg: { name: '날숨 통로', color: '#8fd0e8', wMul: 1.15,
                      desc: '이산화탄소를 실은 공기가 시원하게 빠져나가는 넓은 길' },
-              via: [[3740, 1690], [3814, 1573], [3763, 1430], [3703, 1300], [3755, 1179],
-                   [3817, 1041], [3733, 931], [3608, 853], [3475, 807]] },
+              via: [[2660, 1650], [2800, 1380], [3000, 1180]] },
 
-            { name: '날숨', at: [3340, 760], color: '#8fd0e8', role: '이산화탄소 배출', blob: 250,
+            /* 날숨 설명을 바로잡았다 : 예전 글은 '가로막과 갈비뼈가 올라가며' — 날숨에 갈비뼈는 내려간다 */
+            { name: '날숨', at: [3180, 1080], color: '#8fd0e8', role: '이산화탄소 배출', blob: 250,
               pump: { power: 1, label: '날숨! 후—', desc: '가로막이 올라가며 가슴이 좁아져 공기가 힘차게 밀려 나갑니다.' },
-              info: '가로막과 갈비뼈가 올라가며 가슴 속 공간이 좁아져 공기가 밀려 나갑니다.',
-              seg: { name: '기도 복귀', color: '#8fd0e8', wMul: 1.15,
+              info: '가로막은 올라가고 갈비뼈는 내려가며 가슴 속 공간이 좁아져 공기가 밀려 나갑니다.',
+              seg: { name: '코로 나감', color: '#8fd0e8', wMul: 1.15,
                      desc: '숨을 내쉬고 나면 다시 들이마실 차례. 숨은 쉬지 않고 반복됩니다' },
-              via: [[3210, 683], [3072, 596], [2946, 537], [2815, 491], [2660, 449],
-                   [2518, 420], [2371, 398], [2221, 382], [2091, 371], [1936, 363],
-                   [1782, 360], [1652, 361], [1503, 367], [1360, 378], [1209, 397],
-                   [1067, 423], [924, 449], [765, 472]] }
+              via: [[3150, 860]] }
         ],
         pickups: [
             { icon: '산소', name: '산소',       color: '#6ec6f2', effect: 'turbo', img: 'rbc',
@@ -5952,6 +5971,75 @@ function fitKidney(lm) {
              ang, len, wid, flip };
 }
 
+/* ---- 호흡계 가슴 그림 (사용자가 준 교과서 그림 : 코 · 기관 · 기관지 · 폐 · 가로막) ----
+   도로 아래에 깔린다. 원점은 가슴 한가운데(landmark at = [2200, 2300]), 좌표는 맵 단위 그대로라
+   코스 좌표와 1:1 로 맞는다 (호흡계 flow 위 주석의 기준 참고).
+   숨 한 번 : 들숨이면 폐가 부풀고 · 가로막이 내려가고 · 갈비뼈가 올라간다. 날숨이면 반대.
+   (사용자 : "폐 부풀려지고 가로막 내려오고 늑골 올라가고 그런 표현도 들어가게") */
+function drawChest(g, t, i) {
+    const ph = (Math.sin(t * .9) + 1) / 2;               // 0 날숨 끝 → 1 들숨 끝
+    g.save();
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    // 몸 윤곽 : 머리는 오른쪽을 본다 (코가 오른쪽 위 — 코스가 코에서 출발한다)
+    g.fillStyle = 'rgba(247,222,203,.30)'; g.strokeStyle = 'rgba(120,70,50,.35)'; g.lineWidth = 16;
+    g.beginPath(); g.ellipse(180, -1780, 430, 470, 0, 0, TAU); g.fill(); g.stroke();          // 머리
+    g.beginPath(); g.moveTo(560, -1900); g.quadraticCurveTo(790, -1700, 590, -1610);          // 코
+    g.closePath(); g.fill(); g.stroke();
+    g.beginPath();                                                                             // 목 · 어깨 · 몸통
+    g.moveTo(-180, -1350); g.lineTo(-200, -1130);
+    g.bezierCurveTo(-700, -1080, -1450, -1060, -1600, -760);
+    g.bezierCurveTo(-1720, -300, -1700, 900, -1640, 1750);
+    g.quadraticCurveTo(0, 2000, 1640, 1750);
+    g.bezierCurveTo(1700, 900, 1720, -300, 1600, -760);
+    g.bezierCurveTo(1450, -1060, 700, -1080, 420, -1130);
+    g.lineTo(400, -1350); g.closePath(); g.fill(); g.stroke();
+    // 갈비뼈 : 들숨에 올라간다
+    g.strokeStyle = 'rgba(255,248,236,.30)';
+    for (let k = 0; k < 6; k++) {
+        const y = -760 + k * 330 - ph * 60;
+        g.lineWidth = 60 - k * 5;
+        [-1, 1].forEach(sd => {
+            g.beginPath(); g.moveTo(sd * 160, y);
+            g.bezierCurveTo(sd * 700, y - 150 - ph * 30, sd * 1450, y - 40, sd * 1560, y + 260 + k * 20);
+            g.stroke();
+        });
+    }
+    // 가로막 : 들숨에 내려간다 (돔 꼭대기가 150 만큼)
+    const dome = 1050 + ph * 150;
+    g.fillStyle = 'rgba(150,80,60,.28)';
+    g.beginPath(); g.moveTo(-1660, 1700); g.quadraticCurveTo(0, dome, 1660, 1700);
+    g.lineTo(1640, 1780); g.quadraticCurveTo(0, 2000, -1640, 1780); g.closePath(); g.fill();
+    g.strokeStyle = '#c47a5e'; g.lineWidth = 70;
+    g.beginPath(); g.moveTo(-1660, 1700); g.quadraticCurveTo(0, dome, 1660, 1700); g.stroke();
+    // 폐 : 들숨에 부푼다
+    const LR = 1180, inflate = 1 + ph * .07;          // 폐 안 지그재그 다섯 줄을 덮는 크기
+    [-1, 1].forEach(side => {
+        g.save(); g.translate(side * 560, 180); g.scale(inflate, inflate);
+        g.save(); g.translate(14, 24); g.globalAlpha = .18; g.fillStyle = '#000'; lobePath(g, LR, side); g.fill(); g.restore();
+        const grd = g.createRadialGradient(side * LR * .2, -LR * .3, LR * .05, 0, 0, LR * 1.1);
+        grd.addColorStop(0, '#ffc6d8'); grd.addColorStop(1, '#dd7f9c');
+        g.globalAlpha = .85; lobePath(g, LR, side); g.fillStyle = grd; g.fill(); g.globalAlpha = 1;
+        g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 14; lobePath(g, LR, side); g.stroke();
+        g.restore();
+    });
+    // 기관 (연골 고리) · 기관지 가지
+    g.fillStyle = '#e8eef5'; g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 12;
+    g.beginPath(); g.roundRect(-115, -1380, 230, 1060, 60); g.fill(); g.stroke();
+    g.strokeStyle = 'rgba(120,140,170,.55)'; g.lineWidth = 16;
+    for (let y = -1320; y < -360; y += 80) { g.beginPath(); g.moveTo(-100, y); g.quadraticCurveTo(0, y + 26, 100, y); g.stroke(); }
+    const branch = (x, y, ang, len, w, d) => {
+        const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+        g.lineWidth = w; g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.stroke();
+        if (d > 0) { branch(x2, y2, ang - .45, len * .72, w * .66, d - 1); branch(x2, y2, ang + .45, len * .72, w * .66, d - 1); }
+    };
+    g.strokeStyle = 'rgba(232,238,245,.9)';
+    branch(0, -340, Math.PI / 2 + .75, 480, 120, 3);        // 화면 왼쪽 폐로
+    branch(0, -340, Math.PI / 2 - .75, 480, 120, 3);        // 화면 오른쪽 폐로
+    // 다른 맵과 같은 귀여운 얼굴
+    [-1, 1].forEach(side => drawFace(g, side * 800, 300, 300, i + side));
+    g.restore();
+}
+
 function drawLandmarks(g, inView) {
     const lms = track.sys.landmarks;
     if (!lms) return;
@@ -6113,6 +6201,8 @@ function drawLandmarks(g, inView) {
                 drawFace(g, side * R * .22, R * .06, R * .26, i + side);
                 g.restore();
             });
+        } else if (lm.type === 'chest') {
+            drawChest(g, t, i);
         }
         g.restore();
     });
