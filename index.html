@@ -1233,6 +1233,12 @@
     <div class="diagRow">
         <button id="diagCopy">복사</button><button id="diagClose">닫기</button>
     </div>
+    <!-- 개발자 코드 : 맞으면 이 기기에서 모든 차를 푼다 (아래 DEV_HASH 참고) -->
+    <div class="diagRow">
+        <input id="devCode" type="password" autocomplete="off" placeholder="개발자 코드"
+               style="flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid #3f6c9c;background:#0d1f36;color:#fff;font:inherit;user-select:text;-webkit-user-select:text">
+        <button id="devGo">확인</button><button id="devUndo" class="hidden">잠김 되돌리기</button>
+    </div>
 </div>
 <div id="build">버전 105</div>
 <!-- 뒤로가기로 앱이 바로 꺼지지 않게 한 번 묻는다 -->
@@ -2205,7 +2211,11 @@ Object.assign(EN, {
 const CHANGES = [
     { v: 113, d: '9월 11일', t: [
         '적혈구 루키 엔진 소리를 처음 마음에 들었던 레이싱 소리로 되돌렸다',
-        'Red Blood Cell Rookie uses the racing engine sound again'
+        'Red Blood Cell Rookie uses the racing engine sound again',
+        '콜라겐 프레임(오프로드 버기)이 두 번째 차가 됐다 — 혈소판 터프와 자리 · 가격 · 능력치를 바꿨다',
+        'Collagen Frame (off-road buggy) is now the second kart, swapping price and stats with Platelet Tough',
+        '완주 무대 차 그림 아래에 남아 있던 흰 배경을 지웠다',
+        'Removed leftover white background under the finish-stage car art'
     ] },
     { v: 112, d: '9월 11일', t: [
         '차를 고르면 그 차 엔진 소리가 난다 — 잠긴 차도 사기 전에 들어 볼 수 있다',
@@ -3468,10 +3478,12 @@ const CARS = [
       voice: 'plain', pitch: 1.00, skid: 1, skidPitch: 1.00,   // 기본. 무엇 하나 모나지 않다
       speed: 1.00, accel: 1.00, grip: 1.00, boost: 1.00,
       desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
-    { id: 'plt', hold: 1.10,   name: '혈소판 터프',  motif: '판', motifEn: 'P', color: '#b9bcc8', sprite: 'plt',   cost: 260,
-      voice: 'heavy', pitch: 0.82, skid: 2, skidPitch: 0.90,   // 가장 무겁다. 낮고 둔탁하게 울퉁불퉁
+    /* 2번째 자리는 콜라겐 프레임(오프로드 버기) — 사용자(2026-09-11) "콜라게 프레임 2번째 자동차로 옮겨".
+       혈소판 터프와 자리 · 가격 · 능력치 · 성능 설명을 맞바꿨다. 그림 · 소리 · 이름 · 기관 설명은 각자 그대로. */
+    { id: 'collagen', hold: 1.10, name: '콜라겐 프레임', motif: '콜', motifEn: 'C', color: '#ff5a36', sprite: 'collagen', cost: 260,
+      voice: 'heavy', pitch: 0.86, skid: 2, skidPitch: 0.92,
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
-      desc: '상처를 막는 세포. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
+      desc: '몸을 지탱하는 단백질. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
     { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#5cc8ff', sprite: 'wbc',  cost: 520,
       voice: 'guard', pitch: 0.91, skid: 3, skidPitch: 0.97,   // 가드. 기본보다 한 단 낮고 두툼하다
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
@@ -3493,16 +3505,16 @@ const CARS = [
        ATP 위로 그냥 더 센 차를 얹으면 마지막 한 대만 타게 된다.
        그러면 나머지는 사자마자 창고행이라, 살 이유도 한 번뿐이다.
        그래서 위쪽은 '더 센 차' 가 아니라 '다른 차' 로 만든다 —
-       미끄러운 코스에는 콜라겐, 직선이 긴 코스에는 미토콘드리아처럼
+       미끄러운 코스에는 혈소판, 직선이 긴 코스에는 미토콘드리아처럼
        코스마다 갈아타는 재미가 생긴다. 진짜 만능은 맨 마지막 하나뿐이다. */
     { id: 'insulin', hold: 1.10, name: '인슐린 셔틀', motif: '인', motifEn: 'I', color: '#ffd21f', sprite: 'insulin', cost: 3200,
       voice: 'light', pitch: 1.10, skid: 4, skidPitch: 1.06,
       speed: 1.12, accel: 1.14, grip: 1.02, boost: 1.42,
       desc: '혈당을 나르는 호르몬. 부스터가 눈에 띄게 오래갑니다. 터보를 자주 쓰는 사람에게.' },
-    { id: 'collagen', hold: 1.34, name: '콜라겐 프레임', motif: '콜', motifEn: 'C', color: '#ff5a36', sprite: 'collagen', cost: 4400,
-      voice: 'heavy', pitch: 0.86, skid: 2, skidPitch: 0.92,
+    { id: 'plt', hold: 1.34,   name: '혈소판 터프',  motif: '판', motifEn: 'P', color: '#b9bcc8', sprite: 'plt',   cost: 4400,
+      voice: 'heavy', pitch: 0.82, skid: 2, skidPitch: 0.90,   // 가장 무겁다. 낮고 둔탁하게 울퉁불퉁
       speed: 1.10, accel: 1.08, grip: 1.40, boost: 1.06,
-      desc: '몸을 지탱하는 단백질. 거의 안 미끄러지고 드리프트를 아주 길게 뭅니다.' },
+      desc: '상처를 막는 세포. 거의 안 미끄러지고 드리프트를 아주 길게 뭅니다.' },
     { id: 'mito', hold: 1.12, name: '미토콘드리아 코어', motif: '미', motifEn: 'M', color: '#f2f2f2', sprite: 'mito', cost: 6000,
       voice: 'sharp', pitch: 1.18, skid: 3, skidPitch: 1.14,
       speed: 1.26, accel: 1.44, grip: 1.00, boost: 1.18,
@@ -3582,6 +3594,8 @@ function loadSave() {
             save.cars = (Array.isArray(d.cars) ? d.cars : []).filter(x => real.has(x));
             if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
             save.car = save.cars.includes(d.car) ? d.car : 'rbc';
+            /* 개발자 코드로 모든 차를 풀기 전에 가졌던 차 — '잠김 되돌리기' 가 앱을 껐다 켠 뒤에도 되게 */
+            if (Array.isArray(d.devPrevCars)) save.devPrevCars = d.devPrevCars.filter(x => real.has(x));
             save.vol = typeof d.vol === 'number' ? clamp(d.vol, 0, 1) : .7;
             save.lang = d.lang === 'en' || d.lang === 'ko' ? d.lang : null;
             save.level = LEVELS.some(l => l.id === d.level) ? d.level : 'easy';
@@ -11363,6 +11377,44 @@ el('build').textContent = T('버전') + ' ' + CHANGES[0].v;   // 판 번호는 �
 el('wnClose').onclick = () => el('whatsNew').classList.add('hidden');
 el('whatsNew').onclick = e => { if (e.target === el('whatsNew')) el('whatsNew').classList.add('hidden'); };
 el('diagClose').onclick = () => el('diag').classList.add('hidden');
+
+/* ---- 개발자 코드 : 모든 차 풀기 ----
+   사용자 : "내 아이디로 접속해서 모든 차 잠김 풀리게 해봐". 이 게임에는 아이디 · 로그인이 없다
+   (아이 안전 · 수집하는 데이터 없음으로 스토어에 신고했다). 그래서 계정 대신 이 기기에서 코드를 넣는다.
+   메뉴에서 판 번호를 길게 눌러 여는 진단 창 안에만 있다 — 아이가 우연히 볼 일이 없다.
+   코드 원문은 파일에 적지 않고 SHA-256 만 둔다 — 소스를 열어 봐도 코드는 모른다. 대소문자 · 앞뒤 빈칸은 무시.
+   풀기 전에 가진 차를 save.devPrevCars 에 적어 두어 '잠김 되돌리기' 로 원래대로 돌아간다. 포인트 · 강화는 건드리지 않는다. */
+const DEV_HASH = 'aaa89ace758b8d8f0a386d9da85a8cdf89d935929c5566965e2605934945f9a6';
+async function sha256hex(t) {
+    if (!(window.crypto && crypto.subtle)) return '';
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+function devRefresh() { el('devUndo').classList.toggle('hidden', !save.devPrevCars); }
+const devSay = (t, ms) => { el('devGo').textContent = t; setTimeout(() => { el('devGo').textContent = '확인'; }, ms); };
+el('devCode').addEventListener('keydown', e => {
+    e.stopPropagation();                       // 글자를 치는 동안 게임 조작 키로 먹히지 않게
+    if (e.key === 'Enter') el('devGo').click();
+});
+el('devGo').onclick = async () => {
+    const code = el('devCode').value.trim().toUpperCase();
+    el('devCode').value = '';
+    if (!code || await sha256hex(code) !== DEV_HASH) { devSay('틀림', 1200); return; }
+    if (!save.devPrevCars) save.devPrevCars = save.cars.slice();
+    save.cars = CARS.map(c => c.id);
+    writeSave(); renderCarPick(); devRefresh();
+    devSay('모든 차 풀림', 1800);
+};
+el('devUndo').onclick = () => {
+    if (!save.devPrevCars) return;
+    save.cars = save.devPrevCars.length ? save.devPrevCars : ['rbc'];
+    if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
+    if (!save.cars.includes(save.car)) save.car = 'rbc';
+    delete save.devPrevCars;
+    writeSave(); renderCarPick(); devRefresh();
+    devSay('되돌림', 1200);
+};
+devRefresh();
 el('diagCopy').onclick = () => {
     const t = el('diagText').textContent;
     if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
