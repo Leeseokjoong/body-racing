@@ -804,6 +804,120 @@
         .cpCar { width: 78px; }
     }
 
+    /* ================= 스킨 뽑기 · 도감 ================= */
+    .cpHead { align-items: center; gap: 8px; }
+    .skOpen { font: inherit; font-size: 12px; font-weight: bold; padding: 3px 12px; border-radius: 999px; cursor: pointer;
+              background: linear-gradient(180deg, #a86bff, #6a3fd0); color: #fff; border: 2px solid #d3b5ff; }
+    .skRow { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 11px; color: #cfe6ff; cursor: pointer; }
+    .skRow b { font-size: 12px; color: #fff; }
+    .skRow u { margin-left: auto; text-decoration: none; color: #d3b5ff; font-weight: bold; }
+    /* 무지개 · 형광 스킨은 메뉴 그림에서도 움직인다. 애니메이션은 다른 filter 규칙보다 우선한다 */
+    .skRainbow { animation: skHue 3s linear infinite; }
+    @keyframes skHue { from { filter: hue-rotate(0deg) drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+                       to   { filter: hue-rotate(360deg) drop-shadow(0 2px 3px rgba(0,0,0,.5)); } }
+    .skGlow { animation: skGlowA 1.4s ease-in-out infinite alternate; }
+    @keyframes skGlowA { from { filter: drop-shadow(0 0 3px rgba(98,255,138,.7)); }
+                         to   { filter: drop-shadow(0 0 9px #6dff95) drop-shadow(0 0 16px rgba(98,255,138,.6)); } }
+
+    #skinShop { z-index: 30; }
+    .skWrap { width: min(96vw, 980px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 12px; }
+    .skLeft, .skRight { background: rgba(0,0,0,.3); border-radius: 14px; padding: 10px 12px; min-width: 0; min-height: 0;
+                        display: flex; flex-direction: column; }
+    .skHead { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #ffe066; margin-bottom: 6px; }
+    .skHead b { font-weight: 900; }
+    .skStage { position: relative; height: 250px; display: flex; align-items: center; justify-content: center; }
+    .skCap { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #1a2230;
+             background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.85) 0 7%, transparent 8%),
+                         linear-gradient(180deg, #ff5a7a 0 47%, #1a2230 47% 53%, #eef3f8 53% 100%);
+             box-shadow: inset 0 -8px 0 rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.45);
+             animation: skFloat 1.8s ease-in-out infinite alternate; }
+    .skCap.shake { animation: skShake .95s ease-in-out forwards; }
+    .skCap.pop { display: none; }
+    @keyframes skFloat { from { transform: translateY(-4px); } to { transform: translateY(5px); } }
+    @keyframes skShake {
+        0%   { transform: rotate(0) scale(1); }
+        15%  { transform: rotate(-14deg); }   30% { transform: rotate(12deg); }
+        45%  { transform: rotate(-10deg); }   60% { transform: rotate(8deg) scale(1.05); }
+        85%  { transform: scale(1.18); box-shadow: 0 0 34px 10px var(--tc, #fff); }
+        100% { transform: scale(1.3); box-shadow: 0 0 60px 22px var(--tc, #fff); filter: brightness(1.7); }
+    }
+    .skCard { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+              gap: 3px; text-align: center; border: 3px solid var(--tc, #c3ccd6); border-radius: 14px;
+              background: rgba(0,0,0,.35); box-shadow: inset 0 0 40px -6px var(--tc, #c3ccd6); animation: skReveal .4s ease-out; }
+    @keyframes skReveal { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .skCard img { width: 110px; height: 110px; object-fit: contain; }
+    .skTier { font-size: 12px; font-weight: 900; letter-spacing: 2px; color: var(--tc); }
+    .skName { font-size: 16px; font-weight: 900; color: #fff; }
+    .skFact { font-size: 11.5px; color: #cfe6ff; line-height: 1.45; max-width: 340px; padding: 0 10px; }
+    .skNew { color: #7ee081; font-weight: 900; font-size: 12px; }
+    .skDup { color: #ffd166; font-size: 12px; }
+    .skCard .btn { margin-top: 4px; }
+    .skBtns { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+    .skBtns .cpBuy { width: auto; margin: 0; padding: 8px 20px; }
+    .skOdds { font-size: 10.5px; color: #9fd0ff; text-align: center; margin-top: 6px; line-height: 1.5; }
+    .skFor { font-size: 11px; color: #cfe6ff; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .skFor img { width: 30px; height: 30px; object-fit: contain; }
+    .skGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 6px;
+              overflow-y: auto; min-height: 0; max-height: 390px; padding: 3px; align-content: start; }
+    .skCell { border: 2px solid var(--tc, #4d6f96); border-radius: 10px; padding: 4px 3px; text-align: center; cursor: pointer;
+              background: rgba(255,255,255,.05); }
+    .skCell.on { box-shadow: 0 0 0 3px #ffd166; }
+    .skCell img, .skCell span { width: 52px; height: 52px; margin: 0 auto; display: block; object-fit: contain; }
+    .skCell span { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900;
+                   color: var(--tc); opacity: .6; }
+    .skCell i { display: block; font-style: normal; font-size: 9.5px; color: #cfe6ff; line-height: 1.2; margin-top: 2px; }
+    .skCell.lock { cursor: default; opacity: .6; }
+    @media (max-width: 760px) { .skWrap { grid-template-columns: minmax(0, 1fr); } .skGrid { max-height: none; } }
+    /* 폰 가로 : 창 하나에 두 칸이 스크롤 없이 들어가게 — 도감 칸만 안에서 스크롤 */
+    @media (max-height: 500px) {
+        #skinShop:not(.hidden) { justify-content: flex-start; }
+        .skWrap { height: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 8px; }
+        .skLeft, .skRight { padding: 6px 8px; }
+        .skHead { font-size: 12px; margin-bottom: 3px; }
+        .skStage { height: auto; flex: 1 1 auto; min-height: 0; }
+        .skCap { width: 72px; height: 72px; border-width: 4px; }
+        .skCard { gap: 1px; }
+        .skCard img { width: 54px; height: 54px; }
+        .skTier { font-size: 10px; } .skName { font-size: 13px; }
+        .skFact { font-size: 10px; line-height: 1.35; }
+        .skNew, .skDup { font-size: 10px; }
+        .skCard .btn { padding: 3px 10px; font-size: 11px; margin-top: 2px; }
+        .skBtns { margin-top: 4px; } .skBtns .cpBuy { padding: 5px 14px; font-size: 12px; }
+        .skOdds { font-size: 9px; margin-top: 3px; line-height: 1.35; }
+        .skFor { margin-bottom: 3px; } .skFor img { width: 22px; height: 22px; }
+        .skGrid { max-height: none; flex: 1 1 auto; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 4px; }
+        .skCell img, .skCell span { width: 34px; height: 34px; }
+        .skCell span { font-size: 16px; }
+        .skCell i { font-size: 8.5px; }
+        .skOpen { font-size: 10px; padding: 1px 9px; }
+    }
+
+    /* ---- 버전 122 : 다이아 · 차 도감 줄 · 네온 바닥빛 ---- */
+    .cpDia { color: #ff8a93; margin-left: 6px; }
+    /* 헤모글로빈 동전 : 가운데가 오목한 빨간 적혈구 */
+    .hemo { display: inline-block; width: 1.05em; height: 1.05em; border-radius: 50%; vertical-align: -.18em; margin-right: 3px;
+            background: radial-gradient(circle at 50% 50%, #a3111f 0 26%, #d91f33 34% 58%, #ff5e6c 66% 74%, #b0101f 82%);
+            box-shadow: 0 0 0 1px rgba(60,0,8,.55), 0 1px 2px rgba(0,0,0,.45); }
+    .cpDetail .dn .cell { font-size: 11px; color: #9fd0ff; margin-left: 7px; font-weight: bold; }
+    .skCars { display: flex; gap: 4px; overflow-x: auto; padding: 2px 1px 5px; margin-bottom: 5px; flex: none; }
+    .skCarBtn { flex: none; width: 50px; padding: 2px 1px; border-radius: 8px; cursor: pointer; font: inherit;
+                background: rgba(255,255,255,.05); border: 2px solid #2a4a70; color: #cfe6ff; }
+    .skCarBtn.on { border-color: #ffd166; box-shadow: 0 0 0 2px rgba(255,209,102,.25); }
+    .skCarBtn img { width: 38px; height: 30px; object-fit: contain; display: block; margin: 0 auto; }
+    .skCarBtn i { display: block; font-style: normal; font-size: 9px; line-height: 1.1; }
+    .skSec { grid-column: 1 / -1; font-size: 11px; font-weight: bold; color: #ffe066; padding: 4px 2px 0; }
+    .skUnder { animation: skUnderA 1.5s ease-in-out infinite alternate; }
+    .skU-cheongryong { --uc: rgba(70,180,255,.95); } .skU-baekho { --uc: rgba(190,245,255,.95); }
+    .skU-jujak { --uc: rgba(255,110,40,.95); } .skU-hyeonmu { --uc: rgba(150,255,120,.95); }
+    @keyframes skUnderA { from { filter: drop-shadow(0 4px 3px var(--uc)); }
+                          to   { filter: drop-shadow(0 6px 8px var(--uc)) drop-shadow(0 0 3px var(--uc)); } }
+    @media (max-height: 500px) {
+        .skCars { margin-bottom: 3px; padding-bottom: 3px; }
+        .skCarBtn { width: 42px; } .skCarBtn img { width: 30px; height: 22px; }
+        .skSec { font-size: 9.5px; padding-top: 2px; }
+        .cpDetail .dn .cell { font-size: 9px; }
+    }
+
     /* ================= 폰 가로 : 메뉴를 한 화면에 담는다 =================
        스크롤을 해야 시작 버튼이 보이면 아이는 거기서 멈춘다.
        그래서 낮은 화면에서는 전부 눌러 담고, 자동차 목록만 옆으로 넘긴다. */
@@ -1351,7 +1465,8 @@
         <div id="carPick">
             <div class="cpHead">
                 <span>자동차 고르기</span>
-                <span>보유 <b id="cpPoints">0 P</b></span>
+                <button class="skOpen" id="skOpen">스킨 뽑기</button>
+                <span>보유 <b id="cpPoints">0 P</b> <b id="cpDia" class="cpDia"><i class="hemo"></i>0</b></span>
             </div>
             <div class="cpBody">
                 <div class="cpList" id="cpList2"></div>
@@ -1414,6 +1529,31 @@
 </div>
 
 <!-- 퀴즈방 : 원할 때 들어와 코스 순서를 맞히고 포인트를 얻는다 -->
+<!-- 스킨 뽑기 · 도감 : 게임에서 번 포인트로만 뽑는다. 모양만 바뀐다. -->
+<div class="overlay hidden" id="skinShop">
+    <div class="skWrap">
+        <div class="skLeft">
+            <div class="skHead"><b>스킨 뽑기</b><span>보유 <b id="skPoints">0 P</b></span></div>
+            <div class="skStage">
+                <div class="skCap" id="skCap"></div>
+                <div class="skCard hidden" id="skCard"></div>
+            </div>
+            <div class="skBtns">
+                <button class="cpBuy" id="skPull">뽑기</button>
+                <button class="cpBuy can hidden" id="skTicket">뽑기권</button>
+                <button class="cpBuy" id="skClose">닫기</button>
+            </div>
+            <div class="skOdds" id="skOdds"></div>
+        </div>
+        <div class="skRight">
+            <div class="skHead"><b>스킨 도감</b><span id="skCount">0 / 20</span></div>
+            <div class="skCars" id="skCars"></div>
+            <div class="skFor" id="skFor"></div>
+            <div class="skGrid" id="skGrid"></div>
+        </div>
+    </div>
+</div>
+
 <div class="overlay hidden" id="quizRoom">
     <h2 id="quizTitle">퀴즈방</h2>
     <div id="quizDots"></div>
@@ -1982,6 +2122,14 @@ Object.assign(EN, {
 '신경 스파크': 'Nerve Spark', 'ATP 하이퍼': 'ATP Hyper',
 '인슐린 셔틀': 'Insulin Shuttle', '콜라겐 프레임': 'Collagen Frame',
 '미토콘드리아 코어': 'Mitochondria Core', 'DNA 나선': 'DNA Helix',
+'헤모 스트라이커': 'Hemo Striker', '타이탄 프레임': 'Titan Frame', '화이트 팬텀': 'White Phantom', '에어 블레이드': 'Air Blade',
+'뉴로 볼트': 'Neuro Volt', '하이퍼 코어': 'Hyper Core', '슈가 러시': 'Sugar Rush', '아이언 클롯': 'Iron Clot',
+'파워 리액터': 'Power Reactor', '헬릭스 제로': 'Helix Zero',
+'희귀 이상 뽑기권': 'Rare+ Ticket', '전용 스킨을 모두 모았어요!': 'Exclusive skins complete!', '전용 스킨': 'Exclusive skins',
+'공용 스킨': 'Shared skins', '전용': 'exclusive', '완성': 'Complete', '차를 사면 탈 수 있어요': 'Buy this kart to ride it',
+'가진 스킨이 또 나오면 헤모글로빈 {n}개 돌려받기': 'Duplicates give back {n} Hemoglobin', '헤모글로빈은 매일 접속 · 1등으로 모아요': 'Earn Hemoglobin by logging in daily and winning races',
+'헤모글로빈': 'Hemoglobin', '헤모글로빈을 받았어요': 'Hemoglobin received',
+'스킨 뽑기 선물': 'Skin capsule gift', '매일 접속': 'Daily login', '일째': ' days', '다이아를 받았어요': 'Diamonds received',
 '세포가 쓰는 에너지 그 자체. 어느 코스에서나 잘 달리는 만능 카트.':
     'The energy a cell actually spends. An all-rounder that suits any course.',
 '혈당을 나르는 호르몬. 부스터가 눈에 띄게 오래갑니다. 터보를 자주 쓰는 사람에게.':
@@ -2009,6 +2157,12 @@ Object.assign(EN, {
 '체크포인트': 'checkpoints', '흰 눈금 = 지금 타는 차': 'White tick = your current kart',
 '모자람': 'short', '소리': 'Sound', '전체 화면': 'Fullscreen',
 'SPACE 드리프트': 'SPACE Drift', '이나': 'or',
+// 스킨
+'스킨 뽑기': 'Skin Capsule', '스킨 도감': 'Skin Collection', '스킨': 'Skin', '뽑기': 'Draw', '닫기': 'Close',
+'기본': 'Default', '바꾸기': 'Change', '눌러서 입히기': 'tap to apply', '새 스킨!': 'New skin!', '이미 가진 스킨': 'Already owned',
+'이 차에 입히기': 'Apply to this kart', '일반': 'Common', '희귀': 'Rare', '영웅': 'Epic', '전설': 'Legendary',
+'30번 안에 전설 1번 보장': 'A Legendary is guaranteed within 30 draws', '가진 스킨이 또 나오면 {n} P 돌려받기': 'Duplicates give back {n} P',
+'모양만 바뀌고 성능은 같아요': 'Looks only. Performance stays the same.',
 // 자동차 설명
 '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.':
     'Carries oxygen. Nothing sharp about it — the easiest kart to learn on.',
@@ -2272,6 +2426,26 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 122, d: '9월 11일', t: [
+        '차마다 전용 그림 스킨 44종 — 사신(청룡 · 백호 · 주작 · 현무) 문양 36종과 색 스킨 8종. 전설 스킨은 차 밑에 네온 빛',
+        '44 kart-exclusive drawn skins: 36 Four Guardians patterns (Dragon, Tiger, Bird, Tortoise) and 8 color skins. Legendary skins glow neon underneath',
+        '스킨 뽑기 화폐 헤모글로빈(둥글고 빨간 적혈구 동전) — 처음 300 선물, 매일 접속 50(연속 7일째 +150), 레이스 1등 10(하루 5번). 돈으로는 팔지 않는다',
+        'New skin currency Hemoglobin (a round red blood cell coin): 300 to start, 50 per daily login (+150 every 7th day in a row), 10 per race win (5 a day). Never sold for money',
+        '차마다 스킨 도감 — 한 차의 전용 스킨을 모두 모으면 희귀 이상 뽑기권',
+        'Per-kart skin collection. Completing a kart\'s exclusive skins gives a Rare+ ticket',
+        '차 이름을 새로 — 헤모 스트라이커 · 타이탄 프레임 · 화이트 팬텀 · 에어 블레이드 · 뉴로 볼트 · 하이퍼 코어 · 슈가 러시 · 아이언 클롯 · 파워 리액터 · 헬릭스 제로',
+        'New kart names: Hemo Striker, Titan Frame, White Phantom, Air Blade, Neuro Volt, Hyper Core, Sugar Rush, Iron Clot, Power Reactor, Helix Zero',
+        '아이템은 네 가지만 — 가속 · 붙잡기 · 연막 · 미끄럼. 잘 안 맞던 앞으로 쏘는 명중 아이템은 뺐다',
+        'Only four items now: Boost, Trap, Smoke and Slick. The forward-firing Homing item, which rarely hit, is gone'
+    ] },
+    { v: 121, d: '9월 11일', t: [
+        '스킨 뽑기 · 도감 — 게임에서 번 포인트로 뽑는 스킨 20종(일반 · 희귀 · 영웅 · 전설). 모양만 바뀌고 성능은 같다',
+        'Skin Capsule and Collection: 20 skins (Common, Rare, Epic, Legendary) drawn with points you earn in races. Looks only',
+        '스킨마다 몸 이야기 한 줄 — 전설 스킨은 달릴 때 빛나거나 무지개 궤적을 남긴다',
+        'Every skin comes with a body fact; Legendary skins glow or leave a rainbow trail',
+        '확률은 뽑기 창에 적었다 — 30번 안에 전설 1번 보장, 가진 스킨이 또 나오면 100P 돌려받기',
+        'Odds are shown in the capsule window. A Legendary is guaranteed within 30 draws, and duplicates give back 100 P'
+    ] },
     { v: 120, d: '9월 11일', t: [
         '성능 강화 초반 값을 올렸다 — 1단계가 20~30P 에서 60~80P 로. 10단계 값은 그대로다',
         'Early upgrade levels cost more (level 1 is now 60-80P instead of 20-30P); top levels are unchanged',
@@ -3459,6 +3633,11 @@ const SYSTEMS = {
    성장 : 레이스에서 얻은 포인트로 카트 성능을 올린다.
    기기에 저장되므로 계정 없이도 이어서 키울 수 있다.
    ========================================================================== */
+/* 아이템은 네 가지만 — 가속 · 붙잡기 · 연막 · 미끄럼 (2026-09-11)
+   사용자 : "앞으로 쏘는 것은 거의 맞지도 않아. 일단 아이템 4가지만 남기고 지워버려. 아이템 아이디어는 차후 더 넣는 걸로"
+   명중(clot · 혈전 발사 같은 앞으로 쏘는 탄)을 코스마다 목록에서 뺀다. 효과 코드는 나중에 고쳐 쓸 수 있게 남겨 둔다. */
+for (const id in SYSTEMS) SYSTEMS[id].pickups = SYSTEMS[id].pickups.filter(p => p.effect !== 'clot');
+
 const UPGRADES = [
     /* 10단계로 나눈 이유 —
        5단계짜리는 몇 판이면 끝까지 올라가서, 그 뒤로는 벌어도 쓸 데가 없었다.
@@ -3492,29 +3671,29 @@ const UPGRADES = [
    skid / skidPitch  타이어 녹음과 그 음높이. 타이어는 녹음을 그대로 쓴다 —
          잡음이라 재생 속도를 바꿔도 이상해지지 않기 때문이다. */
 const CARS = [
-    { id: 'rbc', hold: 1.00,   name: '적혈구 루키',  motif: '적', motifEn: 'R', color: '#2f6bff', sprite: 'rbc',   cost: 0,
+    { id: 'rbc', hold: 1.00,   name: '헤모 스트라이커', cell: '적혈구', cellEn: 'Red blood cell',  motif: '적', motifEn: 'R', color: '#2f6bff', sprite: 'rbc',   cost: 0,
       voice: 'plain', pitch: 1.00, skid: 1, skidPitch: 1.00,   // 기본. 무엇 하나 모나지 않다
       speed: 1.00, accel: 1.00, grip: 1.00, boost: 1.00,
       desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
     /* 2번째 자리는 콜라겐 프레임(오프로드 버기) — 사용자(2026-09-11) "콜라게 프레임 2번째 자동차로 옮겨".
        혈소판 터프와 자리 · 가격 · 능력치 · 성능 설명을 맞바꿨다. 그림 · 소리 · 이름 · 기관 설명은 각자 그대로. */
-    { id: 'collagen', hold: 1.10, name: '콜라겐 프레임', motif: '콜', motifEn: 'C', color: '#ff5a36', sprite: 'collagen', cost: 260,
+    { id: 'collagen', hold: 1.10, name: '타이탄 프레임', cell: '콜라겐', cellEn: 'Collagen', motif: '콜', motifEn: 'C', color: '#ff5a36', sprite: 'collagen', cost: 260,
       voice: 'heavy', pitch: 0.86, skid: 2, skidPitch: 0.92,
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
       desc: '몸을 지탱하는 단백질. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
-    { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#2ec4c0', sprite: 'wbc',  cost: 520,
+    { id: 'wbc', hold: 1.05,   name: '화이트 팬텀', cell: '백혈구', cellEn: 'White blood cell',  motif: '백', motifEn: 'W', color: '#2ec4c0', sprite: 'wbc',  cost: 520,
       voice: 'guard', pitch: 0.91, skid: 3, skidPitch: 0.97,   // 가드. 기본보다 한 단 낮고 두툼하다
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
       desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
-    { id: 'o2', hold: 0.95,    name: '산소 러너',    motif: '산', motifEn: 'O', color: '#ff9a1f', sprite: 'o2',  cost: 900,
+    { id: 'o2', hold: 0.95,    name: '에어 블레이드', cell: '산소', cellEn: 'Oxygen',    motif: '산', motifEn: 'O', color: '#ff9a1f', sprite: 'o2',  cost: 900,
       voice: 'light', pitch: 1.16, skid: 4, skidPitch: 1.12,   // 가볍고 빠르다. 높고 매끈하게
       speed: 1.12, accel: 1.10, grip: 0.96, boost: 1.14,
       desc: '폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.' },
-    { id: 'nerve', hold: 1.15, name: '신경 스파크',  motif: '신', motifEn: 'N', color: '#8ee03a', sprite: 'nerve',  cost: 1400,
+    { id: 'nerve', hold: 1.15, name: '뉴로 볼트', cell: '신경', cellEn: 'Nerve',  motif: '신', motifEn: 'N', color: '#8ee03a', sprite: 'nerve',  cost: 1400,
       voice: 'sharp', pitch: 1.24, skid: 4, skidPitch: 1.18,   // 가장 날카롭다. 높고 금속성 타격이 세다
       speed: 1.10, accel: 1.22, grip: 1.04, boost: 1.20,
       desc: '전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.' },
-    { id: 'atp', hold: 1.20,   name: 'ATP 하이퍼',   motif: 'A', motifEn: 'A', color: '#9d5cff', sprite: 'atp', cost: 2200,
+    { id: 'atp', hold: 1.20,   name: '하이퍼 코어', cell: 'ATP', cellEn: 'ATP',   motif: 'A', motifEn: 'A', color: '#9d5cff', sprite: 'atp', cost: 2200,
       voice: 'prime', pitch: 1.08, skid: 2, skidPitch: 1.05,   // 전부 최고. 밝으면서 매끈하다
       speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
       desc: '세포가 쓰는 에너지 그 자체. 어느 코스에서나 잘 달리는 만능 카트.' },
@@ -3525,24 +3704,173 @@ const CARS = [
        그래서 위쪽은 '더 센 차' 가 아니라 '다른 차' 로 만든다 —
        미끄러운 코스에는 혈소판, 직선이 긴 코스에는 미토콘드리아처럼
        코스마다 갈아타는 재미가 생긴다. 진짜 만능은 맨 마지막 하나뿐이다. */
-    { id: 'insulin', hold: 1.10, name: '인슐린 셔틀', motif: '인', motifEn: 'I', color: '#ffd21f', sprite: 'insulin', cost: 3200,
+    { id: 'insulin', hold: 1.10, name: '슈가 러시', cell: '인슐린', cellEn: 'Insulin', motif: '인', motifEn: 'I', color: '#ffd21f', sprite: 'insulin', cost: 3200,
       voice: 'light', pitch: 1.10, skid: 4, skidPitch: 1.06,
       speed: 1.12, accel: 1.14, grip: 1.02, boost: 1.42,
       desc: '혈당을 나르는 호르몬. 부스터가 눈에 띄게 오래갑니다. 터보를 자주 쓰는 사람에게.' },
-    { id: 'plt', hold: 1.34,   name: '혈소판 터프',  motif: '판', motifEn: 'P', color: '#b9bcc8', sprite: 'plt',   cost: 4400,
+    { id: 'plt', hold: 1.34,   name: '아이언 클롯', cell: '혈소판', cellEn: 'Platelet',  motif: '판', motifEn: 'P', color: '#b9bcc8', sprite: 'plt',   cost: 4400,
       voice: 'heavy', pitch: 0.82, skid: 2, skidPitch: 0.90,   // 가장 무겁다. 낮고 둔탁하게 울퉁불퉁
       speed: 1.10, accel: 1.08, grip: 1.40, boost: 1.06,
       desc: '상처를 막는 세포. 거의 안 미끄러지고 드리프트를 아주 길게 뭅니다.' },
-    { id: 'mito', hold: 1.12, name: '미토콘드리아 코어', motif: '미', motifEn: 'M', color: '#f2f2f2', sprite: 'mito', cost: 6000,
+    { id: 'mito', hold: 1.12, name: '파워 리액터', cell: '미토콘드리아', cellEn: 'Mitochondria', motif: '미', motifEn: 'M', color: '#f2f2f2', sprite: 'mito', cost: 6000,
       voice: 'sharp', pitch: 1.18, skid: 3, skidPitch: 1.14,
       speed: 1.26, accel: 1.44, grip: 1.00, boost: 1.18,
       desc: '세포의 발전소. 튀어 나가는 힘이 압도적이지만 접지력을 포기했습니다.' },
-    { id: 'dna', hold: 1.30, name: 'DNA 나선', motif: 'D', motifEn: 'D', color: '#ff2e3f', sprite: 'dna', cost: 8500,
+    { id: 'dna', hold: 1.30, name: '헬릭스 제로', cell: 'DNA', cellEn: 'DNA', motif: 'D', motifEn: 'D', color: '#ff2e3f', sprite: 'dna', cost: 8500,
       voice: 'prime', pitch: 1.12, skid: 1, skidPitch: 1.08,
       speed: 1.34, accel: 1.30, grip: 1.24, boost: 1.32,
       desc: '생명의 설계도. 모든 수치가 최고인 마지막 카트입니다.' }
 ];
 const carById = id => CARS.find(c => c.id === id) || CARS[0];
+
+/* ---- 스킨 (모양만 바꾸는 도색) ----
+   사용자(2026-09-11) : "자동차 스킨뽑기 만들어주면 어떨까? 희귀 전설 이런식으로 성능은 차이가 없고"
+                       "계속 무료스킨 주다가 나중에 정말 유료스킨 도입해도 되고"
+   · 게임에서 번 포인트로만 뽑는다. 돈 · 광고로 뽑기를 사게 하지 않는다 (아이 게임).
+   · 확률은 뽑기 창에 그대로 적는다. 30번 안에 전설 1번 · 가진 스킨이 또 나오면 일부 돌려준다.
+   · 새 그림을 그리지 않고 차 그림의 '도색' 픽셀만 코드로 칠한다 — 그래서 주행 · 차 고르기 · 완주 무대 옆모습이
+     늘 같은 모양이 된다 ("실제 게임내 자동차와 통계 · 선택 이미지가 일치해야해").
+   · 나중에 파는 스킨은 paid:true 로 넣는다 — 뽑기에는 안 나오고 따로 판다 (gachaPool 참고).
+   hue 색상(도) · sat 채도 고정 · lit 밝기 배수 · pat 무늬 · hue2 무늬 칸 색 · flame 부스터 불꽃 · glow 둘레 빛 · trail 궤적 · rainbow 색이 돈다 */
+/* 버전 122 : 그림 스킨 44종이 들어오며 전설이 38종이 됐다 — 전설 확률을 2% → 6% 로 올리고 일반을 줄였다.
+   뽑기는 포인트가 아니라 다이아로 (사용자 "추천대로" : 다이아는 스킨 전용, 접속 · 출석 · 1등으로만 받고 돈으로 팔지 않는다) */
+const SKIN_TIERS = [
+    { id: 'common', name: '일반', color: '#c3ccd6', rate: 50 },
+    { id: 'rare',   name: '희귀', color: '#4ad0ff', rate: 30 },
+    { id: 'epic',   name: '영웅', color: '#c77dff', rate: 14 },
+    { id: 'legend', name: '전설', color: '#ffd166', rate: 6 }
+];
+const SKIN_PRICE = 100, SKIN_REFUND = 30, SKIN_PITY = 30;   // 헤모글로빈
+/* 화폐 '헤모글로빈' — 둥글고 빨간 적혈구 모양 동전. 사용자 "신체장기니까. 헤모글로빈? 둥글고 빨간 화폐" (저장 이름은 save.dia 그대로) */
+const HEMO = '<i class="hemo" title="헤모글로빈"></i>';
+const SKINS = [
+    { id: 'heme',  tier: 'common', hue: 355, name: '헤모글로빈 레드', en: 'Hemoglobin Red',
+      fact: '적혈구의 헤모글로빈은 산소와 붙으면 선홍색, 산소를 내려놓으면 검붉은색이 됩니다.',
+      factEn: 'Hemoglobin turns bright red when it carries oxygen and dark red after it lets go.' },
+    { id: 'bile',  tier: 'common', hue: 100, name: '담즙 그린', en: 'Bile Green',
+      fact: '쓸개즙의 초록빛은 오래된 적혈구가 분해되며 생긴 빌리베르딘 색입니다.',
+      factEn: 'Bile gets its green from biliverdin, made when old red blood cells are broken down.' },
+    { id: 'carot', tier: 'common', hue: 28, name: '카로틴 오렌지', en: 'Carotene Orange',
+      fact: '당근의 베타카로틴은 몸속에서 비타민 A로 바뀌어 어두운 곳에서 보는 것을 돕습니다.',
+      factEn: 'Beta-carotene from carrots becomes vitamin A, which helps you see in dim light.' },
+    { id: 'ribo',  tier: 'common', hue: 52, name: '비타민 B2 옐로', en: 'Riboflavin Yellow',
+      fact: '비타민 B2(리보플래빈)는 노란색이라, 많이 먹으면 소변이 샛노래집니다.',
+      factEn: 'Vitamin B2 (riboflavin) is yellow, so taking a lot can turn urine bright yellow.' },
+    { id: 'vein',  tier: 'common', hue: 218, name: '정맥 블루', en: 'Vein Blue',
+      fact: '정맥이 파랗게 보이는 것은 피부를 지나는 빛 때문이에요. 피는 파랗지 않습니다.',
+      factEn: 'Veins look blue because of how light passes through skin. Blood is never blue.' },
+    { id: 'rhod',  tier: 'common', hue: 290, name: '로돕신 퍼플', en: 'Rhodopsin Purple',
+      fact: '눈의 막대세포에 있는 로돕신 덕분에 어두운 곳에서도 볼 수 있습니다.',
+      factEn: 'Rhodopsin in the rod cells of your eyes lets you see in the dark.' },
+    { id: 'gum',   tier: 'common', hue: 335, lit: 1.15, name: '잇몸 핑크', en: 'Gum Pink',
+      fact: '건강한 잇몸이 분홍빛인 것은 가는 혈관이 비쳐 보이기 때문입니다.',
+      factEn: 'Healthy gums look pink because tiny blood vessels show through.' },
+    { id: 'melan', tier: 'common', hue: 25, sat: .5, lit: .75, name: '멜라닌 브라운', en: 'Melanin Brown',
+      fact: '멜라닌 색소는 햇빛의 자외선으로부터 피부 세포를 지켜 줍니다.',
+      factEn: 'Melanin pigment shields skin cells from the ultraviolet rays of the sun.' },
+
+    { id: 'muscle', tier: 'rare', hue: 350, pat: 'stripe', name: '근육 줄무늬', en: 'Muscle Stripes',
+      fact: '팔다리를 움직이는 근육은 현미경으로 보면 가로줄이 보여 가로무늬근이라 부릅니다.',
+      factEn: 'The muscles that move your arms and legs show stripes under a microscope, so they are called striated muscle.' },
+    { id: 'membrane', tier: 'rare', hue: 185, pat: 'dots', name: '세포막 점무늬', en: 'Membrane Dots',
+      fact: '세포막은 인지질 두 겹으로 되어 있어 필요한 물질만 드나들게 합니다.',
+      factEn: 'The cell membrane is a double layer of phospholipids that lets only the right substances through.' },
+    { id: 'helix', tier: 'rare', hue: 265, pat: 'helix', name: 'DNA 나선', en: 'DNA Helix',
+      fact: 'DNA는 두 가닥이 꼬인 이중 나선이에요. 세포 하나의 DNA를 풀면 약 2m나 됩니다.',
+      factEn: 'DNA is a twisted double helix. Unwound, the DNA in one cell is about 2 meters long.' },
+    { id: 'finger', tier: 'rare', hue: 38, pat: 'rings', name: '지문 소용돌이', en: 'Fingerprint Swirl',
+      fact: '지문은 엄마 배 속에서 만들어지고, 일란성 쌍둥이도 지문은 서로 다릅니다.',
+      factEn: 'Fingerprints form before birth, and even identical twins have different ones.' },
+    { id: 'neuron', tier: 'rare', hue: 75, pat: 'zigzag', name: '뉴런 번개', en: 'Neuron Spark',
+      fact: '가장 빠른 신경 신호는 1초에 100m 넘게 달립니다.',
+      factEn: 'The fastest nerve signals travel more than 100 meters per second.' },
+    { id: 'bone', tier: 'rare', hue: 45, sat: .35, lit: 1.15, pat: 'cells', name: '해면뼈 벌집', en: 'Spongy Bone',
+      fact: '뼈 속 해면뼈는 구멍이 송송 나 있어 가벼우면서도 튼튼합니다.',
+      factEn: 'Spongy bone inside your bones is full of tiny holes, making it light yet strong.' },
+
+    { id: 'calcium', tier: 'epic', hue: 205, pat: 'dots', flame: ['225,245,255', '90,180,255', '40,90,255'],
+      name: '칼슘 이온', en: 'Calcium Ion',
+      fact: '근육 세포 안에서 칼슘 이온이 풀려나야 근육이 수축합니다.',
+      factEn: 'Muscles contract only when calcium ions are released inside muscle cells.' },
+    { id: 'napump', tier: 'epic', hue: 275, hue2: 50, pat: 'stripe', flame: ['255,245,200', '255,210,60', '170,80,255'],
+      name: '나트륨-칼륨 펌프', en: 'Sodium-Potassium Pump',
+      fact: '신경세포는 나트륨-칼륨 펌프를 쉬지 않고 돌려 신호를 보낼 준비를 합니다.',
+      factEn: 'Nerve cells run sodium-potassium pumps nonstop to stay ready to fire signals.' },
+    { id: 'adren', tier: 'epic', hue: 356, lit: .85, pat: 'zigzag', flame: ['255,220,200', '255,70,60', '160,0,30'],
+      name: '아드레날린', en: 'Adrenaline Rush',
+      fact: '깜짝 놀라면 아드레날린이 나와 심장이 빨리 뛰고 힘이 솟습니다.',
+      factEn: 'When you get a fright, adrenaline makes your heart race and gives you a burst of energy.' },
+    { id: 'patrol', tier: 'epic', hue: 200, sat: .1, lit: 1.2, pat: 'cells', flame: ['255,255,255', '200,240,255', '120,200,255'],
+      name: '백혈구 출동', en: 'White Cell Patrol',
+      fact: '백혈구는 혈관 벽 틈을 비집고 나가 세균을 잡으러 갑니다.',
+      factEn: 'White blood cells squeeze through gaps in blood vessel walls to hunt germs.' },
+
+    { id: 'gfp', tier: 'legend', hue: 130, lit: 1.1, glow: '98,255,138', trail: '120,255,160',
+      flame: ['230,255,235', '98,255,138', '40,200,90'], name: '형광 단백질 GFP', en: 'GFP Glow',
+      fact: '해파리에서 찾은 초록 형광 단백질(GFP)은 세포 속을 비추는 등불이 되어 노벨상을 받았습니다.',
+      factEn: 'Green fluorescent protein (GFP), found in jellyfish, lights up the inside of cells and won a Nobel Prize.' },
+    { id: 'iris', tier: 'legend', hue: 0, rainbow: true, trail: 'rainbow', flame: 'rainbow', name: '무지개 홍채', en: 'Rainbow Iris',
+      fact: '홍채 무늬는 사람마다 달라서 지문처럼 본인 확인에 쓰입니다.',
+      factEn: 'Every iris pattern is unique, so it can identify a person like a fingerprint.' }
+];
+/* ---- 차 전용 그림 스킨 ----
+   사용자(2026-09-11) : "구글 플로우에서 탑뷰 측면 이미지 뽑아서 확보해" · "난 색보다 문양이 멋졌으면 좋겠어. 용무늬 이런것도 좋잖아"
+   · "스킨은 많을 수록 좋을 것 같아. 차량이 없어도 스킨을 얻었으면 플레이어가 차를 사려고 열심히 하겠지"
+   그림은 구글 플로우(Nano Banana Pro)로 원래 차 그림을 참고해 다시 칠한 것 — assets/skins/kart_<차>__<스킨>.webp · car_side_…
+   (원본 · 안 고른 그림은 참고/스킨원본). DNA 나선 사신은 플로우 사용량 한도로 아직 없다.
+   car 가 있는 스킨은 그 차에만 입는다. 뽑기에는 모든 차의 스킨이 나온다 — 안 가진 차 스킨도 손에 들어온다.
+   under : 전설 스킨의 차 밑 네온 빛 색 (사용자 "전설급 스킨차들은 밑에 네온 빛이 나오게 할 수도 있니?") */
+const DRAWN_LOOKS = {
+    cheongryong: { tier: 'legend', name: '청룡', en: 'Azure Dragon', under: '70,180,255',
+        fact: '청룡은 동쪽을 지키는 푸른 용이에요. 고구려 강서대묘 벽화에 사신과 함께 그려져 있어요.',
+        factEn: 'The Azure Dragon guards the east. It is painted with the other Four Guardians in the Goguryeo Gangseo Great Tomb.' },
+    baekho: { tier: 'legend', name: '백호', en: 'White Tiger', under: '190,245,255',
+        fact: '백호는 서쪽을 지키는 흰 호랑이예요. 청룡 · 주작 · 현무와 함께 사신이라고 불러요.',
+        factEn: 'The White Tiger guards the west. With the Dragon, Bird and Tortoise it is one of the Four Guardians.' },
+    jujak: { tier: 'legend', name: '주작', en: 'Vermilion Bird', under: '255,110,40',
+        fact: '주작은 남쪽을 지키는 붉은 새예요. 불처럼 타오르는 깃털로 그려져요.',
+        factEn: 'The Vermilion Bird guards the south and is drawn with feathers like flames.' },
+    hyeonmu: { tier: 'legend', name: '현무', en: 'Black Tortoise', under: '150,255,120',
+        fact: '현무는 북쪽을 지켜요. 거북과 뱀이 한 몸으로 얽힌 모습이에요.',
+        factEn: 'The Black Tortoise guards the north: a turtle and a snake wound together.' },
+    crimson: { tier: 'epic', name: '헤모글로빈 크림슨', en: 'Hemoglobin Crimson',
+        fact: '적혈구의 헤모글로빈은 산소와 붙으면 선홍색, 산소를 내려놓으면 검붉은색이 됩니다.',
+        factEn: 'Hemoglobin turns bright red when it carries oxygen and dark red after it lets go.' },
+    neon: { tier: 'epic', name: '신경 네온', en: 'Nerve Neon',
+        fact: '가장 빠른 신경 신호는 1초에 100m 넘게 달립니다.',
+        factEn: 'The fastest nerve signals travel more than 100 meters per second.' },
+    ivory: { tier: 'epic', name: '뼈 아이보리', en: 'Bone Ivory',
+        fact: '뼈 속 해면뼈는 구멍이 송송 나 있어 가벼우면서도 튼튼합니다.',
+        factEn: 'Spongy bone inside your bones is full of tiny holes, making it light yet strong.' },
+    emerald: { tier: 'epic', name: '담즙 에메랄드', en: 'Bile Emerald',
+        fact: '쓸개즙의 초록빛은 오래된 적혈구가 분해되며 생긴 빌리베르딘 색입니다.',
+        factEn: 'Bile gets its green from biliverdin, made when old red blood cells are broken down.' },
+    violet: { tier: 'epic', name: '로돕신 바이올렛', en: 'Rhodopsin Violet',
+        fact: '눈의 막대세포에 있는 로돕신 덕분에 어두운 곳에서도 볼 수 있습니다.',
+        factEn: 'Rhodopsin in the rod cells of your eyes lets you see in the dark.' },
+    sky: { tier: 'epic', name: '산소 스카이', en: 'Oxygen Sky',
+        fact: '폐포에서 산소를 받은 피가 온몸으로 산소를 나릅니다.',
+        factEn: 'Blood picks up oxygen in the alveoli and carries it all over the body.' }
+};
+const SASIN = ['cheongryong', 'baekho', 'jujak', 'hyeonmu'];
+[['rbc', [...SASIN, 'crimson', 'neon', 'ivory', 'emerald']],
+ ['collagen', [...SASIN, 'violet', 'ivory', 'neon', 'sky']],
+ ['wbc', SASIN], ['o2', SASIN], ['nerve', SASIN], ['atp', SASIN], ['insulin', SASIN], ['plt', SASIN], ['mito', SASIN]
+].forEach(([car, looks]) => looks.forEach(look => {
+    const d = DRAWN_LOOKS[look];
+    SKINS.push({ id: car + '__' + look, car, look, tier: d.tier, name: d.name, en: d.en, fact: d.fact, factEn: d.factEn, under: d.under });
+}));
+const skinById = id => (id && SKINS.find(k => k.id === id)) || null;
+const tierOf = sk => SKIN_TIERS.find(t => t.id === sk.tier) || SKIN_TIERS[0];
+/* 뽑기에 나오는 스킨. 나중에 파는 스킨(paid)은 여기서 빠진다 */
+function gachaPool() { return SKINS.filter(k => !k.paid); }
+/* 그 차에 입힌 스킨 (가진 것만) */
+function skinOf(carId) {
+    const id = save.skinOf && save.skinOf[carId];
+    if (!id || !save.skins || !save.skins.includes(id)) return null;
+    const sk = skinById(id);
+    return sk && (!sk.car || sk.car === carId) ? id : null;       // 전용 스킨은 그 차에만
+}
 /* 카트 표식 한 글자도 언어를 따른다 */
 const mo = c => (LANG === 'en' && c.motifEn) ? c.motifEn : c.motif;
 
@@ -3573,7 +3901,9 @@ function curLevel() { return LV_OF(save.level); }
 
 let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
              cars: ['rbc'], car: 'rbc', vol: .7, lang: null, level: 'easy',
-             lv10: true };   // 강화가 10단계 기준이라는 표시 (위 loadSave 참고)
+             lv10: true,     // 강화가 10단계 기준이라는 표시 (위 loadSave 참고)
+             skins: [], skinOf: {}, pity: 0,     // 가진 스킨 · 차마다 입힌 스킨 · 전설 없이 뽑은 횟수
+             dia: 0, diaWelcome: false, lastLogin: '', streak: 0, winDay: '', winN: 0, tickets: 0, doneCars: [] };
 
 function loadSave() {
     try {
@@ -3614,6 +3944,26 @@ function loadSave() {
             save.car = save.cars.includes(d.car) ? d.car : 'rbc';
             /* 개발자 코드로 모든 차를 풀기 전에 가졌던 차 — '잠김 되돌리기' 가 앱을 껐다 켠 뒤에도 되게 */
             if (Array.isArray(d.devPrevCars)) save.devPrevCars = d.devPrevCars.filter(x => real.has(x));
+            /* 스킨 : 있는 스킨만 · 차마다 입힌 스킨은 가진 것만 · 뽑은 횟수는 0~29 */
+            const realSkin = new Set(SKINS.map(k => k.id));
+            save.skins = (Array.isArray(d.skins) ? d.skins : []).filter((x, i, a) => realSkin.has(x) && a.indexOf(x) === i);
+            save.skinOf = {};
+            if (d.skinOf && typeof d.skinOf === 'object')
+                for (const k in d.skinOf) if (real.has(k) && save.skins.includes(d.skinOf[k])) {
+                    const sk = skinById(d.skinOf[k]);
+                    if (sk && (!sk.car || sk.car === k)) save.skinOf[k] = d.skinOf[k];
+                }
+            save.pity = Math.round(num(d.pity, 0, SKIN_PITY - 1, 0));
+            /* 다이아 · 출석 · 1등 횟수 · 뽑기권 (버전 122) */
+            save.dia = Math.round(num(d.dia, 0, 1e9, 0));
+            save.diaWelcome = !!d.diaWelcome;
+            save.lastLogin = typeof d.lastLogin === 'string' ? d.lastLogin : '';
+            save.streak = Math.round(num(d.streak, 0, 1e6, 0));
+            save.winDay = typeof d.winDay === 'string' ? d.winDay : '';
+            save.winN = Math.round(num(d.winN, 0, 99, 0));
+            save.tickets = Math.round(num(d.tickets, 0, 999, 0));
+            save.doneCars = (Array.isArray(d.doneCars) ? d.doneCars : []).filter(x => real.has(x));
+            if (Array.isArray(d.devPrevSkins)) save.devPrevSkins = d.devPrevSkins.filter(x => realSkin.has(x));
             save.vol = typeof d.vol === 'number' ? clamp(d.vol, 0, 1) : .7;
             save.lang = d.lang === 'en' || d.lang === 'ko' ? d.lang : null;
             save.level = LEVELS.some(l => l.id === d.level) ? d.level : 'easy';
@@ -4316,6 +4666,7 @@ function makeKart(isPlayer, ci, name) {
         color: mine ? mine.color : CAR_COLORS[ci],
         sprite: mine ? mine.sprite : KART_KEYS[ci],
         motif: mine ? mo(mine) : null,
+        skin: mine ? skinOf(mine.id) : null,      // 입힌 스킨 (모양만)
         x: 0, y: 0, ang: 0, vx: 0, vy: 0, speed: 0, slip: 0, steer: 0, wobble: Math.random() * TAU,
         si: 0, prevSi: 0, lap: 1, cpIndex: 0, cpDone: 0, progress: 0,
         finished: false, finishTime: 0, rank: 1,
@@ -7296,6 +7647,8 @@ function drawKart(g, k, lift = 0) {
     lift += airH;
     const ox = clamp((k.x - cam.x) * .035, -14, 14);
     const oy = clamp((k.y - cam.y) * .035, -14, 14) - KART_H;
+    const sk = k.skin ? skinById(k.skin) : null;
+    if (sk && sk.trail) skinTrail(g, k, sk, lift);      // 전설 스킨 궤적 (땅 위, 차 뒤로)
 
     g.save();
     g.translate(k.x, k.y - lift);
@@ -7312,9 +7665,7 @@ function drawKart(g, k, lift = 0) {
         g.save(); g.rotate(k.ang);
         const f = 32 + Math.random() * 28;
         const grd = g.createLinearGradient(-20, 0, -20 - f, 0);
-        grd.addColorStop(0, 'rgba(255,238,160,.95)');
-        grd.addColorStop(.5, 'rgba(255,140,50,.7)');
-        grd.addColorStop(1, 'rgba(255,80,40,0)');
+        flameStops(grd, sk);                            // 스킨마다 불꽃 색 (기본은 노랑 → 주황)
         g.fillStyle = grd;
         g.beginPath(); g.moveTo(-18, -11); g.lineTo(-18 - f, 0); g.lineTo(-18, 11); g.closePath(); g.fill();
         g.restore();
@@ -7327,7 +7678,22 @@ function drawKart(g, k, lift = 0) {
     }
 
     // --- 블렌더 스프라이트가 로드됐으면 그걸로 그린다
-    const img = KART_SPRITES[k.sprite];
+    if (sk && sk.under) {                               // 전설 그림 스킨 : 차 밑 네온 (차 방향으로 길쭉하게)
+        const pul = .75 + Math.sin(performance.now() / 300) * .25;
+        g.save(); g.translate(ox, oy + bounce + 6); g.rotate(k.ang + (k.spin || 0)); g.scale(1, .55);
+        const rg = g.createRadialGradient(0, 0, 8, 0, 0, 88);
+        rg.addColorStop(0, `rgba(${sk.under},${.8 * pul})`); rg.addColorStop(.55, `rgba(${sk.under},${.32 * pul})`); rg.addColorStop(1, `rgba(${sk.under},0)`);
+        g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.beginPath(); g.arc(0, 0, 88, 0, TAU); g.fill();
+        g.restore();
+    }
+    if (sk && sk.glow) {                                // 전설 스킨 : 둘레가 숨 쉬듯 빛난다
+        const pul = .7 + Math.sin(performance.now() / 240) * .3, cy = oy + bounce;
+        const rg = g.createRadialGradient(ox, cy, 8, ox, cy, 92);
+        rg.addColorStop(0, `rgba(${sk.glow},${.5 * pul})`); rg.addColorStop(1, `rgba(${sk.glow},0)`);
+        g.fillStyle = rg; g.beginPath(); g.arc(ox, cy, 92, 0, TAU); g.fill();
+    }
+    const img0 = KART_SPRITES[k.sprite];
+    const img = sk ? skinImg(img0, k.sprite, sk, 'top') : img0;
     if (img && img.ready) {
         g.save();
         g.translate(ox, oy + bounce);
@@ -9475,7 +9841,7 @@ function startRace(id, timeAttack) {
     raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; escapeHint = 0; backHint = 0; countShown = -1; stickyHint = 0;
     subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
 
-    stopCarVoice(); engineUseCar(); skidUseCar(); sideImg(carById(save.car).sprite);            // 고른 차의 엔진 · 타이어 소리로
+    stopCarVoice(); engineUseCar(); skidUseCar(); sideImg(carById(save.car).sprite); skinWarm(carById(save.car).sprite, skinOf(save.car));            // 고른 차의 엔진 · 타이어 소리로
     preloadOneShots();                       // 메뉴를 건너뛰고 왔을 때를 대비
     buildHudStatic();
     el('taCard').classList.toggle('hidden', !TA.on);
@@ -9657,6 +10023,7 @@ function taMakeGhostKart() {
     ghostKart.isPlayer = false;
     ghostKart.sprite = player ? player.sprite : ghostKart.sprite;
     ghostKart.motif = player ? player.motif : ghostKart.motif;
+    ghostKart.skin = player ? player.skin : null;
     ghostKart.color = '#9fd0ff';
     ghostKart.name = '';
 }
@@ -10173,7 +10540,8 @@ function drawVictory(g) {
     //    그림을 뒤집으면 번호가 거울 글자(01→10)가 되므로 뒤집지 않는다 —
     //    왼쪽을 보는 차는 오른쪽 밖에서, 오른쪽을 보는 차는 왼쪽 밖에서 달려 들어와 같은 자리(오른쪽 편)에 선다.
     const inX = clamp(t / .7, 0, 1), ease = inX * (2 - inX);       // 부드럽게 감속
-    const side = sideImg(player.sprite);
+    const pSkin = player.skin ? skinById(player.skin) : null;
+    const side = pSkin ? skinImg(sideImg(player.sprite), player.sprite, pSkin, 'side') : sideImg(player.sprite);
     if (side.ready) {
         let h = Math.min(roadH * .95, 170);
         let w = h * side.naturalWidth / side.naturalHeight;
@@ -10185,6 +10553,13 @@ function drawVictory(g) {
         g.translate(kx, roadY + roadH * .66 + Math.sin(t * 9) * 1.4);
         g.fillStyle = 'rgba(0,0,0,.28)';                                  // 땅 그림자
         g.beginPath(); g.ellipse(0, 0, w * .46, h * .09, 0, 0, TAU); g.fill();
+        if (pSkin && pSkin.under) {                                      // 전설 그림 스킨 : 완주 무대에서도 차 밑 네온
+            const pul = .75 + Math.sin(t * 5) * .25;
+            g.save(); g.scale(1, .16); g.globalCompositeOperation = 'lighter';
+            const rg = g.createRadialGradient(0, 0, 4, 0, 0, w * .56);
+            rg.addColorStop(0, `rgba(${pSkin.under},${.85 * pul})`); rg.addColorStop(1, `rgba(${pSkin.under},0)`);
+            g.fillStyle = rg; g.beginPath(); g.arc(0, 0, w * .56, 0, TAU); g.fill(); g.restore();
+        }
         g.drawImage(side, -w / 2, -h * .98, w, h);
         g.restore();
     } else {
@@ -10354,6 +10729,13 @@ function endRace() {
     const base = player.earned + rankBonus + bestBonus + gradeBonus;
     const total = Math.round(base * payMul);
     save.points += total;
+    /* 1등이면 다이아 (하루 5번까지) */
+    let diaGot = 0;
+    if (!TA.on && player.rank === 1) {
+        const td = dayKey(new Date());
+        if (save.winDay !== td) { save.winDay = td; save.winN = 0; }
+        if (save.winN < DIA_WIN_MAX) { save.winN++; save.dia += DIA_WIN; diaGot = DIA_WIN; }
+    }
     writeSave();
     offerDouble(total);
 
@@ -10363,7 +10745,8 @@ function endRace() {
         ` + <b style="color:${G.color}">${G.grade} ${gradeBonus}</b>` +
         (bestBonus ? ` + <b style="color:#7ee081">${T('신기록')} ${bestBonus}</b>` : '') +
         (payMul !== 1 ? ` <b style="color:#ff8a3c">×${payMul.toFixed(2)}</b>` : '') +
-        ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>`;
+        ` = <b style="color:#ffe066;font-size:22px">+${total} P</b>` +
+        (diaGot ? ` · <b style="color:#ff7a85">${HEMO}+${diaGot}</b>` : '');
     if (TA.on) {
         const b = TA.prevBest;
         el('resBest').textContent = (TA.fresh ? T('랩 신기록') : T('최고 랩')) +
@@ -10755,12 +11138,13 @@ function renderCarPick() {
     const list = el('cpList2'); if (!list) return;
     if (!carPreview || !CARS.some(c => c.id === carPreview)) carPreview = save.car;
     el('cpPoints').textContent = save.points + ' P';
+    el('cpDia').innerHTML = HEMO + save.dia;
 
     list.innerHTML = CARS.map(c => {
         const owned = save.cars.includes(c.id);
         const can = !owned && save.points >= c.cost;
         return `<div class="cpCar${carPreview === c.id ? ' on' : ''}${owned ? '' : ' locked'}" data-cp="${c.id}">
-            <div class="em"><img src="assets/kart_${c.sprite}.webp" alt="">${owned ? '' : `<span>${T('잠김')}</span>`}</div>
+            <div class="em"><img src="${skinThumb(c.sprite, skinOf(c.id))}" class="${skinFx(skinOf(c.id))}" alt="">${owned ? '' : `<span>${T('잠김')}</span>`}</div>
             <div class="nm">${T(c.name)}</div>
             <div class="pr ${owned ? 'own' : can ? 'can' : ''}">${
                 save.car === c.id ? T('사용 중') : owned ? T('보유') : c.cost + ' P'}</div>
@@ -10783,7 +11167,7 @@ function renderCarPick() {
     const picked = save.car === c.id;
 
     el('cpDetail').innerHTML =
-        `<div class="dn" style="color:${c.color}"><img class="dImg" src="assets/kart_${c.sprite}.webp" alt="">${T(c.name)}</div>
+        `<div class="dn" style="color:${c.color}"><img class="dImg ${skinFx(skinOf(c.id))}" src="${skinThumb(c.sprite, skinOf(c.id))}" alt="">${T(c.name)}<small class="cell">${LANG === 'en' ? c.cellEn : c.cell}</small></div>
          <div class="dd">${T(c.desc)}</div><div class="cpStats">` +
         CAR_STATS.map(s => {
             const { lo, hi } = statRange(s.key);
@@ -10795,13 +11179,17 @@ function renderCarPick() {
                 <span class="gv">${Math.round(c[s.key] * 100)}</span>
             </div>`;
         }).join('') +
-        `<div class="dd" style="margin:8px 0 0;font-size:11px">${T('흰 눈금 = 지금 타는 차')} · ${T(now.name)}</div></div>
+        `<div class="dd" style="margin:8px 0 0;font-size:11px">${T('흰 눈금 = 지금 타는 차')} · ${T(now.name)}</div>
+            <div class="skRow" id="skRowCar"><span>${T('스킨')}</span>${skinOf(c.id)
+                ? `<b style="color:${tierOf(skinById(skinOf(c.id))).color}">${skinName(skinById(skinOf(c.id)))}</b>`
+                : `<b>${T('기본')}</b>`}<u>${T('바꾸기')}</u></div></div>
          <button class="cpBuy ${picked ? 'on' : (owned || can) ? 'can' : ''}"
                  id="cpBuyBtn" ${picked || owned || can ? '' : 'disabled'}>${
             picked ? T('이 차로 달리는 중') : owned ? T('이 차로 바꾸기')
                    : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
          }</button>`;
 
+    const skr = el('skRowCar'); if (skr) skr.onclick = () => openSkinShop(c.id);
     const btn = el('cpBuyBtn');
     if (btn) btn.onclick = () => {
         if (picked) return;
@@ -10813,6 +11201,298 @@ function renderCarPick() {
         save.car = c.id; writeSave(); renderCarPick();
     };
 }
+
+/* ============================================================================
+   스킨 칠하기 · 뽑기 · 도감
+   ========================================================================== */
+/* 차 그림에서 '도색' 만 고른다 : 채도가 있는 픽셀. 타이어 · 유리 · 흰 번호판은 채도가 없어 그대로 남는다.
+   혈소판(검은 차) · 미토콘드리아(흰 차)는 도색이 가는 줄뿐이라 차체의 검정 · 흰색도 칠한다.
+   경계는 딱 자르지 않고 부드럽게 섞는다 — 딱 자르면 흰 차에 흰 점이 얼룩덜룩 남았다. */
+const SKIN_BODY = { plt: 'dark', mito: 'light' };
+const SKIN_PAT = {
+    stripe: (x, y, p) => ((x + y) / p | 0) % 2 === 1,
+    dots:   (x, y, p) => { const gx = x % p - p / 2, gy = y % p - p / 2; return gx * gx + gy * gy < p * p * .09; },
+    helix:  (x, y, p) => Math.abs((y + p * 8 + Math.sin(x / p * 1.3) * p * .55) % (p * 1.6) - p * .8) < p * .22,
+    rings:  (x, y, p, w, h) => (Math.hypot(x - w / 2, y - h / 2) / (p * .55) | 0) % 2 === 1,
+    zigzag: (x, y, p) => { const tri = Math.abs((x / p % 1) * 2 - 1); return Math.abs((y + tri * p * .8) % (p * 1.4) - p * .7) < p * .16; },
+    cells:  (x, y, p) => { const q = p * 1.3, ox = ((y / q | 0) % 2) ? q / 2 : 0;
+                           const gx = (x + ox) % q - q / 2, gy = y % q - q / 2; return gx * gx + gy * gy < q * q * .12; }
+};
+const smooth = (v, a, b) => clamp((v - a) / (b - a), 0, 1);
+function hsl2rgb(h, s, l) {
+    const q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    const f = t => { t = (t + 1) % 1;
+        return 255 * (t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p); };
+    return [f(h + 1 / 3), f(h), f(h - 1 / 3)];
+}
+function skinPaint(img, sprite, sk, hue) {
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    let id;
+    try { g.drawImage(img, 0, 0); id = g.getImageData(0, 0, w, h); } catch (e) { return null; }   // file:// 로 열면 막힌다 → 기본 그림
+    const d = id.data, body = SKIN_BODY[sprite], p = Math.max(8, w / 14), pat = SKIN_PAT[sk.pat];
+    const H = (((hue % 360) + 360) % 360) / 360, H2 = sk.hue2 !== undefined ? sk.hue2 / 360 : null;
+    for (let y = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, i += 4) {
+        if (d[i + 3] < 10) continue;
+        const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255;
+        const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), L = (mx + mn) / 2, dl = mx - mn;
+        const S = dl === 0 ? 0 : dl / (1 - Math.abs(2 * L - 1));
+        const satW = smooth(S, .2, .34);
+        const wPaint = satW * smooth(L, .08, .13) * (1 - smooth(L, .9, .95));
+        const wBody = body === 'light' ? (1 - satW) * smooth(L, .6, .78)
+                    : body === 'dark' ? (1 - satW) * smooth(L, .1, .14) * (1 - smooth(L, .34, .4)) : 0;
+        const wt = Math.max(wPaint, wBody);
+        if (wt <= 0) continue;
+        let tS, tL, tH = H;
+        if (wPaint >= wBody) { tS = Math.min(1, S * 1.05); tL = L; }
+        else if (body === 'light') { tS = .75; tL = .3 + L * .45; }
+        else { tS = .62; tL = L * 1.35 + .04; }
+        if (sk.sat !== undefined) tS = sk.sat;
+        if (sk.lit) tL = Math.min(.95, tL * sk.lit);
+        if (pat && pat(x, y, p, w, h)) { if (H2 !== null) tH = H2; else tL = Math.min(.92, tL * 1.35 + .08); }
+        const c = hsl2rgb(tH, tS, tL);
+        d[i] += (c[0] - d[i]) * wt; d[i + 1] += (c[1] - d[i + 1]) * wt; d[i + 2] += (c[2] - d[i + 2]) * wt;
+    }
+    g.putImageData(id, 0, 0);
+    cv.naturalWidth = w; cv.naturalHeight = h; cv.ready = true;
+    return cv;
+}
+/* 칠한 그림은 한 번만 만든다. 무지개는 색을 30도씩 돌린 12장 */
+const SKIN_CACHE = new Map();
+function skinFrame(base, sprite, sk, kind, f) {
+    const key = kind + ':' + sprite + ':' + sk.id + ':' + f;
+    let cv = SKIN_CACHE.get(key);
+    if (cv === undefined) { cv = skinPaint(base, sprite, sk, sk.rainbow ? f * 30 : sk.hue); SKIN_CACHE.set(key, cv); }
+    return cv;
+}
+/* 그림 스킨은 칠하지 않고 그림 파일을 그대로 쓴다 (받는 대로) */
+const DRAWN_IMGS = {};
+function drawnImg(sk, kind) {
+    const key = kind + ':' + sk.id;
+    let im = DRAWN_IMGS[key];
+    if (!im) {
+        im = DRAWN_IMGS[key] = new Image();
+        im.onload = () => { im.ready = true; };
+        im.src = 'assets/skins/' + (kind === 'top' ? 'kart_' : 'car_side_') + sk.id + '.webp';
+    }
+    return im;
+}
+function skinImg(base, sprite, sk, kind) {
+    if (sk && sk.car) { const im = drawnImg(sk, kind); return im.ready ? im : base; }
+    if (!sk || !base || !base.ready) return base;
+    const f = sk.rainbow ? Math.floor(performance.now() / 110) % 12 : 0;
+    return skinFrame(base, sprite, sk, kind, f) || base;
+}
+/* 출발할 때 미리 칠해 둔다 — 달리는 중에 만들면 한 번 멈칫한다 */
+function skinWarm(sprite, skinId) {
+    const sk = skinById(skinId), base = KART_SPRITES[sprite];
+    if (sk && sk.car) { drawnImg(sk, 'top'); drawnImg(sk, 'side'); return; }
+    if (!sk || !base || !base.ready) return;
+    for (let f = 0; f < (sk.rainbow ? 12 : 1); f++) skinFrame(base, sprite, sk, 'top', f);
+}
+/* 메뉴 <img> 용 작은 그림 */
+const SKIN_THUMB = new Map();
+function skinThumb(sprite, skinId) {
+    const path = 'assets/kart_' + sprite + '.webp', sk = skinById(skinId), base = KART_SPRITES[sprite];
+    if (!sk) return path;
+    if (sk.car) return 'assets/skins/kart_' + sk.id + '.webp';
+    if (!base || !base.ready) {
+        if (base && !base.skinWait) { base.skinWait = 1; base.addEventListener('load', () => setTimeout(() => { renderCarPick(); }, 0)); }
+        return path;
+    }
+    const key = sprite + ':' + sk.id;
+    if (SKIN_THUMB.has(key)) return SKIN_THUMB.get(key);
+    const cv = skinFrame(base, sprite, sk, 'top', 0);
+    let url = path;
+    if (cv) try {
+        const t = document.createElement('canvas'); t.width = t.height = 160;
+        t.getContext('2d').drawImage(cv, 0, 0, 160, 160); url = t.toDataURL('image/png');
+    } catch (e) {}
+    SKIN_THUMB.set(key, url);
+    return url;
+}
+const skinFx = skinId => { const sk = skinById(skinId);
+    return !sk ? '' : sk.under ? 'skUnder skU-' + sk.look : sk.rainbow ? 'skRainbow' : sk.glow ? 'skGlow' : ''; };
+const skinName = sk => LANG === 'en' ? sk.en : sk.name;
+const skinFact = sk => LANG === 'en' ? sk.factEn : sk.fact;
+const FLAME0 = ['255,238,160', '255,140,50', '255,80,40'];
+function flameStops(grd, sk) {
+    if (sk && sk.flame === 'rainbow') {
+        const h = performance.now() / 3 % 360;
+        grd.addColorStop(0, `hsla(${h},100%,88%,.95)`);
+        grd.addColorStop(.5, `hsla(${(h + 60) % 360},100%,60%,.7)`);
+        grd.addColorStop(1, `hsla(${(h + 120) % 360},100%,55%,0)`);
+        return;
+    }
+    const f = (sk && sk.flame) || FLAME0;
+    grd.addColorStop(0, `rgba(${f[0]},.95)`); grd.addColorStop(.5, `rgba(${f[1]},.7)`); grd.addColorStop(1, `rgba(${f[2]},0)`);
+}
+/* 전설 스킨 궤적 : 지난 0.65초 동안 지나온 자리를 빛 띠로 */
+function skinTrail(g, k, sk, lift) {
+    const now = performance.now(), tr = k.skinTrail || (k.skinTrail = []);
+    if (!tr.length || now - tr[tr.length - 1].t > 35) tr.push({ x: k.x, y: k.y - lift, t: now });
+    while (tr.length && now - tr[0].t > 650) tr.shift();
+    if (tr.length < 2) return;
+    g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+    for (let i = 1; i < tr.length; i++) {
+        const a = 1 - (now - tr[i].t) / 650, p0 = tr[i - 1], p1 = tr[i];
+        if (Math.hypot(p1.x - p0.x, p1.y - p0.y) > 400) continue;      // 되살아나며 순간 이동한 자리는 잇지 않는다
+        g.strokeStyle = sk.trail === 'rainbow' ? `hsla(${(now / 4 + i * 24) % 360},100%,62%,${a * .55})` : `rgba(${sk.trail},${a * .5})`;
+        g.lineWidth = 4 + a * 18;
+        g.beginPath(); g.moveTo(p0.x, p0.y); g.lineTo(p1.x, p1.y); g.stroke();
+    }
+    g.restore();
+}
+
+/* ---- 뽑기 창 ---- */
+let skinCar = 'rbc', skinBusy = false;
+function openSkinShop(carId) {
+    skinCar = carId || save.car;
+    skinBusy = false;
+    el('skCard').classList.add('hidden');
+    el('skCap').className = 'skCap';
+    el('skinShop').classList.remove('hidden');
+    renderSkinShop();
+    playBeep(1000, .06);
+}
+function closeSkinShop() {
+    el('skinShop').classList.add('hidden');
+    renderCarPick();
+    playBeep(700, .05);
+}
+function renderSkinShop() {
+    const car = carById(skinCar), pool = gachaPool(), cur = skinOf(car.id);
+    el('skPoints').innerHTML = HEMO + save.dia;
+    const pb = el('skPull');
+    pb.innerHTML = `${T('뽑기')} ${HEMO}${SKIN_PRICE}`;
+    pb.disabled = skinBusy || save.dia < SKIN_PRICE;
+    pb.classList.toggle('can', !pb.disabled);
+    const tb = el('skTicket');
+    tb.classList.toggle('hidden', !save.tickets);
+    tb.textContent = `🎟 ${T('희귀 이상 뽑기권')} ×${save.tickets}`;
+    tb.disabled = skinBusy;
+    el('skOdds').innerHTML = SKIN_TIERS.map(t => `<b style="color:${t.color}">${T(t.name)} ${t.rate}%</b>`).join(' · ') +
+        `<br>${T('30번 안에 전설 1번 보장')} (${save.pity}/${SKIN_PITY}) · ${T('가진 스킨이 또 나오면 헤모글로빈 {n}개 돌려받기').replace('{n}', SKIN_REFUND)}` +
+        `<br>${T('모양만 바뀌고 성능은 같아요')} · ${T('헤모글로빈은 매일 접속 · 1등으로 모아요')}`;
+    el('skCount').textContent = pool.filter(k => save.skins.includes(k.id)).length + ' / ' + pool.length;
+    /* 차 고르기 줄 — 차마다 도감 (사용자 "게임에서 차량도감도 만들어야 겠구나") */
+    el('skCars').innerHTML = CARS.map(c => {
+        const mine = SKINS.filter(k => k.car === c.id), got = mine.filter(k => save.skins.includes(k.id)).length;
+        return `<button class="skCarBtn${c.id === car.id ? ' on' : ''}" data-skcar="${c.id}" title="${T(c.name)}">` +
+               `<img src="${skinThumb(c.sprite, skinOf(c.id))}" alt=""><i>${mine.length ? got + '/' + mine.length : '—'}</i></button>`;
+    }).join('');
+    const owned = save.cars.includes(car.id);
+    el('skFor').innerHTML = `<img src="${skinThumb(car.sprite, cur)}" class="${skinFx(cur)}" alt=""><span>${T(car.name)} · ${owned ? T('눌러서 입히기') : T('차를 사면 탈 수 있어요')}</span>`;
+    const cell = k => {
+        const t = tierOf(k);
+        return save.skins.includes(k.id)
+            ? `<div class="skCell${cur === k.id ? ' on' : ''}" data-sk="${k.id}" style="--tc:${t.color}">
+                 <img src="${skinThumb(car.sprite, k.id)}" class="${skinFx(k.id)}" alt=""><i>${skinName(k)}</i></div>`
+            : `<div class="skCell lock" style="--tc:${t.color}"><span>?</span><i>${T(t.name)}</i></div>`;
+    };
+    const mine = pool.filter(k => k.car === car.id), shared = pool.filter(k => !k.car);
+    const cnt = arr => arr.filter(k => save.skins.includes(k.id)).length + '/' + arr.length;
+    el('skGrid').innerHTML =
+        `<div class="skCell${cur ? '' : ' on'}" data-sk=""><img src="assets/kart_${car.sprite}.webp" alt=""><i>${T('기본')}</i></div>` +
+        (mine.length ? `<div class="skSec">${T('전용 스킨')} ${cnt(mine)}${save.doneCars.includes(car.id) ? ' · 🎟 ' + T('완성') : ''}</div>` + mine.map(cell).join('') : '') +
+        `<div class="skSec">${T('공용 스킨')} ${cnt(shared)}</div>` + shared.map(cell).join('');
+    el('skGrid').querySelectorAll('[data-sk]').forEach(n => {
+        n.onclick = () => {
+            if (skinBusy) return;
+            const id = n.dataset.sk;
+            if (id) save.skinOf[car.id] = id; else delete save.skinOf[car.id];
+            writeSave(); playBeep(1150, .08);
+            renderSkinShop();
+            const k = skinById(id);
+            if (k) showSkinCard(k, car, null); else { el('skCard').classList.add('hidden'); el('skCap').className = 'skCap'; }
+        };
+    });
+    el('skCars').querySelectorAll('[data-skcar]').forEach(n => {
+        n.onclick = () => {
+            if (skinBusy) return;
+            skinCar = n.dataset.skcar;
+            el('skCard').classList.add('hidden'); el('skCap').className = 'skCap';
+            playBeep(900, .04); renderSkinShop();
+        };
+    });
+}
+function showSkinCard(k, car, dup) {
+    const t = tierOf(k), c = el('skCard');
+    const on = k.car ? carById(k.car) : car;                         // 전용 스킨은 그 차 그림으로
+    c.style.setProperty('--tc', t.color);
+    c.innerHTML = `<div class="skTier">${T(t.name)}${k.car ? ' · ' + T(on.name) + ' ' + T('전용') : ''}</div>
+        <img src="${skinThumb(on.sprite, k.id)}" class="${skinFx(k.id)}" alt="">
+        <div class="skName">${skinName(k)}</div>
+        <div class="skFact">${skinFact(k)}</div>` +
+        (dup === null ? '' : dup ? `<div class="skDup">${T('이미 가진 스킨')} · ${HEMO}+${SKIN_REFUND}</div>`
+                                 : `<div class="skNew">${T('새 스킨!')}${save.cars.includes(on.id) ? '' : ' · ' + T('차를 사면 탈 수 있어요')}</div>`) +
+        (skinOf(on.id) !== k.id ? `<button class="btn small" id="skWear">${T('이 차에 입히기')}</button>` : '');
+    el('skCap').className = 'skCap pop';
+    c.classList.remove('hidden');
+    const wb = el('skWear');
+    if (wb) wb.onclick = () => {
+        save.skinOf[on.id] = k.id; writeSave(); playBeep(1300, .1);
+        skinCar = on.id; renderSkinShop(); showSkinCard(k, on, null);
+    };
+}
+/* 한 차의 전용 스킨을 모두 모으면 '희귀 이상 뽑기권' (사용자 "한 자동차 모든 스킨을 모으면 희귀 이상 뽑기권도 주자") */
+function checkCompletion() {
+    for (const c of CARS) {
+        const mine = SKINS.filter(k => k.car === c.id && !k.paid);
+        if (!mine.length || save.doneCars.includes(c.id) || !mine.every(k => save.skins.includes(k.id))) continue;
+        save.doneCars.push(c.id); save.tickets++;
+        writeSave();
+        showToast('🎟 ' + T('희귀 이상 뽑기권'), T(c.name) + ' · ' + T('전용 스킨을 모두 모았어요!'));
+        if (audioCtx) sfxWin(true);
+    }
+}
+function pullSkin(ticket) {
+    ticket = ticket === true;
+    if (skinBusy || (ticket ? save.tickets < 1 : save.dia < SKIN_PRICE)) return;
+    const pool = gachaPool();
+    if (ticket) save.tickets--; else { save.dia -= SKIN_PRICE; save.pity++; }
+    const tiers = ticket ? SKIN_TIERS.filter(t => t.id !== 'common') : SKIN_TIERS;
+    let tier = ticket ? 'rare' : 'common';
+    if (!ticket && save.pity >= SKIN_PITY) tier = 'legend';
+    else {
+        let r = Math.random() * tiers.reduce((acc, t) => acc + t.rate, 0);
+        for (const t of tiers) { r -= t.rate; if (r < 0) { tier = t.id; break; } }
+    }
+    const cands = pool.filter(k => k.tier === tier);
+    const k = cands[Math.random() * cands.length | 0];
+    if (tier === 'legend') save.pity = 0;
+    const dup = save.skins.includes(k.id);
+    if (dup) save.dia += SKIN_REFUND; else save.skins.push(k.id);
+    if (k.car) skinCar = k.car;                     // 뽑은 스킨의 차 도감으로
+    writeSave();                                     // 뽑자마자 저장 — 연출 도중 앱을 꺼도 잃지 않는다
+
+    skinBusy = true;
+    renderSkinShop();
+    el('skPoints').innerHTML = HEMO + (save.dia - (dup ? SKIN_REFUND : 0));
+    el('skCard').classList.add('hidden');
+    const cap = el('skCap');
+    cap.style.setProperty('--tc', tierOf(k).color);
+    cap.className = 'skCap'; void cap.offsetWidth; cap.className = 'skCap shake';
+    playBeep(620, .05);
+    [0, 220, 440, 660].forEach((ms, i) => setTimeout(() => { if (audioCtx) tone(520 + i * 90, .06, .05, 'triangle'); }, ms));
+    setTimeout(() => {
+        skinBusy = false;
+        renderSkinShop();
+        showSkinCard(k, carById(skinCar), dup);
+        checkCompletion();
+        if (!audioCtx) return;
+        if (tier === 'legend') sfxWin(true);
+        else if (tier === 'epic') { bell(784, .6, .1, 0, 1); bell(1175, .7, .09, .12, 1); }
+        else if (tier === 'rare') bell(1046, .5, .1, 0, 1);
+        else tone(880, .12, .07, 'sine');
+    }, 950);
+}
+el('skPull').onclick = () => pullSkin(false);
+el('skTicket').onclick = () => pullSkin(true);
+el('skClose').onclick = closeSkinShop;
+el('skOpen').onclick = () => openSkinShop(typeof carPreview === 'string' && carPreview ? carPreview : save.car);
 
 function drawPreview(cv, sys) {
     const g0 = cv.getContext('2d');
@@ -11651,9 +12331,11 @@ el('devGo').onclick = async () => {
     el('devCode').value = '';
     if (!code || await sha256hex(code) !== DEV_HASH) { devSay('틀림', 1200); return; }
     if (!save.devPrevCars) save.devPrevCars = save.cars.slice();
+    if (!save.devPrevSkins) save.devPrevSkins = save.skins.slice();
     save.cars = CARS.map(c => c.id);
+    save.skins = gachaPool().map(k => k.id);
     writeSave(); renderCarPick(); devRefresh();
-    devSay('모든 차 풀림', 1800);
+    devSay('모든 차 · 스킨 풀림', 1800);
 };
 el('devUndo').onclick = () => {
     if (!save.devPrevCars) return;
@@ -11661,10 +12343,38 @@ el('devUndo').onclick = () => {
     if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
     if (!save.cars.includes(save.car)) save.car = 'rbc';
     delete save.devPrevCars;
+    if (save.devPrevSkins) {
+        save.skins = save.devPrevSkins;
+        for (const k in save.skinOf) if (!save.skins.includes(save.skinOf[k])) delete save.skinOf[k];
+        delete save.devPrevSkins;
+    }
     writeSave(); renderCarPick(); devRefresh();
     devSay('되돌림', 1200);
 };
 devRefresh();
+/* ---- 다이아 (스킨 전용) ----
+   처음 한 번 300 · 매일 첫 접속 50 · 연속 7일째마다 +150 · 레이스 1등 10 (하루 5번까지). 돈으로는 팔지 않는다. */
+const DIA_WELCOME = 300, DIA_DAILY = 50, DIA_STREAK7 = 150, DIA_WIN = 10, DIA_WIN_MAX = 5;
+function dayKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function dailyReward() {
+    const got = [];
+    if (!save.diaWelcome) { save.diaWelcome = true; save.dia += DIA_WELCOME; got.push(T('스킨 뽑기 선물') + ' 🔴' + DIA_WELCOME); }
+    const now = new Date(), today = dayKey(now);
+    if (save.lastLogin !== today) {
+        const y = new Date(now); y.setDate(y.getDate() - 1);
+        save.streak = save.lastLogin === dayKey(y) ? save.streak + 1 : 1;
+        save.lastLogin = today;
+        let n = DIA_DAILY;
+        if (save.streak % 7 === 0) n += DIA_STREAK7;
+        save.dia += n;
+        got.push(T('매일 접속') + ' ' + save.streak + T('일째') + ' 🔴' + n);
+    }
+    if (!got.length) return;
+    writeSave();
+    renderCarPick();
+    setTimeout(() => showToast('🔴 ' + T('헤모글로빈을 받았어요'), got.join(' · ')), 1500);
+}
+dailyReward();
 el('diagCopy').onclick = () => {
     const t = el('diagText').textContent;
     if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
