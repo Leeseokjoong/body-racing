@@ -2173,6 +2173,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 109, d: '9월 11일', t: [
+        '코스 고르는 카드 그림을 다듬었다 — 카트·아이템·관중석·글자를 빼고 코스와 장기만',
+        'Course cards redrawn: just the course and organs, no karts, items, stands or labels',
+        '카드 모양(가로로 긴 틀)에 맞춰 찍고, 폰에서 흐리지 않게 해상도를 2배로',
+        'Cards now match the wide frame and render at 2x so they stay sharp on phones'
+    ] },
     { v: 108, d: '9월 11일', t: [
         '플레이 중에 빨간 진단 창이 뜨지 않는다 — 오류는 조용히 기록만 한다',
         'The red diagnostics panel no longer pops up during play; errors are logged quietly',
@@ -10123,7 +10129,7 @@ function drawMapCard(dir) {
     card.innerHTML =
         `<h3>${T(sys.name)}</h3>` +
         `<div class="kind">${T(ZOOM_MAPS.includes(sys.id) ? '기관 확대 코스' : '계통 순회 코스')}</div>` +
-        `<canvas width="560" height="300"></canvas>` +
+        `<canvas width="1120" height="600"></canvas>` +
         `<div class="route">${sys.flow.map(f => T(f.name)).join(' → ')}</div>` +
         `<div class="facts">` +
             `<span class="fact">${T('바퀴')}<b>${sys.laps}</b></span>` +
@@ -10287,6 +10293,7 @@ function drawPreview(cv, sys) {
     }
 
     const t = buildTrack(sys), g = cv.getContext('2d');
+    const u = cv.width / 560;                    // 선 굵기 기준 (예전 캔버스 560 폭 = 1)
     /* 섬까지 들어가도록 테두리를 잡는다 — 트랙만 기준으로 잡으면 땅이 잘린다 */
     let ix0 = 1e9, iy0 = 1e9, ix1 = -1e9, iy1 = -1e9;
     for (const p of (t.island || [])) {
@@ -10295,7 +10302,7 @@ function drawPreview(cv, sys) {
     }
     const b = t.island && t.island.length
         ? { x: ix0, y: iy0, w: ix1 - ix0, h: iy1 - iy0 } : t.bounds;
-    const s = Math.min((cv.width - 16) / b.w, (cv.height - 16) / b.h);
+    const s = Math.min((cv.width - 16 * u) / b.w, (cv.height - 16 * u) / b.h);
     const ox = (cv.width - b.w * s) / 2 - b.x * s, oy = (cv.height - b.h * s) / 2 - b.y * s;
     g.lineCap = 'round'; g.lineJoin = 'round';
 
@@ -10306,20 +10313,20 @@ function drawPreview(cv, sys) {
         t.island.forEach((p, i) => i ? ip.lineTo(p.x * s + ox, p.y * s + oy)
                                      : ip.moveTo(p.x * s + ox, p.y * s + oy));
         ip.closePath();
-        g.save(); g.translate(0, 7); g.fillStyle = '#40301f'; g.fill(ip); g.restore();
-        g.save(); g.translate(0, 3); g.fillStyle = '#584127'; g.fill(ip); g.restore();
+        g.save(); g.translate(0, 7 * u); g.fillStyle = '#40301f'; g.fill(ip); g.restore();
+        g.save(); g.translate(0, 3 * u); g.fillStyle = '#584127'; g.fill(ip); g.restore();
         const gr = g.createLinearGradient(0, b.y * s + oy, 0, (b.y + b.h) * s + oy);
         gr.addColorStop(0, sys.grass[0]); gr.addColorStop(1, sys.grass[1]);
         g.fillStyle = gr; g.fill(ip);
-        g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 3; g.stroke(ip);
+        g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 3 * u; g.stroke(ip);
     }
     const path = new Path2D();
     path.moveTo(t.pts[0].x * s + ox, t.pts[0].y * s + oy);
     for (let i = 1; i < t.N; i++) path.lineTo(t.pts[i].x * s + ox, t.pts[i].y * s + oy);
     if (t.closed) path.closePath();
-    g.strokeStyle = '#08111d'; g.lineWidth = 14; g.stroke(path);
+    g.strokeStyle = '#08111d'; g.lineWidth = 14 * u; g.stroke(path);
     t.secs.forEach(sec => {
-        g.strokeStyle = sec.color; g.lineWidth = 9; g.beginPath();
+        g.strokeStyle = sec.color; g.lineWidth = 9 * u; g.beginPath();
         for (let i = sec.from; i <= sec.to; i++) {
             const p = t.pts[i];
             i === sec.from ? g.moveTo(p.x * s + ox, p.y * s + oy) : g.lineTo(p.x * s + ox, p.y * s + oy);
@@ -10328,8 +10335,8 @@ function drawPreview(cv, sys) {
     });
     t.checkpoints.forEach(cp => {
         const p = t.pts[cp.si];
-        g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x * s + ox, p.y * s + oy, 7, 0, TAU); g.fill();
-        g.fillStyle = '#123'; g.font = 'bold 10px sans-serif';
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x * s + ox, p.y * s + oy, 7 * u, 0, TAU); g.fill();
+        g.fillStyle = '#123'; g.font = 'bold ' + Math.round(10 * u) + 'px sans-serif';
         g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText(cp.num, p.x * s + ox, p.y * s + oy + .5);
     });
