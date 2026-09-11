@@ -1082,6 +1082,7 @@
 #stepNav #stepPrev { justify-self: end; margin-right: 10px; }
 #stepNav #stepNext { grid-column: 2; }
 #stepNav .btn.ghost { visibility: hidden; }
+#stepNav .btn { white-space: nowrap; }      /* 폰 세로에서 '이전' 이 '이 / 전' 두 줄로 꺾였다 */
 
 /* ---- 코스 고르기 ---- */
 #mpStage { display: flex; align-items: center; gap: 14px; touch-action: pan-y; }
@@ -1298,6 +1299,108 @@
     #taCard { min-width: 0; padding: 6px 10px; }
     .taV { font-size: 15px; } #taDelta { font-size: 16px; }
 }
+
+/* ================= 버전 126 : 출발 장 = 레이싱 게임 모드 선택 화면 ================= */
+#goStage { display: grid; grid-template-columns: minmax(250px, 330px) minmax(0, 580px); gap: 16px;
+           width: min(96vw, 940px); align-items: stretch; }
+.goLeft { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.goHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.goHead .pickLabel { margin: 0; font-size: 13px; font-weight: bold; color: #9fb6d4; }
+.goHead #keysToggle { margin: 0; }
+#goStage #modePick { display: flex; flex-direction: column; gap: 8px; }
+#goStage .modeBtn { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 11px;
+    align-items: center; text-align: left; padding: 7px 16px 7px 12px; border-radius: 7px; min-height: 0;
+    transform: skewX(-10deg); transition: transform .14s, background .14s, box-shadow .14s;
+    background: linear-gradient(90deg, rgba(27,58,94,.97), rgba(14,32,56,.9)); border: 2px solid #2f5580;
+    color: #dcebff; box-shadow: 0 3px 0 rgba(0,0,0,.4); }
+#goStage .modeBtn > * { transform: skewX(10deg); }
+#goStage .modeBtn:hover { transform: skewX(-10deg) translateX(4px); }
+#goStage .modeBtn .mIc { grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    background: #0b1a2c; color: #7fd4ff; box-shadow: inset 0 0 0 2px rgba(127,212,255,.35); }
+#goStage .modeBtn .mIc svg { width: 23px; height: 23px; }
+#goStage .modeBtn b { font-size: 17px; font-weight: 900; font-style: italic; letter-spacing: -.3px; line-height: 1.15; }
+#goStage .modeBtn small { font-size: 11px; color: #8fb3d9; line-height: 1.2; }
+#goStage .modeBtn .mTag { position: absolute; top: -8px; right: 12px; font-style: normal; font-size: 10px; font-weight: 800;
+    background: #2f7fe0; color: #fff; padding: 1px 7px; border-radius: 4px; }
+#goStage .modeBtn.sel { background: linear-gradient(90deg, #ffd84a, #ffa51f); border-color: #fff3b8; color: #2a1800;
+    transform: skewX(-10deg) translateX(10px); box-shadow: 0 0 0 3px rgba(255,210,63,.22), 0 4px 0 #9a5b00; }
+#goStage .modeBtn.sel small { color: #5f3a00; }
+#goStage .modeBtn.sel .mIc { background: #fff4c9; color: #c26a00; box-shadow: none; }
+#goStage #lvPick { align-items: stretch; margin-top: 2px; }
+#goStage #lvBtns { justify-content: space-between; }
+#goStage .lvBtn { flex: 1 1 0; padding: 6px 4px; transform: skewX(-8deg); border-radius: 6px; }
+#goStage #lvNote { text-align: left; }
+#goStage #taBox { margin: 0; text-align: left; }
+/* 코스 기록 9개가 다 펼쳐지면 왼쪽 칸이 길어져 무대의 '기록 도전' 이 화면 아래 '이전' 띠 밑으로 내려갔다 — 두 줄 반만 보이고 넘치면 스크롤 */
+#goStage #taRecords { justify-content: flex-start; max-height: 84px; overflow-y: auto; }
+#goStage #roomInput { width: 140px; min-width: 0; }      /* '코드 6자리' 가 '코드 6자' 로 잘렸다 */
+
+.goHero { position: relative; min-height: 320px; border-radius: 14px; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 10px 16px 14px;
+    border: 2px solid #2f5580;
+    background:
+      linear-gradient(118deg, transparent 0 34%, rgba(255,255,255,.06) 34% 42%, transparent 42% 58%, rgba(255,255,255,.045) 58% 63%, transparent 63%),
+      radial-gradient(ellipse at 50% 66%, color-mix(in srgb, var(--gc, #4aa3ff) 42%, transparent), transparent 62%),
+      linear-gradient(180deg, #19406b, #0b1a2e); }
+.goBig { position: absolute; left: 3%; top: 9%; font-size: 92px; font-weight: 900; font-style: italic; line-height: .9;
+    letter-spacing: -3px; white-space: nowrap; color: rgba(255,255,255,.09); transform: skewX(-8deg); pointer-events: none; }
+.goCourse { position: absolute; left: 14px; top: 12px; font-size: 12px; color: #cfe6ff; background: rgba(0,0,0,.38);
+    padding: 3px 11px; border-radius: 999px; }
+.goCourse b { color: #ffd166; }
+#goCar { width: 100%; max-width: 560px; height: auto; flex: 0 1 auto; min-height: 0; animation: goBob 2.2s ease-in-out infinite alternate; }
+@keyframes goBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+.goCarName { font-size: 13px; color: #cfe6ff; margin: 0 0 8px; }
+#goStage #onlineBox { width: 100%; margin-bottom: 6px; }
+#goStage #goRow { align-self: flex-end; }
+#goStage #startBtn { font-size: 22px; padding: 12px 34px; font-style: italic; font-weight: 900; transform: skewX(-10deg); border-radius: 8px; }
+
+/* 세로 · 좁은 화면 : 무대를 위로, 카드를 아래로 */
+@media (max-width: 780px) {
+    #goStage { grid-template-columns: minmax(0, 1fr); width: 100%; gap: 10px; }
+    /* 세로 폰에서는 한 장이 길어져 난이도 단추가 아래 '이전' 띠 밑으로 들어갔다 — 무대와 카드를 낮춘다 */
+    .goHero { order: -1; min-height: 0; padding: 6px 12px 10px; }
+    .goBig { font-size: 54px; }
+    #goCar { max-height: 150px; width: auto; max-width: 100%; }
+    .goCarName { margin-bottom: 4px; }
+    #goStage #startBtn { font-size: 18px; padding: 8px 26px; }
+    .goLeft { gap: 6px; }
+    #goStage #modePick { gap: 6px; }
+    #goStage .modeBtn { grid-template-columns: 32px minmax(0, 1fr); column-gap: 9px; padding: 5px 14px 5px 10px; }
+    #goStage .modeBtn .mIc { width: 32px; height: 32px; }
+    #goStage .modeBtn .mIc svg { width: 19px; height: 19px; }
+    #goStage .modeBtn b { font-size: 15px; }
+    #goStage .modeBtn small { font-size: 10px; }
+    #goStage .modeBtn.sel { transform: skewX(-10deg) translateX(6px); }
+    #goStage #lvNote { display: none; }
+}
+/* 폰 가로 : 한 화면에 — 카드를 낮게, 설명 한 줄은 숨긴다 */
+@media (max-height: 500px) {
+    #goStage { height: 100%; min-height: 0; grid-template-columns: minmax(210px, 38%) minmax(0, 1fr); gap: 10px; width: 100%; }
+    /* 고른 카드가 오른쪽으로 6px 비켜나고 비스듬해서 칸 끝에서 잘렸다 — 안쪽 여백으로 자리를 준다 */
+    .goLeft { gap: 4px; min-height: 0; overflow: hidden; padding: 3px 14px 2px 5px; }
+    .goHead { display: none; }
+    #goStage #modePick { gap: 5px; }
+    #goStage .modeBtn { grid-template-columns: 28px minmax(0, 1fr); column-gap: 8px; padding: 3px 12px 3px 8px; min-height: 0; }
+    #goStage .modeBtn .mIc { width: 28px; height: 28px; }
+    #goStage .modeBtn .mIc svg { width: 17px; height: 17px; }
+    #goStage .modeBtn b { font-size: 14px; }
+    #goStage .modeBtn small { font-size: 9.5px; }
+    #goStage .modeBtn .mTag { top: -6px; font-size: 8.5px; }
+    #goStage .modeBtn.sel { transform: skewX(-10deg) translateX(6px); }
+    #goStage #lvPick .pickLabel { display: none; }
+    #goStage .lvBtn { padding: 3px 2px; font-size: 11px; }
+    #goStage .lvBtn .px { font-size: 8.5px; }
+    #goStage #lvNote { display: none; }
+    #goStage #taBox .taLine { font-size: 10px; line-height: 1.35; }
+    #goStage #taBox .taLine.dim { display: none; }
+    #goStage #taRecords { max-height: 54px; margin-top: 3px; }
+    .goHero { min-height: 0; height: 100%; padding: 4px 10px 6px; }
+    .goBig { font-size: 52px; top: 12%; }
+    .goCourse { top: 6px; left: 8px; font-size: 10px; padding: 2px 8px; }
+    #goCar { max-height: calc(100% - 64px); width: auto; max-width: 100%; }
+    .goCarName { font-size: 10.5px; margin-bottom: 3px; }
+    #goStage #startBtn { font-size: 16px; padding: 6px 22px; }
+}
 </style>
 <!-- 애드센스 : 아래 client 를 본인 계정 ID 로 바꾸고 주석을 풀면 실제 광고가 나갑니다.
      스크립트 주소의 client 와 body-racing.html 안의 AD.client 를 같은 값으로 맞춰 주세요.
@@ -1502,13 +1605,14 @@
 
       <!-- ─── 3장 : 출발 ─── -->
       <section class="page hidden" data-step="2">
-        <button id="keysToggle">조작법</button>
-        <div class="pickLabel">어떻게 달릴까</div>
-        <div id="modePick">
-        <button class="modeBtn sel" data-mode="1">혼자 하기</button>
-        <button class="modeBtn" data-mode="3">타임 어택</button>
-        <button class="modeBtn" data-mode="2" id="modeOnline">친구와 온라인</button>
-    </div>
+        <div id="goStage">
+          <div class="goLeft">
+            <div class="goHead"><span class="pickLabel">어떻게 달릴까</span><button id="keysToggle">조작법</button></div>
+            <div id="modePick">
+              <button class="modeBtn sel" data-mode="1"><i class="mIc"><svg viewBox="0 0 24 24"><path d="M5 21V3h2v1h11l-2 4 2 4H7v9z" fill="currentColor"/><path d="M9 5h2v2H9zm4 0h2v2h-2zm-2 2h2v2h-2zm4 0h1.5l-.7 1.4.7 .6H15zm-6 2h2v2H9zm4 0h2v2h-2z" fill="#0b1a2c" opacity=".55"/></svg></i><b>혼자 하기</b><small>상대 차 3대와 겨루기</small></button>
+              <button class="modeBtn" data-mode="3"><i class="mIc"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M10 2h4v2h-4zM12 9v5l3 2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i><b>타임 어택</b><small>혼자 달려 한 바퀴 기록</small></button>
+              <button class="modeBtn" data-mode="2" id="modeOnline"><i class="mIc"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4" fill="currentColor"/><circle cx="16.5" cy="9" r="2.8" fill="currentColor" opacity=".8"/><path d="M2.5 20c.4-4 3-6 6.5-6s6.1 2 6.5 6z" fill="currentColor"/><path d="M14.5 14.4c3.4-.3 6.3 1.5 7 5.6h-5" fill="currentColor" opacity=".8"/></svg></i><b>친구와 온라인</b><small>방 코드로 친구와</small><em class="mTag">친구</em></button>
+            </div>
     <!-- 난이도. 혼자 달릴 때만 뜻이 있다 (타임 어택·온라인에는 봇이 없다) -->
     <div id="lvPick">
         <div class="pickLabel">난이도 <span class="pl2">· 어려울수록 점수를 더 준다</span></div>
@@ -1521,7 +1625,12 @@
         <div class="taLine dim">최고 기록은 유령 카트가 되어 다음 판에 함께 달립니다.</div>
         <div id="taRecords"></div>
     </div>
-
+          </div>
+          <div class="goHero" id="goHero">
+            <div class="goBig" id="goBig">SOLO RACE</div>
+            <div class="goCourse" id="goCourse"></div>
+            <canvas id="goCar" width="700" height="260"></canvas>
+            <div class="goCarName" id="goCarName"></div>
     <div id="onlineBox" style="display:none">
         <!-- 코드 없이 아무나 만나기. 자리 남은 방에 붙고, 없으면 하나 열고 기다린다. -->
         <div class="obRow">
@@ -1537,7 +1646,9 @@
         <div id="roomState"></div>
     </div>
         <div id="goRow">
-            <button class="btn" id="startBtn">레이스 시작</button>
+              <button class="btn" id="startBtn">레이스 시작</button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -2182,6 +2293,8 @@ Object.assign(EN, {
 '체크포인트': 'checkpoints', '흰 눈금 = 지금 타는 차': 'White tick = your current kart',
 '모자람': 'short', '소리': 'Sound', '전체 화면': 'Fullscreen',
 'SPACE 드리프트': 'SPACE Drift', '이나': 'or',
+'상대 차 3대와 겨루기': 'Race 3 rival karts', '혼자 달려 한 바퀴 기록': 'Beat your best lap', '방 코드로 친구와': 'Race friends with a room code',
+'친구': 'Friends', '바퀴': 'laps',
 // 스킨
 '스킨 뽑기': 'Skin Capsule', '스킨 도감': 'Skin Collection', '스킨': 'Skin', '뽑기': 'Draw', '닫기': 'Close',
 '기본': 'Default', '바꾸기': 'Change', '눌러서 입히기': 'tap to apply', '새 스킨!': 'New skin!', '이미 가진 스킨': 'Already owned',
@@ -2451,6 +2564,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 126, d: '9월 11일', t: [
+        '출발 화면을 레이싱 게임 모드 화면처럼 — 왼쪽은 비스듬한 모드 카드, 오른쪽은 내 차(스킨 그대로)를 크게 보여 주는 무대와 노란 레이스 시작',
+        'New start screen like a racing game mode select: slanted mode cards on the left, and a stage showing your kart (with its skin) and a big Race button on the right'
+    ] },
     { v: 125, d: '9월 11일', t: [
         '완주 무대에서 오른쪽을 보는 차(타이탄 프레임 · 슈가 러시 · 파워 리액터)가 뒤로 달리는 것처럼 보이던 것을 고쳤다 — 도로가 차 방향에 맞춰 흐른다',
         'On the finish stage, karts facing right no longer look like they are reversing: the road now scrolls to match the kart direction'
@@ -11647,7 +11764,47 @@ function refreshModeUI() {
     // 난이도는 봇이 있을 때만 뜻이 있다 — 타임 어택과 온라인에는 봇이 없다
     el('lvPick').style.display = (online || time) ? 'none' : 'flex';
     renderLevels();
+    renderGoHero();
     syncKeys();
+}
+
+/* 출발 장 오른쪽 무대 — 고른 차의 옆모습(스킨 그대로)을 크게, 뒤에는 모드 이름을 흐리게 크게.
+   레이싱 게임 모드 화면처럼 (사용자 "이런식으로부탁해") */
+const GO_BIG = { 1: 'SOLO RACE', 3: 'TIME ATTACK', 2: 'ONLINE' };
+let goTries = 0;
+function renderGoHero() {
+    const cv = el('goCar'); if (!cv || !cv.getContext) return;
+    const selBtn = document.querySelector('.modeBtn.sel');
+    const mode = selBtn ? selBtn.dataset.mode : '1';
+    el('goBig').textContent = GO_BIG[mode] || '';
+    const sys = SYSTEMS[selectedId];
+    el('goCourse').innerHTML = sys ? `<b>${T(sys.name)}</b> · ${mode === '3' ? TA.laps : sys.laps} ${T('바퀴')}` : '';
+    const c = carById(save.car), sk = skinById(skinOf(c.id));
+    el('goCarName').innerHTML = `<b style="color:${c.color}">${T(c.name)}</b>${sk ? ' · ' + skinName(sk) : ''}`;
+    const hero = el('goHero');
+    if (hero && hero.style && hero.style.setProperty) hero.style.setProperty('--gc', c.color);   // 차 색으로 무대 뒤 빛
+    const g2 = cv.getContext('2d');
+    g2.clearRect(0, 0, cv.width, cv.height);
+    const base = sideImg(c.sprite), img = sk ? skinImg(base, c.sprite, sk, 'side') : base;
+    if (!img || !img.ready || (sk && sk.car && img === base)) {       // 그림이 아직 오는 중 — 조금 뒤 다시
+        if (goTries++ < 40) setTimeout(renderGoHero, 150);
+        if (!img || !img.ready) return;
+    } else goTries = 0;
+    const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
+    let w = cv.width * .9, h = w * nh / nw;
+    if (h > cv.height * .78) { h = cv.height * .78; w = h * nw / nh; }
+    const cx = cv.width / 2, groundY = cv.height * .9;
+    g2.save();                                                         // 땅 그림자
+    g2.fillStyle = 'rgba(0,0,0,.45)'; g2.filter = 'blur(6px)';
+    g2.beginPath(); g2.ellipse(cx, groundY, w * .47, h * .1, 0, 0, TAU); g2.fill();
+    g2.restore();
+    if (sk && sk.under) {                                              // 전설 스킨 네온
+        g2.save(); g2.translate(cx, groundY); g2.scale(1, .18); g2.globalCompositeOperation = 'lighter';
+        const rg = g2.createRadialGradient(0, 0, 4, 0, 0, w * .58);
+        rg.addColorStop(0, `rgba(${sk.under},.9)`); rg.addColorStop(1, `rgba(${sk.under},0)`);
+        g2.fillStyle = rg; g2.beginPath(); g2.arc(0, 0, w * .58, 0, TAU); g2.fill(); g2.restore();
+    }
+    g2.drawImage(img, cx - w / 2, groundY - h * .97, w, h);
 }
 
 /* 난이도 단추를 그린다. 무엇이 달라지는지 한 줄로 같이 적는다 —
