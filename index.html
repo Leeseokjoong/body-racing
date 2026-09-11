@@ -2209,6 +2209,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 114, d: '9월 11일', t: [
+        '신경 · 백혈구 · 산소 · ATP · DNA 카트를 가상 팀 포뮬러카로 바꿨다 — 실제 차를 닮은 그림을 뺐다',
+        'Nerve, White Blood Cell, Oxygen, ATP and DNA karts are now fictional formula cars (no real-car look-alikes)',
+        '포뮬러카가 된 네 대는 엔진 소리도 포뮬러 엔진으로',
+        'Those formula karts got formula engine sounds'
+    ] },
     { v: 113, d: '9월 11일', t: [
         '적혈구 루키 엔진 소리를 처음 마음에 들었던 레이싱 소리로 되돌렸다',
         'Red Blood Cell Rookie uses the racing engine sound again',
@@ -3484,7 +3490,7 @@ const CARS = [
       voice: 'heavy', pitch: 0.86, skid: 2, skidPitch: 0.92,
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
       desc: '몸을 지탱하는 단백질. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
-    { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#5cc8ff', sprite: 'wbc',  cost: 520,
+    { id: 'wbc', hold: 1.05,   name: '백혈구 가드',  motif: '백', motifEn: 'W', color: '#2ec4c0', sprite: 'wbc',  cost: 520,
       voice: 'guard', pitch: 0.91, skid: 3, skidPitch: 0.97,   // 가드. 기본보다 한 단 낮고 두툼하다
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
       desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
@@ -4276,7 +4282,8 @@ const ITEM_IMAGES = {};
 /* ---- 블렌더에서 렌더한 카트 스프라이트 (없으면 코드 그림으로 자동 대체) ---- */
 /* 상대 카트가 탈 그림. 넷의 실루엣이 서로 가장 다른 것으로 골랐다 —
    예전에는 같은 카트에 색만 넷이라 누가 누군지 알 수 없었다. */
-const KART_KEYS = ['mito', 'wbc', 'nerve', 'collagen'];
+/* 2026-09-11 : 신경 · 백혈구 · 산소 · ATP · DNA 가 포뮬러카가 되어, 상대는 모양이 다른 넷(프로토타입 · 머슬카 · 랠리 · 버기)으로 */
+const KART_KEYS = ['mito', 'plt', 'insulin', 'collagen'];
 /* 상대 카트가 쓰는 넷 + 내가 살 수 있는 차 열 대. 겹치는 것은 한 번만 받는다.
    예전에는 KART_KEYS 넷만 받아서, 새 차를 사면 그림이 비어 있었다. */
 const KART_SPRITES = {};
@@ -7602,16 +7609,16 @@ const ENGINE_BASE_PITCH = .72;
    일레븐랩스로 만들었다 — tools/make-engine.mjs 의 FLAVORS 에 차마다 글이 있다.
    일레븐랩스는 rpm 을 적어도 음높이가 거의 같게 내므로, 셋은 'rpm 이 다른 녹음' 이 아니라
    '결이 다른 녹음' 이다. 음높이는 아래 기어 곡선이 맡고, 녹음마다 기본음 차이만 ENGINE_FIX 로 맞춘다.
-     rbc F1 — 사용자가 처음 좋아한 'B-레이싱' 녹음 그대로 (기계 낱말로 새로 뽑은 것은 사용자가 거절)  plt 머슬카 V8   wbc V8 GT   o2 가벼운 4기통
-     nerve 날카로운 오토바이 결   atp 트윈터보 하이퍼카   insulin 터보 랠리카   collagen 오프로드 트럭
-     mito 비명 같은 V12   dna V10 슈퍼카 붕붕 — 출발 전 부앙부앙, 출발할 때 울부짖음
+     rbc F1 — 사용자가 처음 좋아한 'B-레이싱' 녹음 그대로 (기계 낱말로 새로 뽑은 것은 사용자가 거절)  plt 머슬카 V8   wbc V10 포뮬러   o2 4기통 포뮬러
+     nerve V8 포뮬러   atp 터보 하이브리드 V6 포뮬러   insulin 터보 랠리카   collagen 오프로드 트럭
+     mito 비명 같은 V12   dna V10 붕붕(빨간 포뮬러) — 출발 전 부앙부앙, 출발할 때 울부짖음
    차 그림(카트 · 옆모습)도 같은 짝이다 — 소리와 그림이 한 차로 느껴지게.
    B(레이싱)와 붕붕을 한 소리로 섞는 안은 버렸다 — 사용자 "b와 붕붕 조합하면 이상해지지". */
 /* 가운데 녹음에 맞춘 기본음 보정 (공회전 · 중간 · 고회전), engine3b.js 가 잰 값.
    음높이를 못 잰 녹음(60Hz 아래 · 300Hz 위 — 잡음을 음으로 잘못 읽은 것)은 보정하지 않는다(1). */
 const ENGINE_FIX = {
-    rbc:      [.939, 1, 1.228], plt:      [1.01, 1, 1.25], wbc:      [1.17, 1, 1.08], o2:       [1, 1, 1],
-    nerve:    [1, 1, .8], atp:      [1, 1, 1], insulin:  [1.25, 1, 1.22], collagen: [1, 1, 1.25],
+    rbc:      [.939, 1, 1.228], plt:      [1.01, 1, 1.25], wbc:      [1.02, 1, 1.22], o2:       [.83, 1, 1.25],
+    nerve:    [1.25, 1, 1.09], atp:      [1, 1, 1], insulin:  [1.25, 1, 1.22], collagen: [1, 1, 1.25],
     mito:     [.8, 1, 1.08], dna:      [1, 1, 1]
 };
 const ENGINE_REVS = { dna: true };          // 한 번 소리(부앙부앙 · 출발 울부짖음)가 있는 차
@@ -9859,7 +9866,7 @@ function victoryRows(G) {
 
 /* 완주 무대의 옆모습 그림 — 판을 시작할 때 내 차 것만 받아 둔다 (열 장을 처음부터 다 받지 않는다) */
 const SIDE_IMGS = {};
-const SIDE_FACES_LEFT = new Set(['rbc', 'plt', 'nerve', 'wbc', 'o2']);   // 옆모습 그림이 왼쪽을 보는 차
+const SIDE_FACES_LEFT = new Set(['rbc', 'plt', 'nerve', 'wbc', 'o2', 'atp', 'dna']);   // 옆모습 그림이 왼쪽을 보는 차
 function sideImg(sprite) {
     let im = SIDE_IMGS[sprite];
     if (!im) {
