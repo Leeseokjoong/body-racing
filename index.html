@@ -2203,6 +2203,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 113, d: '9월 11일', t: [
+        '적혈구 루키 엔진 소리를 처음 마음에 들었던 레이싱 소리로 되돌렸다',
+        'Red Blood Cell Rookie uses the racing engine sound again'
+    ] },
     { v: 112, d: '9월 11일', t: [
         '차를 고르면 그 차 엔진 소리가 난다 — 잠긴 차도 사기 전에 들어 볼 수 있다',
         'Tapping a kart plays its engine sound, even locked ones, so you can hear it before buying',
@@ -7584,7 +7588,7 @@ const ENGINE_BASE_PITCH = .72;
    일레븐랩스로 만들었다 — tools/make-engine.mjs 의 FLAVORS 에 차마다 글이 있다.
    일레븐랩스는 rpm 을 적어도 음높이가 거의 같게 내므로, 셋은 'rpm 이 다른 녹음' 이 아니라
    '결이 다른 녹음' 이다. 음높이는 아래 기어 곡선이 맡고, 녹음마다 기본음 차이만 ENGINE_FIX 로 맞춘다.
-     rbc F1 레이싱 고회전(사용자가 좋아한 결)  plt 머슬카 V8   wbc V8 GT   o2 가벼운 4기통
+     rbc F1 — 사용자가 처음 좋아한 'B-레이싱' 녹음 그대로 (기계 낱말로 새로 뽑은 것은 사용자가 거절)  plt 머슬카 V8   wbc V8 GT   o2 가벼운 4기통
      nerve 날카로운 오토바이 결   atp 트윈터보 하이퍼카   insulin 터보 랠리카   collagen 오프로드 트럭
      mito 비명 같은 V12   dna V10 슈퍼카 붕붕 — 출발 전 부앙부앙, 출발할 때 울부짖음
    차 그림(카트 · 옆모습)도 같은 짝이다 — 소리와 그림이 한 차로 느껴지게.
@@ -7592,7 +7596,7 @@ const ENGINE_BASE_PITCH = .72;
 /* 가운데 녹음에 맞춘 기본음 보정 (공회전 · 중간 · 고회전), engine3b.js 가 잰 값.
    음높이를 못 잰 녹음(60Hz 아래 · 300Hz 위 — 잡음을 음으로 잘못 읽은 것)은 보정하지 않는다(1). */
 const ENGINE_FIX = {
-    rbc:      [1, 1, 1], plt:      [1.01, 1, 1.25], wbc:      [1.17, 1, 1.08], o2:       [1, 1, 1],
+    rbc:      [.939, 1, 1.228], plt:      [1.01, 1, 1.25], wbc:      [1.17, 1, 1.08], o2:       [1, 1, 1],
     nerve:    [1, 1, .8], atp:      [1, 1, 1], insulin:  [1.25, 1, 1.22], collagen: [1, 1, 1.25],
     mito:     [.8, 1, 1.08], dna:      [1, 1, 1]
 };
