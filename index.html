@@ -2272,6 +2272,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 119, d: '9월 11일', t: [
+        '코스 고르는 순서를 쉬운 것부터 어려운 것으로 — 순환계 · 시각계 · 소화계 · 신경계 · 배설계 · 간 · 위 · 이자 · 네프론 · 호흡계 · 청각계',
+        'Courses are now listed from easiest to hardest: Circulatory, Visual, Digestive, Nervous, Urinary, Liver/Stomach/Pancreas, Nephron, Respiratory, Auditory'
+    ] },
     { v: 118, d: '9월 11일', t: [
         '간 · 위 두 맵을 합쳐 간 · 위 · 이자 서킷으로 — 코스는 9개가 되었다',
         'The liver and stomach maps are merged into the Liver, Stomach & Pancreas Circuit; there are now 9 courses',
@@ -10616,7 +10620,11 @@ cvs.addEventListener('touchend', () => { pinchDist = 0; });
    한 화면에 다 담으려니 코스 11 개에 자동차 6 대에 모드까지 빽빽했다.
    결정 하나에 한 장씩 준다. 좌우로 넘기고, 넘길 때마다 하나만 고르면 된다.
    ========================================================================== */
-const MAP_IDS = () => Object.keys(SYSTEMS);
+/* 코스 고르는 순서 = 쉬운 것부터 (2026-09-11, 사용자 "난위도 별 순서조정해야겠다").
+   초보처럼 모는 시험 차(difficulty.js)로 두 바퀴씩 달려 잰 순서 — 벽 충돌 · 벽에 붙은 시간 · 멈칫 · 도로 폭 · 급커브.
+   청각계는 달팽이관 길이 좁아(반폭 124) 바퀴마다 벽 충돌 10번으로 가장 어렵다. 표에 없는 코스는 뒤에 붙는다. */
+const MAP_ORDER = ['circulatory', 'visual', 'digestive', 'nervous', 'urinary', 'liver', 'glomerulus', 'respiratory', 'auditory'];
+const MAP_IDS = () => MAP_ORDER.filter(id => SYSTEMS[id]).concat(Object.keys(SYSTEMS).filter(id => !MAP_ORDER.includes(id)));
 let mapAt = 0;                     // 지금 보고 있는 코스
 let setupStep = 0;                 // 지금 보고 있는 장
 
@@ -10894,7 +10902,7 @@ function renderLevels() {
 
 // 메뉴에서 코스별 최고 랩을 한눈에 보여 준다 — 아직 없는 코스가 곧 할 일이 된다
 function renderTaRecords() {
-    el('taRecords').innerHTML = Object.keys(SYSTEMS).map(id => {
+    el('taRecords').innerHTML = MAP_IDS().map(id => {
         const b = taBestOf(id);
         return `<span class="taRec">${T(SYSTEMS[id].name)}<b>${b ? fmtTime(b) : '--:--.--'}</b></span>`;
     }).join('');
