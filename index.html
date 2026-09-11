@@ -2173,6 +2173,16 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 110, d: '9월 11일', t: [
+        '배설계 콩팥을 제대로 — 달걀 네 개로 보이던 것을 강낭콩 두 개로',
+        'Urinary kidneys fixed: two proper beans instead of what looked like four eggs',
+        '콩팥 속에 겉질 · 속질(콩팥 피라미드) · 콩팥깔때기를 그렸다 — 깔때기는 오줌관과 같은 노랑',
+        'Kidneys now show cortex, medulla pyramids and a pelvis matching the ureter',
+        '이자 코스를 뺐다 — 흐름이 아니라 기관 하나라 코스로 만들기 애매했다',
+        'The pancreas course is removed: it was a single organ, not a flow',
+        '친구 방에서 이 판에 없는 코스를 고르면 순환계로 들어간다',
+        'Online rooms fall back to the circulatory course if the host picked a course this version lacks'
+    ] },
     { v: 109, d: '9월 11일', t: [
         '코스 고르는 카드 그림을 다듬었다 — 카트·아이템·관중석·글자를 빼고 코스와 장기만',
         'Course cards redrawn: just the course and organs, no karts, items, stands or labels',
@@ -3360,77 +3370,6 @@ const SYSTEMS = {
             { q: '위의 출구를 지키며 조금씩만 내보내는 문은?', a: ['날문(유문)', '들문(분문)', '항문'], correct: 0, ex: '날문 괄약근이 죽이 된 음식만 조금씩 십이지장으로 보냅니다.' }
         ]
     }    ,
-    pancreas: {
-        island: 'pancreas',
-        id: 'pancreas', name: '이자 군도', laps: 5, /* 4 바퀴는 150 초로 짧았다 — 다른 맵에 맞춘다 */ closed: true, halfWidth: 178,
-        grass: ['#3a5c50', '#26403a'], accent: '#7ee0b8',
-        /* 이자를 확대하면 소화효소의 바다 위에 랑게르한스섬이 점점이 떠 있다.
-           길쭉한 기관을 따라 갔다가 돌아오는 왕복 슬라럼 —
-           섬 사이를 좌우로 누비는 리듬이 이 코스의 전부다. */
-        flow: [
-            { name: '이자 머리', at: [287, 2003], color: '#6ecfa8', role: '십이지장이 감싼 곳', blob: 250,
-              info: '이자에서 가장 두툼한 부분. 십이지장이 C자로 감싸 안고 있습니다.',
-              seg: { name: '섬 사이 슬라럼', color: '#7ee0b8', wMul: .7,
-                     desc: '랑게르한스섬 사이를 좌우로 누빈다 — 세 번의 큰 슬라럼!' },
-              via: [[378, 1872], [448, 1773], [430, 1572], [531, 1395], [721, 1427],
-                   [889, 1557], [1050, 1598], [1175, 1464], [1332, 1306], [1494, 1350],
-                   [1606, 1507], [1677, 1669], [1851, 1725], [1994, 1601], [2037, 1511],
-                   [2101, 1380], [2243, 1305], [2348, 1307], [2470, 1212], [2642, 1258],
-                   [2708, 1395], [2746, 1561], [2872, 1710], [3042, 1682], [3172, 1552],
-                   [3228, 1431], [3383, 1375], [3565, 1427], [3625, 1442], [3791, 1431],
-                   [3952, 1405], [4071, 1448], [4213, 1584], [4386, 1635], [4508, 1536],
-                   [4646, 1416]] },
-
-            { name: '랑게르한스섬', at: [4791, 1482], color: '#ffd166', role: '혈당 조절 본부', blob: 0,
-              pump: { power: .62, label: '인슐린 분비!', desc: '혈당이 오르면 인슐린을 뿜어 낮춥니다.' },
-              info: '소화액이 아니라 호르몬을 만드는 섬. 인슐린은 혈당을 낮추고 글루카곤은 올립니다.',
-              seg: { name: '이자 꼬리', color: '#e8c95c', wMul: .85,
-                     desc: '섬이 가장 많이 모여 있는 끝자락. 넓게 도는 고속 코너' },
-              via: [[4937, 1528], [4992, 1708], [5087, 1796], [5279, 1833], [5432, 1947],
-                   [5414, 2130], [5251, 2252], [5129, 2338], [5105, 2487], [5061, 2684],
-                   [4934, 2790], [4742, 2728]] },
-
-            { name: '꼬리 끝', at: [4600, 2750], color: '#e8c95c', role: '되돌아가는 곳', blob: 220,
-              info: '이자는 길이 15센티미터. 위 뒤에 가로로 길게 누워 있습니다.',
-              seg: { name: '돌아오는 슬라럼', color: '#5cc99a', wMul: .7,
-                     desc: '반대편 섬 사이로 다시 누비며 돌아간다' },
-              via: [[4444, 2705], [4299, 2822], [4134, 2920], [3993, 2813], [3895, 2657],
-                   [3805, 2509], [3624, 2511], [3503, 2636], [3452, 2697], [3368, 2821],
-                   [3236, 2882], [3154, 2913], [3007, 3021], [2846, 2937], [2803, 2782],
-                   [2762, 2599], [2617, 2488], [2444, 2559], [2331, 2680], [2263, 2765],
-                   [2083, 2797], [1921, 2755], [1867, 2780], [1689, 2795], [1541, 2803],
-                   [1429, 2722], [1270, 2573], [1114, 2565], [996, 2700], [846, 2804]] },
-
-            { name: '총담관 합류', at: [709, 2718], color: '#4a9e4f', role: '쓸개즙과 합류', blob: 240,
-              info: '간에서 온 쓸개즙 관과 이자관이 여기서 만나 한 관이 됩니다.',
-              seg: { name: '오디 괄약근', color: '#48b088', wMul: .62, tunnel: true,
-                     desc: '십이지장으로 나가는 마지막 문. 필요할 때만 열립니다' },
-              via: [[568, 2644], [527, 2453], [382, 2405], [151, 2337], [164, 2143]] }
-        ],
-        pickups: [
-            { icon: '아밀', name: '아밀레이스', color: '#8fd0e8', effect: 'turbo', img: 'rbc',
-              desc: '녹말을 엿당으로 자르는 효소. 힘차게 가속!' },
-            { icon: '트립', name: '트립신',   color: '#e8eef5', effect: 'wbc', img: 'wbc',
-              desc: '단백질을 자르는 이자의 효소. 가까운 카트를 붙잡습니다.' },
-            { icon: '글루', name: '글루카곤', color: '#e8a33d', effect: 'smoke', img: 'co2',
-              desc: '혈당을 올리는 호르몬이 확 퍼집니다. 뒤차의 시야를 가립니다.' },
-            { icon: '라이', name: '라이페이스', color: '#f3d98a', effect: 'sticky', img: 'chol',
-              desc: '지방을 분해하는 효소. 지나온 길이 미끌미끌!' },
-            { icon: '담석', name: '담석',     color: '#9a8a7a', effect: 'clot', img: 'clot',
-              desc: '관을 막는 돌. 앞차의 길을 막습니다!' }
-        ],
-        hazards: [
-            { icon: '담석', name: '담석', color: '#9a8a7a', r: 42, slow: .34, spin: true, desc: '쓸개즙이 굳어 생긴 돌. 관을 막으면 큰일!' },
-            { icon: '당분', name: '설탕 폭탄', color: '#f4a3c0', r: 40, slow: .4, spin: false, desc: '혈당이 치솟으면 이자가 바빠집니다.' }
-        ],
-        quiz: [
-            { q: '이자액에 들어 있지 않은 것은?', a: ['펩신', '아밀레이스', '트립신'], correct: 0, ex: '펩신은 위에서 나옵니다. 이자액에는 아밀레이스 · 트립신 · 라이페이스!' },
-            { q: '이자액이 분해할 수 있는 영양소는?', a: ['녹말 · 단백질 · 지방 전부', '녹말만', '지방만'], correct: 0, ex: '3대 영양소를 모두 분해하는 효소를 다 갖춘 유일한 소화액입니다.' },
-            { q: '혈당을 낮추는 호르몬은?', a: ['인슐린', '글루카곤', '아드레날린'], correct: 0, ex: '랑게르한스섬의 인슐린이 혈당을 낮춥니다. 부족하면 당뇨병!' },
-            { q: '혈당이 떨어졌을 때 올려 주는 호르몬은?', a: ['글루카곤', '인슐린', '펩신'], correct: 0, ex: '글루카곤이 간의 글리코젠을 포도당으로 바꿔 혈당을 올립니다.' },
-            { q: '이자가 특별한 이유는?', a: ['소화액과 호르몬을 둘 다 만든다', '가장 큰 기관이라서', '피를 만들어서'], correct: 0, ex: '소화기관이면서 내분비기관 — 두 가지 일을 한 몸으로 해냅니다.' }
-        ]
-    }
 };
 
 /* ============================================================================
@@ -4235,7 +4174,7 @@ Object.keys(SYSTEMS).forEach(key => {
    그림이 있으면 그림을 깔고, 없으면 수식 모양으로 버틴다 — 기관 그림과 같은 방식이다.
    그림은 위에서 내려다본 기관 하나, 배경 없이(투명), 정사각형이면 된다. */
 const ISLAND_IMAGES = {};
-['brain', 'stomach', 'kidney', 'liver', 'ear', 'eye', 'lungs', 'pancreas'].forEach(key => {
+['brain', 'stomach', 'kidney', 'liver', 'ear', 'eye', 'lungs'].forEach(key => {
     const im = new Image();
     im.onload = () => { im.ready = true; };
     im.src = 'assets/island_' + key + '.webp';
@@ -5605,7 +5544,7 @@ function drawSpeedLines(g) {
    무거운 계산 없이 'destination-out' 한 번이면 되므로 폰에서도 부담이 없다.
 
    빛의 세기는 계통마다 다르다 — 뇌는 어둑하고, 폐는 환하다. */
-const LIGHT_DARK = { circulatory: .30, digestive: .26, respiratory: .18, nervous: .42, urinary: .28, auditory: .38, visual: .30, glomerulus: .32, liver: .34, stomach: .26, pancreas: .24 };
+const LIGHT_DARK = { circulatory: .30, digestive: .26, respiratory: .18, nervous: .42, urinary: .28, auditory: .38, visual: .30, glomerulus: .32, liver: .34, stomach: .26 };
 let lightCv = null, lightG = null;
 
 function drawLighting(g, zoom) {
@@ -5883,6 +5822,55 @@ function lobePath(g, R, side) {
     g.closePath();
 }
 
+/* 콩팥 그림을 그 콩팥을 지나는 길에 맞춘다 (배설계).
+   가장 가까운 '콩팥 바깥 돌기' 구간의 표본으로 중심 · 긴 축(주성분) · 폭을 잰다.
+   좌표를 손으로 박지 않으므로, 나중에 길을 고쳐도 콩팥이 따라온다.
+   맞출 구간이 없으면 lm 자리에 반지름 r 크기로 세운다. */
+function fitKidney(lm) {
+    const midX = track.bounds.x + track.bounds.w / 2;
+    const cen = s => {
+        let x = 0, y = 0, n = 0;
+        for (let k = s.from; k <= s.to; k++) { x += track.pts[k].x; y += track.pts[k].y; n++; }
+        return [x / n, y / n];
+    };
+    let best = null, bc = null, bd = 1e18;
+    for (const sec of track.secs) {
+        if (!/콩팥 바깥/.test(sec.name || '')) continue;
+        const c = cen(sec), d = Math.hypot(c[0] - lm.at[0], c[1] - lm.at[1]);
+        if (d < bd) { bd = d; best = sec; bc = c; }
+    }
+    if (!best || bd > lm.r * 2.5) {
+        return { cx: lm.at[0], cy: lm.at[1], ang: 0, len: lm.r * 1.3, wid: lm.r * .8,
+                 flip: lm.at[0] > midX ? 1 : -1 };
+    }
+    const [mx, my] = bc;
+    let xx = 0, yy = 0, xy = 0;
+    for (let k = best.from; k <= best.to; k++) {
+        const dx = track.pts[k].x - mx, dy = track.pts[k].y - my;
+        xx += dx * dx; yy += dy * dy; xy += dx * dy;
+    }
+    const major = .5 * Math.atan2(2 * xy, xx - yy);           // 길이 뻗은 방향
+    const ux = Math.cos(major), uy = Math.sin(major);
+    let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9;
+    for (let k = best.from; k <= best.to; k++) {
+        const dx = track.pts[k].x - mx, dy = track.pts[k].y - my;
+        const a = dx * ux + dy * uy, b = -dx * uy + dy * ux;
+        a0 = Math.min(a0, a); a1 = Math.max(a1, a); b0 = Math.min(b0, b); b1 = Math.max(b1, b);
+    }
+    const am = (a0 + a1) / 2, bm = (b0 + b1) / 2;
+    const cx = mx + am * ux - bm * uy, cy = my + am * uy + bm * ux;
+    const ang = major - Math.PI / 2;                            // rotate 뒤 local y 가 긴 축
+    const outward = cx > midX ? 1 : -1;                         // 몸 바깥쪽
+    const flip = Math.cos(ang) * outward >= 0 ? 1 : -1;         // 볼록한 쪽(local +x)이 바깥, 콩팥문이 가운데
+    const len = (a1 - a0) * .95;
+    const wid = Math.max((b1 - b0) + track.sys.halfWidth * 2.4, len * .62);
+    /* 길 한가운데에 앉히면 콩팥 몸통이 길에 거의 다 가려졌다(1차 시험).
+       볼록한 쪽(몸 바깥)으로 밀어, 길은 콩팥문 쪽을 지나고 몸통은 드러나게 한다. */
+    const push = wid * .24;
+    return { cx: cx + flip * Math.cos(ang) * push, cy: cy + flip * Math.sin(ang) * push,
+             ang, len, wid, flip };
+}
+
 function drawLandmarks(g, inView) {
     const lms = track.sys.landmarks;
     if (!lms) return;
@@ -5965,28 +5953,67 @@ function drawLandmarks(g, inView) {
             drawFace(g, -R * .3, R * .3, R * .26, i);
 
         } else if (lm.type === 'kidney') {
-            // 콩팥 : 강낭콩 두 쪽
-            const pulse = 1 + Math.sin(t * 1.3) * .02;
-            g.scale(pulse, pulse);
-            [-1, 1].forEach(side => {
-                g.save(); g.translate(side * R * .52, 0); g.scale(side, 1);
-                const bean = () => {
-                    g.beginPath();
-                    g.moveTo(-R * .1, -R * .62);
-                    g.bezierCurveTo(R * .55, -R * .68, R * .62, R * .68, -R * .1, R * .62);
-                    g.bezierCurveTo(-R * .48, R * .42, -R * .3, -R * .12, -R * .34, -R * .18);
-                    g.bezierCurveTo(-R * .3, -R * .3, -R * .42, -R * .46, -R * .1, -R * .62);
-                    g.closePath();
-                };
-                g.save(); g.translate(12, 20); g.globalAlpha = .2; g.fillStyle = '#000';
-                bean(); g.fill(); g.restore();
-                const kg = g.createRadialGradient(-R * .1, -R * .2, R * .05, 0, 0, R * .8);
-                kg.addColorStop(0, '#c4566a'); kg.addColorStop(1, '#8e2f45');
-                g.globalAlpha = .9; g.fillStyle = kg; bean(); g.fill(); g.globalAlpha = 1;
-                g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 10; bean(); g.stroke();
-                g.restore();
-                drawFace(g, side * R * .62, R * .02, R * .22, i + side);
-            });
+            /* 콩팥 : 자리 하나에 강낭콩 하나.
+               예전에는 한 번 그릴 때 '강낭콩 두 쪽' 을 좌우로 그렸다. 그런데 배설계는 콩팥 자리를
+               왼쪽 · 오른쪽 따로 두어서 콩이 넷, 얼굴도 넷 — 달걀 네 개로 보였다.
+               이제 하나씩, 그 콩팥을 지나는 길에 맞춰 앉힌다(순환계 심장처럼 길이 위를 지난다).
+               오목한 콩팥문은 몸 가운데를 보고, 속에는 겉질 · 속질(콩팥 피라미드) · 콩팥깔때기를 그린다.
+               깔때기는 오줌관(노란 길)과 같은 노랑 — 여기서 오줌이 빠져나간다는 것이 보이게. */
+            if (!lm._fit || lm._fitTrack !== track) { lm._fit = fitKidney(lm); lm._fitTrack = track; }
+            const f = lm._fit, L = f.len, Wd = f.wid;
+            const pulse = 1 + Math.sin(t * 1.3) * .015;
+            const bean = () => {
+                g.beginPath();
+                g.moveTo(0, -L / 2);
+                g.bezierCurveTo(Wd * .64, -L / 2, Wd * .64, L / 2, 0, L / 2);           // 볼록한 바깥
+                g.bezierCurveTo(-Wd * .58, L / 2, -Wd * .66, L * .2, -Wd * .2, L * .05);  // 아래 끝 → 콩팥문
+                g.bezierCurveTo(-Wd * .66, -L * .2, -Wd * .58, -L / 2, 0, -L / 2);        // 콩팥문 → 위 끝
+                g.closePath();
+            };
+            g.save();
+            g.translate(f.cx - lm.at[0], f.cy - lm.at[1]);
+            g.rotate(f.ang);
+            g.scale(f.flip * pulse, pulse);
+            // 그림자
+            g.save(); g.translate(16, 24); g.globalAlpha = .22; g.fillStyle = '#000'; bean(); g.fill(); g.restore();
+            // 겉질
+            const kg = g.createRadialGradient(Wd * .15, -L * .18, Wd * .05, 0, 0, L * .6);
+            kg.addColorStop(0, '#d0667a'); kg.addColorStop(1, '#8e2f45');
+            g.fillStyle = kg; bean(); g.fill();
+            // 속질 : 겉질 안쪽의 어두운 층
+            g.save(); g.translate(Wd * .06, 0); g.scale(.74, .8);
+            g.fillStyle = '#7a2438'; bean(); g.fill();
+            g.restore();
+            // 콩팥 피라미드 : 밑변은 바깥(겉질 쪽), 꼭짓점은 콩팥문 쪽
+            g.fillStyle = '#5e1a2b';
+            const PY = 6;
+            for (let p = 0; p < PY; p++) {
+                const a = (p + .5) / PY;
+                const by = (a - .5) * L * .62;
+                const bx = Wd * .30 * Math.sqrt(Math.max(0, 1 - Math.pow((a - .5) * 1.9, 2)));
+                const half = L * .05;
+                g.beginPath();
+                g.moveTo(bx, by - half); g.lineTo(bx, by + half);
+                g.lineTo(-Wd * .12, by * .35); g.closePath(); g.fill();
+            }
+            // 콩팥깔때기 : 피라미드 끝에서 모인 오줌이 콩팥문으로 빠지는 둥근 깔때기
+            //   (1차는 뾰족한 삼각형이라 깃발처럼 보였다)
+            g.fillStyle = '#e8c24a'; g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 7;
+            g.beginPath();
+            g.moveTo(-Wd * .04, -L * .17);
+            g.bezierCurveTo(Wd * .06, -L * .08, Wd * .06, L * .08, -Wd * .04, L * .17);   // 둥근 머리
+            g.bezierCurveTo(-Wd * .14, L * .12, -Wd * .2, L * .04, -Wd * .3, L * .035);   // 목으로 좁아진다
+            g.lineTo(-Wd * .3, -L * .035);
+            g.bezierCurveTo(-Wd * .2, -L * .04, -Wd * .14, -L * .12, -Wd * .04, -L * .17);
+            g.closePath(); g.fill(); g.stroke();
+            // 바깥선
+            g.strokeStyle = 'rgba(0,0,0,.42)'; g.lineWidth = 12; bean(); g.stroke();
+            g.restore();
+            // 얼굴은 하나 — 볼록한 쪽 위에 똑바로 세운다
+            const fx = Wd * .36 * f.flip, fy = -L * .12;         // 길에 안 가리는 볼록한 쪽
+            const ca = Math.cos(f.ang), sa = Math.sin(f.ang);
+            drawFace(g, f.cx - lm.at[0] + fx * ca - fy * sa, f.cy - lm.at[1] + fx * sa + fy * ca,
+                     Math.min(Wd, L) * .13, i);
 
         } else if (lm.type === 'lungs') {
             const br = 1 + Math.sin(t * 1.1) * .04;                               // 숨쉬기
@@ -8462,8 +8489,10 @@ async function joinCode(code, pub) {
 
     net.roomId = code; net.myId = myId;
     net.isHost = false; net.hostId = room.hostId || null;
-    net.mapId = room.mapId || 'circulatory';
-    selectedId = net.mapId;                       // 방장이 고른 코스를 따라간다
+    /* 방장이 고른 코스를 따라간다. 단, 이 판에 없는 코스면 순환계로 —
+       옛 판을 쓰는 친구가 없어진 코스(예: 이자)를 고르면 없는 맵을 열다 멈췄을 것이다. */
+    net.mapId = (room.mapId && SYSTEMS[room.mapId]) ? room.mapId : 'circulatory';
+    selectedId = net.mapId;
     net.mySeat = seat; net.myName = seatName(seat);
     net.pub = !!pub;
 
@@ -10116,7 +10145,7 @@ let mapAt = 0;                     // 지금 보고 있는 코스
 let setupStep = 0;                 // 지금 보고 있는 장
 
 /* 계통을 도는 코스인지, 기관 하나를 확대한 코스인지 */
-const ZOOM_MAPS = ['glomerulus', 'liver', 'stomach', 'pancreas'];
+const ZOOM_MAPS = ['glomerulus', 'liver', 'stomach'];
 
 function drawMapCard(dir) {
     const ids = MAP_IDS();
@@ -10614,21 +10643,6 @@ const KNOW_QS = {
         { q: '음식을 밀어내는 위와 소장의 운동은?', a: '연동 운동',
           w: ['확산', '여과', '재흡수'], ex: '근육이 물결처럼 수축하며 밀어냅니다.' }
     ],
-    pancreas: [
-        { q: '혈당을 낮추는 호르몬은?', a: '인슐린',
-          w: ['글루카곤', '아드레날린', '티록신'], ex: '포도당을 세포로 넣고 간에 저장시킵니다.' },
-        { q: '혈당을 높이는 호르몬은?', a: '글루카곤',
-          w: ['인슐린', '아드레날린', '멜라토닌'], ex: '간에 저장된 글리코젠을 포도당으로 바꿉니다.' },
-        { q: '인슐린과 글루카곤을 만드는 곳은?', a: '랑게르한스섬',
-          w: ['쓸개', '간', '위'], ex: '이자 곳곳에 섬처럼 흩어져 있어 붙은 이름입니다.' },
-        { q: '이자액 속에서 단백질을 분해하는 효소는?', a: '트립신',
-          w: ['아밀레이스', '라이페이스', '펩신'], ex: '위의 펩신이 하던 일을 이어서 합니다.' },
-        { q: '이자액이 십이지장에서 하는 일은?', a: '위산을 중화한다',
-          w: ['위산을 더 세게 한다', '물을 흡수한다', '산소를 공급한다'],
-          ex: '소장의 효소는 염기성에서 잘 작동하기 때문입니다.' },
-        { q: '이자처럼 호르몬을 혈액으로 내보내는 샘을 무엇이라 하나?', a: '내분비샘',
-          w: ['외분비샘', '림프샘', '땀샘'], ex: '관 없이 바로 혈액으로 보냅니다.' }
-    ]
 };
 
 const QUIZ_LEVELS = [
