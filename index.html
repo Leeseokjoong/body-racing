@@ -2601,7 +2601,7 @@ Object.assign(EN, {
 '스킨 뽑기': 'Skin Capsule', '스킨 도감': 'Skin Collection', '스킨': 'Skin', '뽑기': 'Draw', '닫기': 'Close',
 '기본': 'Default', '바꾸기': 'Change', '눌러서 입히기': 'tap to apply', '새 스킨!': 'New skin!', '이미 가진 스킨': 'Already owned',
 '이 차에 입히기': 'Apply to this kart', '일반': 'Common', '희귀': 'Rare', '영웅': 'Epic', '전설': 'Legendary',
-'30번 안에 전설 1번 보장': 'A Legendary is guaranteed within 30 draws', '가진 스킨이 또 나오면 {n} P 돌려받기': 'Duplicates give back {n} P',
+'30번 안에 전설 1번 보장': 'A Legendary is guaranteed within 30 draws', '{p}번 안에 전설 1번 · {r}번마다 희귀 이상 1번 보장': 'Legendary guaranteed within {p} draws · Rare or better every {r} draws', '가진 스킨이 또 나오면 {n} P 돌려받기': 'Duplicates give back {n} P',
 '모양만 바뀌고 성능은 같아요': 'Looks only. Performance stays the same.',
 // 자동차 설명
 '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.':
@@ -2866,6 +2866,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 140, d: '9월 14일', t: [
+        '뽑기가 무늬를 먼저 고른다 — 단청 · 해태만 자꾸 나오지 않고, 방금 나온 무늬는 연달아 잘 안 나온다',
+        'The gacha now picks a pattern first, so Dancheong and Haechi no longer flood Epic pulls and the same pattern rarely repeats',
+        '스킨 뽑기를 더 어렵게 — 전설 1% · 영웅 6% · 희귀 23% · 일반 70%, 100번 안에 전설 1번 · 10번마다 희귀 이상 1번 보장',
+        'Skin draws are harder: Legendary 1%, Epic 6%, Rare 23%, Common 70%, with a Legendary within 100 draws and Rare or better every 10',
+        '옆모습 차 밑에 남아 있던 흰 그림자 · 회색 줄을 지웠다 (화이트 팬텀 · 헬릭스 제로 등)',
+        'Removed the white shadow and gray line under side-view cars such as White Phantom and Helix Zero'
+    ] },
     { v: 139, d: '9월 14일', t: [
         '새 스킨 16종 — 사신만 있던 8대에 단청 · 해태 문양 스킨이 하나씩 생겼다 (영웅 등급)',
         '16 new skins: the eight cars that only had Four Guardians skins now also get Dancheong and Haechi patterns (Epic)'
@@ -4265,13 +4273,16 @@ const carById = id => CARS.find(c => c.id === id) || CARS[0];
    hue 색상(도) · sat 채도 고정 · lit 밝기 배수 · pat 무늬 · hue2 무늬 칸 색 · flame 부스터 불꽃 · glow 둘레 빛 · trail 궤적 · rainbow 색이 돈다 */
 /* 버전 122 : 그림 스킨 44종이 들어오며 전설이 38종이 됐다 — 전설 확률을 2% → 6% 로 올리고 일반을 줄였다.
    뽑기는 포인트가 아니라 다이아로 (사용자 "추천대로" : 다이아는 스킨 전용, 접속 · 출석 · 1등으로만 받고 돈으로 팔지 않는다) */
+/* 버전 140 : 사용자 "스킨 확률이 너무 높다" · "전설은 0.01" · "리그오브레전드 확률체계를 참고하여 더 어렵게"
+   → 전설 1% · 영웅 6% · 희귀 23% · 일반 70%. LoL 뽑기처럼 천장(전설 보장)을 길게 100번으로,
+     대신 빈손이 길어지지 않게 10번마다 희귀 이상 1개를 보장한다. */
 const SKIN_TIERS = [
-    { id: 'common', name: '일반', color: '#c3ccd6', rate: 50 },
-    { id: 'rare',   name: '희귀', color: '#4ad0ff', rate: 30 },
-    { id: 'epic',   name: '영웅', color: '#c77dff', rate: 14 },
-    { id: 'legend', name: '전설', color: '#ffd166', rate: 6 }
+    { id: 'common', name: '일반', color: '#c3ccd6', rate: 70 },
+    { id: 'rare',   name: '희귀', color: '#4ad0ff', rate: 23 },
+    { id: 'epic',   name: '영웅', color: '#c77dff', rate: 6 },
+    { id: 'legend', name: '전설', color: '#ffd166', rate: 1 }
 ];
-const SKIN_PRICE = 100, SKIN_REFUND = 30, SKIN_PITY = 30;   // 헤모글로빈
+const SKIN_PRICE = 100, SKIN_REFUND = 30, SKIN_PITY = 100, SKIN_PITY_RARE = 10;   // 헤모글로빈
 /* 화폐 '헤모글로빈' — 둥글고 빨간 적혈구 모양 동전. 사용자 "신체장기니까. 헤모글로빈? 둥글고 빨간 화폐" (저장 이름은 save.dia 그대로) */
 const HEMO = '<i class="hemo" title="헤모글로빈"></i>';
 const SKINS = [
@@ -4453,7 +4464,7 @@ function curLevel() { return LV_OF(save.level); }
 let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, best: {},
              cars: ['rbc'], car: 'rbc', vol: .7, music: true, lang: null, level: 'easy',
              lv10: true,     // 강화가 10단계 기준이라는 표시 (위 loadSave 참고)
-             skins: [], skinOf: {}, pity: 0,     // 가진 스킨 · 차마다 입힌 스킨 · 전설 없이 뽑은 횟수
+             skins: [], skinOf: {}, pity: 0, pity10: 0,     // 가진 스킨 · 차마다 입힌 스킨 · 전설 없이 뽑은 횟수
              dia: 0, diaWelcome: false, lastLogin: '', streak: 0, winDay: '', winN: 0, tickets: 0, doneCars: [] };
 
 function loadSave() {
@@ -4505,6 +4516,7 @@ function loadSave() {
                     if (sk && (!sk.car || sk.car === k)) save.skinOf[k] = d.skinOf[k];
                 }
             save.pity = Math.round(num(d.pity, 0, SKIN_PITY - 1, 0));
+            save.pity10 = Math.round(num(d.pity10, 0, SKIN_PITY_RARE - 1, 0));
             /* 다이아 · 출석 · 1등 횟수 · 뽑기권 (버전 122) */
             save.dia = Math.round(num(d.dia, 0, 1e9, 0));
             save.diaWelcome = !!d.diaWelcome;
@@ -12144,7 +12156,7 @@ function renderSkinShop() {
     tb.textContent = `🎟 ${T('희귀 이상 뽑기권')} ×${save.tickets}`;
     tb.disabled = skinBusy;
     el('skOdds').innerHTML = SKIN_TIERS.map(t => `<b style="color:${t.color}">${T(t.name)} ${t.rate}%</b>`).join(' · ') +
-        `<br>${T('30번 안에 전설 1번 보장')} (${save.pity}/${SKIN_PITY}) · ${T('가진 스킨이 또 나오면 헤모글로빈 {n}개 돌려받기').replace('{n}', SKIN_REFUND)}` +
+        `<br>${T('{p}번 안에 전설 1번 · {r}번마다 희귀 이상 1번 보장').replace('{p}', SKIN_PITY).replace('{r}', SKIN_PITY_RARE)} (${save.pity}/${SKIN_PITY}) · ${T('가진 스킨이 또 나오면 헤모글로빈 {n}개 돌려받기').replace('{n}', SKIN_REFUND)}` +
         `<br>${T('모양만 바뀌고 성능은 같아요')} · ${T('헤모글로빈은 매일 접속 · 1등으로 모아요')}`;
     el('skCount').textContent = pool.filter(k => save.skins.includes(k.id)).length + ' / ' + pool.length;
     /* 차 고르기 줄 — 차마다 도감 (사용자 "게임에서 차량도감도 만들어야 겠구나") */
@@ -12234,17 +12246,31 @@ function pullSkin(ticket) {
     ticket = ticket === true;
     if (skinBusy || (ticket ? save.tickets < 1 : save.dia < SKIN_PRICE)) return;
     const pool = gachaPool();
-    if (ticket) save.tickets--; else { save.dia -= SKIN_PRICE; save.pity++; }
+    if (ticket) save.tickets--; else { save.dia -= SKIN_PRICE; save.pity++; save.pity10 = (save.pity10 || 0) + 1; }
     const tiers = ticket ? SKIN_TIERS.filter(t => t.id !== 'common') : SKIN_TIERS;
     let tier = ticket ? 'rare' : 'common';
     if (!ticket && save.pity >= SKIN_PITY) tier = 'legend';
-    else {
+    else if (!ticket && save.pity10 >= SKIN_PITY_RARE) {          // 10번째 : 일반을 뺀 확률로 굴린다
+        const up = SKIN_TIERS.filter(t => t.id !== 'common');
+        let r = Math.random() * up.reduce((acc, t) => acc + t.rate, 0);
+        tier = 'rare';
+        for (const t of up) { r -= t.rate; if (r < 0) { tier = t.id; break; } }
+    } else {
         let r = Math.random() * tiers.reduce((acc, t) => acc + t.rate, 0);
         for (const t of tiers) { r -= t.rate; if (r < 0) { tier = t.id; break; } }
     }
     const cands = pool.filter(k => k.tier === tier);
-    const k = cands[Math.random() * cands.length | 0];
+    /* 버전 140 : 무늬를 먼저 고르고, 그다음 차를 고른다 (사용자 "단청이라는 영웅 스킨이 동시에 연달아 나왔어").
+       영웅 28종 중 16종이 단청 · 해태(차 8대씩)라 스킨 하나씩 고르면 영웅의 절반 넘게가 이 둘이었다.
+       무늬 단위로 고르면 영웅 무늬 12가지가 고르게 나온다. 방금 나온 무늬는 한 번 더 굴려 피한다. */
+    const looks = [...new Set(cands.map(k => k.look || k.id))];
+    let look = looks[Math.random() * looks.length | 0];
+    if (look === save.lastLook && looks.length > 1) look = looks[Math.random() * looks.length | 0];
+    const group = cands.filter(k => (k.look || k.id) === look);
+    const k = group[Math.random() * group.length | 0];
+    save.lastLook = look;
     if (tier === 'legend') save.pity = 0;
+    if (tier !== 'common') save.pity10 = 0;
     const dup = save.skins.includes(k.id);
     if (dup) save.dia += SKIN_REFUND; else save.skins.push(k.id);
     if (k.car) skinCar = k.car;                     // 뽑은 스킨의 차 도감으로
@@ -13215,10 +13241,13 @@ el('devGo').onclick = async () => {
     if (!code || await sha256hex(code) !== DEV_HASH) { devSay('틀림', 1200); return; }
     if (!save.devPrevCars) save.devPrevCars = save.cars.slice();
     if (!save.devPrevSkins) save.devPrevSkins = save.skins.slice();
+    if (save.devPrevPoints === undefined) { save.devPrevPoints = save.points; save.devPrevDia = save.dia; }
     save.cars = CARS.map(c => c.id);
     save.skins = gachaPool().map(k => k.id);
+    save.points = 9999999; save.dia = 9999999;   // 버전 140 : 시험용 — 강화 · 뽑기를 마음껏 (사용자 "포인트 무한으로 줘")
     writeSave(); renderCarPick(); devRefresh();
-    devSay('모든 차 · 스킨 풀림', 1800);
+    try { renderGarage(); } catch (e) {}
+    devSay('모든 차 · 스킨 · 포인트 풀림', 1800);
 };
 el('devUndo').onclick = () => {
     if (!save.devPrevCars) return;
@@ -13226,6 +13255,7 @@ el('devUndo').onclick = () => {
     if (!save.cars.includes('rbc')) save.cars.unshift('rbc');
     if (!save.cars.includes(save.car)) save.car = 'rbc';
     delete save.devPrevCars;
+    if (save.devPrevPoints !== undefined) { save.points = save.devPrevPoints; save.dia = save.devPrevDia; delete save.devPrevPoints; delete save.devPrevDia; }
     if (save.devPrevSkins) {
         save.skins = save.devPrevSkins;
         for (const k in save.skinOf) if (!save.skins.includes(save.skinOf[k])) delete save.skinOf[k];
