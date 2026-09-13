@@ -1474,8 +1474,11 @@
     /* 뽑기 결과 카드 : 안의 내용이 무대보다 커서 '이 차에 입히기' 가 설명글과 '새 스킨!' 위로 겹쳤다.
        가운데 정렬 대신 위에서부터 쌓고, 설명글은 두 줄로 자른다 (버전 131). */
     .skCard { gap: 1px; justify-content: center; padding: 4px 6px; overflow: hidden; }
-    .skCard img { width: 54px; height: 54px; }        /* 스킨을 보여 주는 카드다 — 차가 보여야 한다 (66 이면 갤럭시 가로에서 넘쳤다) */
+    .skCard img { width: 48px; height: 48px; }        /* 스킨을 보여 주는 카드다 — 차가 보여야 한다 (66 이면 갤럭시 가로에서 넘쳤다) */
     .skCard .skFact { -webkit-line-clamp: 1; }
+    /* 요소가 눌려 겹치지 않게 — 긴 '새 스킨! · 차를 사면 탈 수 있어요' 는 한 줄로 자른다 */
+    .skCard > * { flex-shrink: 0; }
+    .skCard .skNew, .skCard .skDup { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 96%; }
     .skCard .skTier { font-size: 9px; letter-spacing: 1px; }
     .skCard .skName { font-size: 11.5px; }
     .skCard .skFact { font-size: 8.5px; line-height: 1.25; max-width: none; padding: 0 4px;
@@ -1519,7 +1522,7 @@
 /* 폰 세로 : 두 줄로 쌓고 옆으로 넘긴다 */
 @media (max-width: 780px) {
     #carPick .cpList { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto);
-                       grid-auto-columns: 96px; gap: 8px; overflow-x: auto; overflow-y: hidden;
+                       grid-auto-columns: 96px; gap: 6px; overflow-x: auto; overflow-y: hidden;
                        scrollbar-width: thin; scrollbar-color: rgba(255,209,102,.7) rgba(255,255,255,.08);
                        -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
                        mask-image: linear-gradient(90deg, #000 88%, transparent); }
@@ -1583,7 +1586,7 @@
 @media (max-width: 780px) {
     .cpCar { width: 96px; }
     /* 세로 폰은 화면이 길어 설명칸이 아래 손잡이 띠에 닿았다 — 옆모습과 설명을 줄여 단추를 띠 위로 */
-    .cpDetail .cpHero { max-height: 62px; }
+    .cpDetail .cpHero { max-height: 50px; }      /* 62 이면 사기 단추가 손잡이 띠에 5px 걸렸다 (버전 135) */
     .cpDetail .cpBig { font-size: 20px; }
     .cpDetail .dd { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 2px 0 4px; }
 
@@ -2800,6 +2803,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 135, d: '9월 13일', t: [
+        '카운트다운 소리를 새 소리 팩의 세 삑으로 — 3 · 2 · 1 마다 음이 뚜렷이 올라간다',
+        'The countdown now uses three distinct beeps from the new sound pack, rising clearly on 3, 2, 1',
+        '비슷하던 F1 차 셋을 새 모양으로 — 화이트 팬텀은 장갑 SUV, 하이퍼 코어는 하이퍼카, 헬릭스 제로는 미래형 콘셉트카',
+        'Three look-alike F1 karts get new bodies: White Phantom is an armored SUV, Hyper Core a hypercar, Helix Zero a futuristic concept car',
+        '헬릭스 제로에도 사신(청룡 · 백호 · 주작 · 현무) 스킨 4종이 생겼다',
+        'Helix Zero now has its own Four Guardians skins too'
+    ] },
     { v: 134, d: '9월 13일', t: [
         '자동차 고르기 — 차가 두 줄로 다 보인다 (한 줄일 때 두 대가 화면 밖에 숨었다). 폰 세로는 두 줄로 옆으로 넘기고, 더 있다는 표시를 넣었다',
         'Kart select shows every kart in two rows again (two were hidden off-screen). Portrait phones swipe two rows sideways with a visible hint',
@@ -4290,7 +4301,8 @@ const DRAWN_LOOKS = {
 const SASIN = ['cheongryong', 'baekho', 'jujak', 'hyeonmu'];
 [['rbc', [...SASIN, 'crimson', 'neon', 'ivory', 'emerald']],
  ['collagen', [...SASIN, 'violet', 'ivory', 'neon', 'sky']],
- ['wbc', SASIN], ['o2', SASIN], ['nerve', SASIN], ['atp', SASIN], ['insulin', SASIN], ['plt', SASIN], ['mito', SASIN]
+ ['wbc', SASIN], ['o2', SASIN], ['nerve', SASIN], ['atp', SASIN], ['insulin', SASIN], ['plt', SASIN], ['mito', SASIN],
+ ['dna', SASIN]     // 버전 135 : 헬릭스 제로 새 차체와 함께 사신 4종
 ].forEach(([car, looks]) => looks.forEach(look => {
     const d = DRAWN_LOOKS[look];
     SKINS.push({ id: car + '__' + look, car, look, tier: d.tier, name: d.name, en: d.en, fact: d.fact, factEn: d.factEn, under: d.under });
@@ -9169,6 +9181,7 @@ function setVolume(v) {
 function preloadOneShots() {
     if (!audioCtx) return;
     wantSample('count', () => {});
+    ['count1', 'count2', 'count3'].forEach(n => wantSample(n, () => {}));   // 버전 135
     wantSample('go', () => {});
     wantSample('crash', () => {});      // 버전 134 : 새 충돌 · 기어 변속 녹음도 메뉴에서 미리 받는다
     wantSample('gear', () => {});
@@ -9545,6 +9558,8 @@ let countN = 0;
 function sfxCount() {
     if (!audioCtx) return;
     const step0 = countN % 3;
+    /* 버전 135 : 소리 팩의 세 삑을 3 · 2 · 1 에 하나씩 (sfx_count1 · 2 · 3 — 뒤로 갈수록 높다) */
+    if (playOne('count' + (step0 + 1), .85)) { countN++; return; }
     if (playOne('count', .85, [1, 1.06, 1.13][step0])) { countN++; return; }
     if (playSfx('count', .6)) { countN++; return; }
     const step = countN++ % 3;
