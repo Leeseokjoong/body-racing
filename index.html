@@ -750,12 +750,13 @@
     /* 세로로 들고 있을 때만 폰을 눕히라고 알려 준다 */
     #rotateHint { display: none; }
     @media (orientation: portrait) { #rotateHint { display: block; } }
-    #rotateHint .phone {
+    .rotBox { text-align: center; color: #9fd0ff; }
+    #rotateHint .phone, .rotBox .phone {
         width: 54px; height: 92px; margin: 0 auto 12px; border-radius: 11px;
         border: 4px solid #7fd4ff; position: relative;
         animation: rotPhone 2.2s ease-in-out infinite;
     }
-    #rotateHint .phone::after {
+    #rotateHint .phone::after, .rotBox .phone::after {
         content: ''; position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%);
         width: 18px; height: 3px; border-radius: 2px; background: #7fd4ff;
     }
@@ -763,7 +764,12 @@
         0%, 32% { transform: rotate(0deg); }
         62%, 100% { transform: rotate(-90deg); }
     }
-    #rotateHint .rt { font-size: 14px; font-weight: bold; }
+    #rotateHint .rt, .rotBox .rt { font-size: 16px; font-weight: bold; }
+    /* 버전 137 : 웹판을 폰 세로로 들고 달리면 조향 패드 위에 터보 · 아이템 버튼이 겹치고 랩 표시를 자막이 덮었다.
+       세로에서는 조작이 성립하지 않는다 — 달리는 동안 세로로 들면 눕히라는 막을 씌운다 (앱은 가로로 잠겨 있어 뜨지 않는다) */
+    #rotateRace { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(8,16,30,.93);
+                  flex-direction: column; align-items: center; justify-content: center; }
+    @media (orientation: portrait) and (max-width: 600px) { body.racing.touchUI #rotateRace { display: flex; } }
 
     /* ================= 초기 화면 자동차 고르기 ================= */
     #carPick { width: min(96vw, 1180px); background: rgba(0,0,0,.28); border-radius: 16px; padding: 12px 14px; }
@@ -1640,6 +1646,55 @@
     background: linear-gradient(100deg, transparent, rgba(255,255,255,.5), transparent);
     transform: rotate(10deg); animation: skCardShine 1.1s ease-out .12s; pointer-events: none; }
 @keyframes skCardShine { from { left: -40%; } to { left: 130%; } }
+
+/* ================= 버전 137 : 폰 화면 겹침 정리 =================
+   폰 8종(640~915 가로 · 세로 둘)으로 레이스 · 결과 · 창까지 찍어 보니 실제로 가리는 곳이 있었다. */
+
+/* ① 아주 좁은 가로 폰(640) : 위쪽 [소리 · 음악 · 음량 · 창] 이 코스 단계 번호 '3' 을 덮었다 — 음량 막대는 숨긴다(끄고 켜기는 남음) */
+@media (orientation: landscape) and (max-width: 700px) { #volSlider, #volNum { display: none; } }
+/* 폭 360 세로 폰 : [소리] 버튼이 왼쪽 위 버전 글자 위에 얹혔다 — 버튼 여백과 음량 막대를 줄인다 */
+@media (orientation: portrait) and (max-width: 380px) { #opts { gap: 4px; padding: 5px 7px; } #opts .optBtn { padding: 5px 7px; } #volSlider { width: 44px; } }
+
+/* ② 레이스 : [나가기] 가 왼쪽 위 랩 카드의 'LAP' 글자를 덮었다.
+   나가기는 랩 카드 안 왼쪽 위 자리에 두고, LAP 글자를 그 옆으로 비킨다. 아래 자원 칸도 그만큼 내린다. */
+body.touchUI #exitRace { left: 21px; top: 19px; min-height: 32px; padding: 3px 9px; font-size: 11px; }
+body.touchUI #lapCard .lbl { padding-left: 60px; line-height: 32px; }
+body.touchUI #resPanel { top: 134px; width: auto; }
+/* 버전 글자가 조향 패드 밑에 깔렸다 — 달리는 동안에는 필요 없다 */
+body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
+
+/* ③ 결과 화면 : 키 낮은 가로 폰 + 아래 배너면 상자가 300px 남짓이라
+   1장은 '신기록' 줄이 [포인트 받기] 밑에 깔리고, 2장은 강화 목록이 버튼 줄에 거의 다 가려졌다.
+   가로로 넓은 화면이니 두 칸으로 나눈다. */
+@media (orientation: landscape) and (max-height: 460px) {
+    #resultBox { padding: 10px 16px; }
+    #resultBox h2 { font-size: 21px; margin-bottom: 2px; }
+    .resNav .btn.small { padding: 6px 12px; font-size: 12.5px; }
+    .resNav { margin-top: 6px; gap: 8px; }
+
+    /* 1장 : 왼쪽 등급 · 오른쪽 기록과 랩 */
+    #resPage1 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                grid-template-areas: "t t" "g c" "n n"; column-gap: 18px; align-items: center; }
+    #resPage1 > h2 { grid-area: t; }
+    #gradeBox { grid-area: g; }
+    #resPage1 .resCols { grid-area: c; margin-top: 0; flex-wrap: nowrap; gap: 10px; justify-content: flex-start; }
+    #resPage1 .resCol { min-width: 0; }
+    #lapBox { margin: 0; }
+    #resPage1 .resNav { grid-area: n; position: static; background: none; }
+
+    /* 2장 : 왼쪽 보상 · 버튼 / 오른쪽 강화 목록(그 칸 안에서만 스크롤) */
+    #resPage2 { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+                grid-template-rows: auto auto auto auto 1fr;
+                grid-template-areas: "t g" "p g" "d g" "c g" "n g"; column-gap: 14px; align-items: start; }
+    #resPage2 > h2 { grid-area: t; }
+    #resPoints { grid-area: p; }
+    #resDouble { grid-area: d; }
+    #resDouble .btn.small { padding: 6px 12px; font-size: 12.5px; }
+    #resCollect { grid-area: c; }
+    #garage { grid-area: g; margin-top: 0; overflow-y: auto; max-height: calc(100dvh - 44px); }
+    body.banner #garage { max-height: calc(100dvh - 44px - var(--ban, 0px)); }
+    #resPage2 .resNav { grid-area: n; align-self: end; position: static; background: none; }
+}
 </style>
 <!-- 애드센스 : 아래 client 를 본인 계정 ID 로 바꾸고 주석을 풀면 실제 광고가 나갑니다.
      스크립트 주소의 client 와 body-racing.html 안의 AD.client 를 같은 값으로 맞춰 주세요.
@@ -1765,6 +1820,7 @@
 </div>
 
 <div id="emotePad" class="hidden"></div>
+<div id="rotateRace"><div id="rotateHint2" class="rotBox"><div class="phone"></div><div class="rt">화면을 가로로 눕혀 주세요</div></div></div>
 
 <!-- 카톡·인스타 같은 앱 안에서 열렸을 때 뜨는 안내.
      인앱 브라우저는 캐시를 세게 잡고 전체 화면도 안 되어 게임이 제대로 돌지 않는다. -->
@@ -2809,6 +2865,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 137, d: '9월 13일', t: [
+        '폰 결과 화면을 두 칸으로 — 신기록 줄과 카트 강화 목록이 버튼에 가려지지 않는다',
+        'Phone result screens now use two columns, so the record line and upgrades are no longer hidden behind buttons',
+        '레이스 중 [나가기] 가 랩 표시를 덮지 않게, 작은 폰 메뉴에서 소리 버튼이 단계 번호를 덮지 않게 정리',
+        'The in-race Exit button no longer covers the lap counter, and the sound buttons no longer cover step numbers on small phones'
+    ] },
     { v: 136, d: '9월 13일', t: [
         '배경음악이 생겼다 — 메뉴에서는 신나는 하우스 비트, 레이스에서는 쿵쿵 울리는 EDM',
         'Background music: a groovy house beat in the menu and pounding EDM during races',
