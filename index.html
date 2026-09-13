@@ -2866,6 +2866,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 139, d: '9월 14일', t: [
+        '새 스킨 16종 — 사신만 있던 8대에 단청 · 해태 문양 스킨이 하나씩 생겼다 (영웅 등급)',
+        '16 new skins: the eight cars that only had Four Guardians skins now also get Dancheong and Haechi patterns (Epic)'
+    ] },
     { v: 138, d: '9월 13일', t: [
         '레이스 중 [나가기] 나 뒤로가기를 누르면 바로 나가지 않고 한 번 묻는다 — 묻는 동안 판이 멈춘다',
         'Exit or the back button during a race now asks first, and the race pauses while it asks',
@@ -4377,13 +4381,22 @@ const DRAWN_LOOKS = {
         factEn: 'Rhodopsin in the rod cells of your eyes lets you see in the dark.' },
     sky: { tier: 'epic', name: '산소 스카이', en: 'Oxygen Sky',
         fact: '폐포에서 산소를 받은 피가 온몸으로 산소를 나릅니다.',
-        factEn: 'Blood picks up oxygen in the alveoli and carries it all over the body.' }
+        factEn: 'Blood picks up oxygen in the alveoli and carries it all over the body.' },
+    /* 버전 139 : 사신만 있던 8대에 문양 스킨 둘씩 (사용자 "플로우에서 더 뽑을 이미지 작업은 없니?" → "그거 뽑아놔줘") */
+    dancheong: { tier: 'epic', name: '단청', en: 'Dancheong',
+        fact: '단청은 궁궐과 절의 나무 건물에 칠한 무늬예요. 보기에 예쁠 뿐 아니라 나무가 썩거나 벌레 먹는 것도 막아 줘요.',
+        factEn: 'Dancheong is the painted pattern on wooden palaces and temples. It looks beautiful and also protects the wood from rot and insects.' },
+    haechi: { tier: 'epic', name: '해태', en: 'Haechi',
+        fact: '해태는 옳고 그름을 가려낸다고 믿었던 상상의 동물이에요. 경복궁 광화문 앞에도 해태 석상이 있어요.',
+        factEn: 'Haechi is a mythical beast believed to tell right from wrong. Haechi statues stand in front of Gwanghwamun Gate at Gyeongbokgung Palace.' }
 };
 const SASIN = ['cheongryong', 'baekho', 'jujak', 'hyeonmu'];
+const KOREA = ['dancheong', 'haechi'];
 [['rbc', [...SASIN, 'crimson', 'neon', 'ivory', 'emerald']],
  ['collagen', [...SASIN, 'violet', 'ivory', 'neon', 'sky']],
- ['wbc', SASIN], ['o2', SASIN], ['nerve', SASIN], ['atp', SASIN], ['insulin', SASIN], ['plt', SASIN], ['mito', SASIN],
- ['dna', SASIN]     // 버전 135 : 헬릭스 제로 새 차체와 함께 사신 4종
+ ['wbc', [...SASIN, ...KOREA]], ['o2', [...SASIN, ...KOREA]], ['nerve', [...SASIN, ...KOREA]], ['atp', [...SASIN, ...KOREA]],
+ ['insulin', [...SASIN, ...KOREA]], ['plt', [...SASIN, ...KOREA]], ['mito', [...SASIN, ...KOREA]],
+ ['dna', [...SASIN, ...KOREA]]     // 버전 135 : 헬릭스 제로 새 차체와 함께 사신 4종
 ].forEach(([car, looks]) => looks.forEach(look => {
     const d = DRAWN_LOOKS[look];
     SKINS.push({ id: car + '__' + look, car, look, tier: d.tier, name: d.name, en: d.en, fact: d.fact, factEn: d.factEn, under: d.under });
