@@ -1510,9 +1510,27 @@
    예전에는 높이를 168px 로 막고 세로로 스크롤했는데, 카드가 커져 두 줄이 안 들어가
    세로 스크롤바가 생기고 윗줄이 잘렸다 (사용자 "여기왜 스크롤이 생긴거지?").
    한 줄이면 목록이 낮아져 사기 단추가 아래 손잡이 띠에 가리는 일도 없다. 스크롤바는 숨긴다. */
-#carPick .cpList { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; max-height: none;
-                   padding-bottom: 4px; scrollbar-width: none; -ms-overflow-style: none; }
-#carPick .cpList::-webkit-scrollbar { display: none; }
+/* 버전 134 : 넓은 화면은 여러 줄로 다 보인다 (한 줄로 두었더니 PC 에서 두 대가 화면 밖에 숨었다 —
+   사용자 "여기 자동차 가려진거 아냐?" · "두줄로 만들면 되잖아") */
+#carPick .cpList { flex-wrap: wrap; overflow: visible; max-height: none; align-content: flex-start; padding-bottom: 4px; }
+#carPick .cpList::-webkit-scrollbar { height: 5px; }
+#carPick .cpList::-webkit-scrollbar-thumb { background: rgba(255,209,102,.7); border-radius: 3px; }
+#carPick .cpList::-webkit-scrollbar-track { background: rgba(255,255,255,.08); }
+/* 폰 세로 : 두 줄로 쌓고 옆으로 넘긴다 */
+@media (max-width: 780px) {
+    #carPick .cpList { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto);
+                       grid-auto-columns: 96px; gap: 8px; overflow-x: auto; overflow-y: hidden;
+                       scrollbar-width: thin; scrollbar-color: rgba(255,209,102,.7) rgba(255,255,255,.08);
+                       -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+                       mask-image: linear-gradient(90deg, #000 88%, transparent); }
+}
+/* 폰 가로 : 높이가 낮아 한 줄로 넘긴다 */
+@media (max-height: 500px) {
+    #carPick .cpList { display: flex; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+                       scrollbar-width: thin; scrollbar-color: rgba(255,209,102,.7) rgba(255,255,255,.08);
+                       -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+                       mask-image: linear-gradient(90deg, #000 88%, transparent); }
+}
 #carPick .cpCar { flex: none; }
 /* 한 줄 목록이 옆 설명칸 높이만큼 세로로 늘어나지 않게, 그리고 칸 너비를 넘어 화면을 밀지 않게 */
 #carPick .cpList { align-items: flex-start; align-self: flex-start; min-width: 0; max-width: 100%; }
@@ -2782,6 +2800,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 134, d: '9월 13일', t: [
+        '자동차 고르기 — 차가 두 줄로 다 보인다 (한 줄일 때 두 대가 화면 밖에 숨었다). 폰 세로는 두 줄로 옆으로 넘기고, 더 있다는 표시를 넣었다',
+        'Kart select shows every kart in two rows again (two were hidden off-screen). Portrait phones swipe two rows sideways with a visible hint',
+        '효과음을 새로 — 충돌 · 타이어 끼익(차마다 조금씩 다른 음) · 카운트다운 · 기어를 올릴 때 철컥',
+        'New sound effects: collisions, tyre squeal (slightly different per kart), countdown beeps and a clunk on every upshift'
+    ] },
     { v: 133, d: '9월 13일', t: [
         '자동차 고르기 목록에 생기던 세로 스크롤바를 없앴다 — 카드를 한 줄로 늘어놓고 옆으로 넘긴다',
         'Removed the vertical scrollbar in kart select; karts now sit in one row you swipe sideways',
@@ -8953,7 +8977,12 @@ function updateEngine() {
         if (gear < 0) gear = Math.min(3, Math.floor(gv));
         else if (gv > gear + 1.08) gear = Math.min(3, gear + 1);   // 경계에서 떨지 않게 여유를 둔다
         else if (gv < gear - .08) gear = Math.max(0, gear - 1);
-        if (gear !== engineGear) { if (engineGear >= 0) engineShift = .12; engineGear = gear; }
+        if (gear !== engineGear) {
+            if (engineGear >= 0) engineShift = .12;
+            /* 기어를 올리는 순간 '철컥' (버전 134). 내릴 때마다 나면 시끄러워 올릴 때만 */
+            if (engineGear >= 0 && gear > engineGear && state === 'race') playOne('gear', .3, .95 + Math.random() * .1);
+            engineGear = gear;
+        }
 
         const inGear = clamp(gv - gear, 0, 1);
         rate = .85 + inGear * .45 + gear * .22;
@@ -9141,6 +9170,8 @@ function preloadOneShots() {
     if (!audioCtx) return;
     wantSample('count', () => {});
     wantSample('go', () => {});
+    wantSample('crash', () => {});      // 버전 134 : 새 충돌 · 기어 변속 녹음도 메뉴에서 미리 받는다
+    wantSample('gear', () => {});
 
     /* 타이어 녹음도 같이 받아 둔다.
        이것은 판이 시작돼 소리 장치가 처음 만들어질 때야 받기 시작하는데,
@@ -9240,7 +9271,8 @@ function bell(freq, dur, vol, at, wet) {
 /* 충돌 : 쿵(몸통) + 딱(시작점) + 긁힘(결) + 금속(세게 박았을 때) */
 function sfxCrash(power = 1) {
     if (!audioCtx) return;
-    if (playSfx('crash', .55 * power, .9 + Math.random() * .2)) return;
+    /* 버전 134 : 녹음(sfx_crash.mp3)을 먼저. 예전에는 SFX_NAMES 가 비어 playSfx 가 늘 실패해 합성음만 났다 */
+    if (playOne('crash', .55 * power, .9 + Math.random() * .2) || playSfx('crash', .55 * power, .9 + Math.random() * .2)) return;
     const p = clamp(power, .2, 1);
     tone(190, .3, .2 * p, 'sine', 0, 38, { punch: 2.2, bendT: .12, wet: 1 });
     tone(96, .38, .15 * p, 'sine', 0, 30, { punch: 1.8 });          // 배를 울리는 저음
