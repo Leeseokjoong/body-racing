@@ -13,6 +13,13 @@
 <meta name="theme-color" content="#0a1420">
 <title>오장육부 레이싱 · Organ Racing</title>
 <style>
+/* 글씨체 : 블랙한산스 (구글 폰트 · OFL, assets/fonts/OFL.txt). 제목 · 버튼 · 카드 이름에만 쓴다 —
+   설명글까지 굵은 글씨로 하면 읽기 어렵다. 사용자(2026-09-13) "글씨체도 멋지게 해줘" → '블랙한산스' 선택 */
+@font-face {
+    font-family: 'BlackHanSans';
+    src: url('assets/fonts/BlackHanSans-Regular.ttf') format('truetype');
+    font-weight: 400 900; font-display: swap;
+}
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     html, body {
@@ -1401,6 +1408,193 @@
     .goCarName { font-size: 10.5px; margin-bottom: 3px; }
     #goStage #startBtn { font-size: 16px; padding: 6px 22px; }
 }
+
+/* ================= 버전 127 : 코스 · 자동차 장 · 단계 · 이전/다음 도 레이싱 게임 스타일 ================= */
+#steps b { border-radius: 6px; transform: skewX(-10deg); }
+#steps b > * { transform: skewX(10deg); }
+#steps b.on { background: linear-gradient(90deg, #ffd84a, #ffa51f); border-color: #fff3b8; color: #2a1800; font-weight: 800; }
+#steps b.on i { background: #2a1800; color: #ffd84a; }
+#stepNav .btn { transform: skewX(-10deg); border-radius: 9px; font-style: italic; }
+#stepNav .btn:active, #goStage #startBtn:active { transform: skewX(-10deg) translateY(4px); }
+
+/* 코스 카드 = 무대 */
+#mpCard { position: relative; overflow: hidden; border: 2px solid #2f5580; border-radius: 14px;
+    box-shadow: 0 0 0 3px rgba(255,209,102,.2), 0 10px 26px rgba(0,0,0,.4);
+    background:
+      linear-gradient(118deg, transparent 0 36%, rgba(255,255,255,.06) 36% 43%, transparent 43% 60%, rgba(255,255,255,.04) 60% 64%, transparent 64%),
+      radial-gradient(ellipse at 50% 55%, rgba(74,163,255,.22), transparent 62%),
+      linear-gradient(180deg, #19406b, #0b1a2e); }
+#mpCard .mpBig { position: absolute; right: 3%; top: 3%; font-size: 80px; font-weight: 900; font-style: italic; line-height: .9;
+    letter-spacing: -3px; white-space: nowrap; color: rgba(255,255,255,.07); transform: skewX(-8deg); pointer-events: none; }
+#mpCard h3 { display: inline-block; justify-self: start; font-style: italic; font-weight: 900; color: #2a1800;
+    background: linear-gradient(90deg, #ffd84a, #ffa51f); padding: 3px 18px; border-radius: 6px; transform: skewX(-10deg);
+    box-shadow: 0 3px 0 #9a5b00; }
+#mpCard .kind { margin-top: 5px; }
+#mpCard canvas { border: 1px solid rgba(127,212,255,.18); }
+#mpCard .fact { transform: skewX(-10deg); border-radius: 5px; background: rgba(0,0,0,.42); border: 1px solid rgba(127,212,255,.22); }
+.mpArrow { border-radius: 9px; transform: skewX(-10deg); background: linear-gradient(180deg, #ffd84a, #e8a020);
+    border: 3px solid #1a0f00; box-shadow: 0 4px 0 #7a4b00; }
+.mpArrow:hover { background: linear-gradient(180deg, #ffe27a, #f0ad2a); border-color: #1a0f00; }
+.mpArrow::after { border-right-color: #2a1800; }
+.mpArrow.r::after { border-right-color: transparent; border-left-color: #2a1800; }
+#mpDots i { width: 16px; height: 6px; border-radius: 2px; transform: skewX(-20deg); }
+#mpDots i.on { width: 26px; transform: skewX(-20deg); }
+
+/* 자동차 장 */
+#carPick { border: 2px solid #2f5580; background: linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.34)); }
+.cpHead > span:first-child { font-style: italic; font-weight: 900; font-size: 16px; }
+.skOpen { transform: skewX(-10deg); border-radius: 6px; }
+.cpCar { border-radius: 8px; border-width: 2px; transform: skewX(-8deg);
+    background: linear-gradient(180deg, rgba(27,58,94,.97), rgba(14,32,56,.9)); box-shadow: 0 3px 0 rgba(0,0,0,.4); }
+.cpCar > * { transform: skewX(8deg); }
+.cpCar:hover { transform: skewX(-8deg) translateY(-3px); }
+.cpCar.on { background: linear-gradient(180deg, #ffd84a, #ffa51f); border-color: #fff3b8;
+    box-shadow: 0 0 0 3px rgba(255,210,63,.25), 0 4px 0 #9a5b00; }
+.cpCar.on .nm { color: #2a1800; }
+.cpCar.on .pr, .cpCar.on .pr.own, .cpCar.on .pr.can { color: #5f3a00; }
+.cpDetail { position: relative; overflow: hidden; border: 2px solid #2f5580;
+    background:
+      linear-gradient(118deg, transparent 0 40%, rgba(255,255,255,.05) 40% 47%, transparent 47%),
+      radial-gradient(ellipse at 50% 22%, color-mix(in srgb, var(--gc, #4aa3ff) 36%, transparent), transparent 60%),
+      linear-gradient(180deg, #17365c, #0b1a2e); }
+.cpDetail .cpBig { position: absolute; right: 4%; top: 3%; font-size: 46px; font-weight: 900; font-style: italic; line-height: .9;
+    letter-spacing: -2px; white-space: nowrap; color: rgba(255,255,255,.08); transform: skewX(-8deg); pointer-events: none; }
+.cpDetail .cpHero { display: block; width: 100%; height: auto; margin: -2px 0 2px; }
+.cpDetail .dn .dImg { display: none; }                   /* 큰 옆모습이 있으니 작은 그림은 뺀다 */
+.gRow .gt { transform: skewX(-15deg); border-radius: 3px; }
+.gRow .gt > i { border-radius: 3px; }
+.cpBuy { transform: skewX(-10deg); border-radius: 8px; font-style: italic; font-weight: 900; }
+.cpBuy.can { background: linear-gradient(180deg, #ffd84a, #e8a020); border-color: #1a0f00; box-shadow: 0 4px 0 #7a4b00; }
+/* 세로 폰 : 옆모습 무대를 조금 낮게 */
+@media (max-width: 780px) { .cpDetail .cpHero { max-height: 150px; width: auto; max-width: 100%; margin: 0 auto 2px; } }
+/* 폰 가로 : 한 화면에 들어가야 한다 — 큰 옆모습 · 큰 글씨는 빼고 작은 그림을 되살린다 */
+@media (max-height: 500px) {
+    .cpDetail .cpHero, .cpDetail .cpBig { display: none; }
+    .cpDetail .dn .dImg { display: inline-block; }
+    /* 뽑기 결과 카드 : 안의 내용이 무대보다 커서 '이 차에 입히기' 가 설명글과 '새 스킨!' 위로 겹쳤다.
+       가운데 정렬 대신 위에서부터 쌓고, 설명글은 두 줄로 자른다 (버전 131). */
+    .skCard { gap: 1px; justify-content: center; padding: 4px 6px; overflow: hidden; }
+    .skCard img { width: 66px; height: 66px; }        /* 스킨을 보여 주는 카드다 — 차가 보여야 한다 */
+    .skCard .skTier { font-size: 9px; letter-spacing: 1px; }
+    .skCard .skName { font-size: 11.5px; }
+    .skCard .skFact { font-size: 8.5px; line-height: 1.25; max-width: none; padding: 0 4px;
+                      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .skCard .skNew, .skCard .skDup { font-size: 8.5px; }
+    .skCard .btn { margin-top: 2px; padding: 2px 9px; font-size: 9.5px; }
+    #mpCard .mpBig { font-size: 48px; }
+    #mpCard h3 { padding: 2px 12px; }
+    .cpCar:hover { transform: skewX(-8deg); }
+}
+
+/* ================= 버전 128 : 글씨체 · 버튼 광택 · 자동차 카드 ================= */
+.title, .titleEn, .btn, #steps b, .modeBtn b, #mpCard h3, .cpCar .nm, .cpDetail .dn, .cpBuy, .skOpen,
+.goBig, .goCarName b, #mpCard .mpBig, .cpDetail .cpBig, .skName, .skTier, .lvBtn, #resTitle, .mTag {
+    font-family: 'BlackHanSans', inherit;
+    letter-spacing: 0;
+}
+/* 노란 버튼에 빛이 한 번 스쳐 지나간다 */
+.btn, .cpBuy.can, #goStage #startBtn { position: relative; overflow: hidden; }
+.btn::after, .cpBuy.can::after, #goStage #startBtn::after {
+    content: ''; position: absolute; top: -60%; left: -30%; width: 26%; height: 220%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    transform: rotate(8deg); animation: btnShine 3.4s ease-in-out infinite; pointer-events: none;
+}
+@keyframes btnShine { 0%, 62% { left: -30%; } 82%, 100% { left: 120%; } }
+
+/* 자동차 카드 : 이름이 두 줄로 꺾이지 않게 조금 넓히고 글자를 줄인다.
+   카드가 넓어지고 큰 옆모습이 붙으면서 장이 길어져 아래 손잡이 띠에 가렸다 →
+   목록은 칸 안에서만 스크롤하고(최대 두 줄), 옆모습은 낮게 (버전 131) */
+.cpCar { width: 96px; }
+/* 두 줄이 딱 들어가는 높이 — 어중간하면 둘째 줄이 반만 보여 잘린 것처럼 보인다 */
+#carPick .cpList { max-height: 168px; overflow-y: auto; align-content: flex-start; }
+/* 태블릿 가로 : 화면이 낮아 설명칸이 아래 손잡이 띠에 닿았다 — 목록은 한 줄만 보이고(나머지는 목록 안에서 스크롤) 옆모습도 낮춘다 */
+@media (min-width: 781px) and (max-height: 800px) {
+    #carPick .cpList { max-height: 84px; }
+    .cpDetail .cpHero { max-height: 52px; }
+    .cpDetail .cpBig { font-size: 20px; }
+    .cpDetail .dd { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+                    font-size: 11px; margin: 2px 0 4px; }
+    /* 능력치 다섯 줄이 칸을 늘려 사기 단추를 손잡이 띠 밑으로 밀어냈다 — 줄은 칸 안에서 스크롤 */
+    .cpDetail .cpStats { max-height: 78px; overflow-y: auto; }
+    .cpDetail { padding: 6px 10px; }
+    .cpDetail .cpHero { max-height: 44px; }
+    .skRow { margin-top: 3px; }
+    .gRow { margin: 2px 0; font-size: 10.5px; }
+    .gRow .gt { height: 9px; }
+    .cpBuy { margin-top: 5px; padding: 6px; font-size: 12px; }
+}
+.cpCar { padding: 5px 5px 6px; }
+.cpCar .em { width: 44px; height: 44px; }
+.cpCar .nm { font-size: 11px; margin-top: 2px; }
+.cpCar .pr { font-size: 9.5px; margin-top: 2px; }
+.cpDetail .cpHero { max-height: 80px; width: auto; max-width: 100%; margin: 0 auto 1px; }
+.cpDetail .cpBig { font-size: 26px; }
+/* 사기 단추가 아래 손잡이 띠에 걸려 — 설명칸을 조금 더 촘촘하게 (버전 131) */
+.cpDetail { padding: 8px 11px; }
+.cpDetail .dd { margin: 3px 0 6px; }
+.gRow { margin: 3px 0; }
+.cpBuy { margin-top: 7px; padding: 8px; }
+/* 폰 세로 : '버전' 글자가 아래에 있으면 손잡이 띠와, 조금 올리면 이전 · 다음 단추와 겹쳤다.
+   그래서 세로에서는 왼쪽 위(소리 줄 아래)로 옮긴다. 길게 눌러 개발자 코드를 여는 자리라 숨기지는 않는다. */
+@media (max-width: 780px) and (orientation: portrait) {
+    /* 세로로 든 폰에서만 맨 위로 올린다. 낮고 넓은 폰 가로에서는 위쪽이 비좁아
+       '개인정보처리방침' 링크를 덮었다 (uicheck 작은 폰 가로). */
+    #build { top: 8px; bottom: auto; left: 8px; opacity: .45; font-size: 10px; }
+    body.banner #build { top: 8px; }
+}
+.cpCar .nm { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 780px) {
+    .cpCar { width: 96px; }
+    /* 세로 폰은 화면이 길어 설명칸이 아래 손잡이 띠에 닿았다 — 옆모습과 설명을 줄여 단추를 띠 위로 */
+    .cpDetail .cpHero { max-height: 62px; }
+    .cpDetail .cpBig { font-size: 20px; }
+    .cpDetail .dd { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 2px 0 4px; }
+    #carPick .cpList { max-height: 152px; }
+    .gRow { margin: 2px 0; }
+    .cpBuy { margin-top: 5px; padding: 7px; }
+}
+@media (max-height: 500px) {
+    .cpCar { width: 88px; padding: 4px 3px 5px; }
+    .cpCar .nm { font-size: 10px; }
+    .cpCar .em { width: 30px; height: 30px; }
+    .cpCar .pr { font-size: 8.5px; margin-top: 1px; }
+    #carPick .cpList { height: 68px; }
+}
+
+/* ================= 버전 130 : 스킨 뽑기 연출 ================= */
+.skStage { overflow: hidden; }
+.skRays, .skFlash, .skBurst { position: absolute; inset: 0; pointer-events: none; }
+.skRays { opacity: 0; transition: opacity .25s;
+    background: repeating-conic-gradient(from 0deg, var(--tc, #fff) 0deg 6deg, transparent 6deg 22deg);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 12%, transparent 62%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 12%, transparent 62%); }
+.skStage.pulling .skRays { opacity: .3; animation: skSpin 2.6s linear infinite; }
+.skStage.rev .skRays { opacity: .55; animation: skSpin .5s linear infinite; }
+@keyframes skSpin { to { transform: rotate(360deg); } }
+.skFlash { background: radial-gradient(circle at 50% 50%, #fff, transparent 60%); opacity: 0; }
+.skStage.rev .skFlash { animation: skFlashA .5s ease-out; }
+@keyframes skFlashA { 0% { opacity: .95; } 100% { opacity: 0; } }
+.skBurst i { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--tc, #fff); box-shadow: 0 0 10px var(--tc, #fff);
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+    animation: skBurstA .55s ease-out var(--t, 0s) forwards; }
+@keyframes skBurstA {
+    from { opacity: 1; transform: translate(-50%, -50%) rotate(var(--a)) translateY(0) scale(var(--s)); }
+    to   { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0); }
+}
+.skConf { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.skConf i { position: absolute; top: -12px; left: var(--x); width: var(--w); height: calc(var(--w) * 1.8);
+    background: var(--c); transform: rotate(var(--r)); animation: skConfA var(--d) ease-in forwards; }
+@keyframes skConfA { to { top: 105%; transform: rotate(calc(var(--r) + 420deg)); opacity: .2; } }
+/* 뽑는 동안에는 세포가 조금씩 커지며 떨린다 */
+.skCap.shake { animation: skDivide 1.3s ease-in-out forwards; }
+.skCard { animation: skReveal .45s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes skReveal { from { transform: scale(.55) rotate(-6deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+/* 카드에 빛이 한 번 스친다 */
+.skCard::after { content: ''; position: absolute; top: -60%; left: -40%; width: 30%; height: 220%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.5), transparent);
+    transform: rotate(10deg); animation: skCardShine 1.1s ease-out .12s; pointer-events: none; }
+@keyframes skCardShine { from { left: -40%; } to { left: 130%; } }
 </style>
 <!-- 애드센스 : 아래 client 를 본인 계정 ID 로 바꾸고 주석을 풀면 실제 광고가 나갑니다.
      스크립트 주소의 client 와 body-racing.html 안의 AD.client 를 같은 값으로 맞춰 주세요.
@@ -1670,8 +1864,11 @@
     <div class="skWrap">
         <div class="skLeft">
             <div class="skHead"><b>스킨 뽑기</b><span>보유 <b id="skPoints">0 P</b></span></div>
-            <div class="skStage">
+            <div class="skStage" id="skStage">
+                <div class="skRays" id="skRays"></div>
+                <div class="skFlash" id="skFlash"></div>
                 <div class="skCap" id="skCap"></div>
+                <div class="skBurst" id="skBurst"></div>
                 <div class="skCard hidden" id="skCard"></div>
             </div>
             <div class="skBtns">
@@ -2293,7 +2490,9 @@ Object.assign(EN, {
 '체크포인트': 'checkpoints', '흰 눈금 = 지금 타는 차': 'White tick = your current kart',
 '모자람': 'short', '소리': 'Sound', '전체 화면': 'Fullscreen',
 'SPACE 드리프트': 'SPACE Drift', '이나': 'or',
-'상대 차 3대와 겨루기': 'Race 3 rival karts', '혼자 달려 한 바퀴 기록': 'Beat your best lap', '방 코드로 친구와': 'Race friends with a room code',
+'상대 차 3대와 겨루기': 'Race 3 rival karts',
+'융털 지그재그': 'Villi Zigzag', '울퉁불퉁한 소장. 바퀴 큰 차가 덜 튑니다 — 타이탄 프레임이 가장 강해요.':
+    'The bumpy small intestine. Big wheels bounce less here, and Titan Frame handles it best.', '혼자 달려 한 바퀴 기록': 'Beat your best lap', '방 코드로 친구와': 'Race friends with a room code',
 '친구': 'Friends', '바퀴': 'laps',
 // 스킨
 '스킨 뽑기': 'Skin Capsule', '스킨 도감': 'Skin Collection', '스킨': 'Skin', '뽑기': 'Draw', '닫기': 'Close',
@@ -2564,6 +2763,30 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 131, d: '9월 13일', t: [
+        '달릴 때 차가 더 크게 보인다 — 스킨 무늬가 눈에 들어온다. 출발 카운트다운에는 내 차를 크게 비췄다가 스르륵 물러난다',
+        'Karts are drawn larger during a race so skins are actually visible, and the countdown opens with a close-up of your kart',
+        '옆모습 그림이 열 대 모두 같은 쪽을 본다 — 오른쪽을 보던 세 대를 뒤집고 번호는 제자리로 돌렸다',
+        'All ten karts now face the same way in side views; the three that faced right were mirrored with their race numbers kept readable'
+    ] },
+    { v: 130, d: '9월 13일', t: [
+        '스킨 뽑기 연출을 크게 — 빛살이 돌고, 마지막에 등급 색이 드러나며, 터지는 순간 번쩍임과 빛 알갱이. 영웅 · 전설은 색종이까지',
+        'Much bigger skin capsule sequence: spinning rays, a late reveal of the rarity color, a flash with flying sparks, and confetti for Epic and Legendary'
+    ] },
+    { v: 129, d: '9월 13일', t: [
+        '소화계 소장(융털 지그재그)이 울퉁불퉁해졌다 — 덜컹이고 조금 느려진다. 바퀴 큰 차일수록 덜 튀고, 타이탄 프레임이 가장 강하다',
+        'The small intestine (Villi Zigzag) is now bumpy: karts judder and slow a little. Big-wheeled karts cope better and Titan Frame is best'
+    ] },
+    { v: 128, d: '9월 13일', t: [
+        '터보가 더 오래가고 불꽃이 훨씬 길고 화려해졌다 — 겉불꽃 · 속불꽃 · 불티',
+        'Turbo lasts longer and the flame is far bigger: outer flame, white core and sparks',
+        '제목 · 버튼 · 카드 이름 글씨체를 굵은 레이싱 글씨(블랙한산스)로 바꾸고, 노란 버튼에 빛이 스친다',
+        'Titles, buttons and card names now use a bold racing typeface, and yellow buttons catch a moving shine'
+    ] },
+    { v: 127, d: '9월 11일', t: [
+        '코스 · 자동차 고르는 장도 출발 화면과 같은 레이싱 게임 스타일 — 비스듬한 카드와 단추, 노란 이름판, 고른 차 옆모습을 크게',
+        'Course and kart select now match the new start screen: slanted cards and buttons, yellow name plates and a big side view of the chosen kart'
+    ] },
     { v: 126, d: '9월 11일', t: [
         '출발 화면을 레이싱 게임 모드 화면처럼 — 왼쪽은 비스듬한 모드 카드, 오른쪽은 내 차(스킨 그대로)를 크게 보여 주는 무대와 노란 레이스 시작',
         'New start screen like a racing game mode select: slanted mode cards on the left, and a stage showing your kart (with its skin) and a big Race button on the right'
@@ -3875,6 +4098,11 @@ const CARS = [
       speed: 1.34, accel: 1.30, grip: 1.24, boost: 1.32,
       desc: '생명의 설계도. 모든 수치가 최고인 마지막 카트입니다.' }
 ];
+/* 울퉁불퉁한 길(소장 융털)에서 얼마나 덜컹이는가. 1 이 보통, 작을수록 강하다.
+   타이탄 프레임은 오프로드 버기라 거의 튀지 않는다 (사용자 "그때 타이탄 프레임이 제일 유리한게지").
+   바퀴가 크고 서스펜션이 있는 차 순서 : 버기 < 랠리 < 머슬카 < 프로토타입 < 포뮬러 */
+const ROUGH = { collagen: .22, insulin: .6, plt: .68, mito: .9, o2: 1.18 };
+const roughOf = c => (c && ROUGH[c.id] !== undefined) ? ROUGH[c.id] : 1;
 const carById = id => CARS.find(c => c.id === id) || CARS[0];
 
 /* ---- 스킨 (모양만 바꾸는 도색) ----
@@ -4172,7 +4400,7 @@ const EFFECT_TIP = {
 const tipSeen = {};                    // 이번 판에 이미 알려 준 효과
 
 const EFFECT_DUR = {
-    turbo: 4.2,      // 적혈구 터보 — 확실히 앞지를 만큼 (3.4 → 4.2 : 조금 더 길게)
+    turbo: 5.0,      // 적혈구 터보 — 확실히 앞지를 만큼 (4.2 → 5.0 : 버전 128)
     wbc: 4.0,        // 백혈구에 붙잡힌 시간
     smoke: 7.0,      // 연막이 남아 있는 시간
     sticky: 10.0,    // 끈적한 길이 남는 시간
@@ -4382,6 +4610,7 @@ function buildTrack(sys) {
         fill.closePath();
         s.fillPath = fill; s.leftPath = le; s.rightPath = re;
         s.tunnel = !!(s.node.seg && s.node.seg.tunnel);
+        s.villi  = !!(s.node.seg && s.node.seg.villi);      // 소장 융털 — 울퉁불퉁한 길 (버전 129)
         s.valve  = !!(s.node.seg && s.node.seg.valve);
     });
 
@@ -4713,11 +4942,12 @@ function fireTurbo(k) {
        아이템 터보가 3.4 초라 드리프트로 모은 것이 초라하게 느껴졌다.
        이제 잘 문 드리프트 한 번이 옛 아이템 터보(3.4 초)와 같고,
        버티기까지 채우면(q≈1.28) 약 4 초 — 새 아이템 터보(4.2 초)보다는 조금 짧다. */
-    k.boostTime = Math.max(k.boostTime, (1.4 + q * 2.0) * (k.isPlayer ? upMul.boost() : 1));
+    /* 버전 128 : 사용자 "터보 더 시간 길게해주고" — 가속 시간 1.4+q·2.0 → 1.9+q·2.5 (잘 문 드리프트 한 번이 4.4 초쯤) */
+    k.boostTime = Math.max(k.boostTime, (1.9 + q * 2.5) * (k.isPlayer ? upMul.boost() : 1));
     /* 최고 속도 구간은 가속 시간의 절반쯤으로 둔다.
        아이템처럼 끝까지 최고 속도면 코너에서 그대로 벽으로 날아간다 —
        터보를 세 개 모아 연달아 쓰면 10 초 넘게 최고 속도가 된다. */
-    k.turboTime = Math.max(k.turboTime, .6 + q * 1.1);
+    k.turboTime = Math.max(k.turboTime, .9 + q * 1.5);        // 최고 속도 구간도 함께 늘린다
     k.turboFiredAt = raceTime;                           // 발사대 타이밍 판정에 쓰인다
     if (k.air > 0) { boostJump(k); return; }             // 하늘에서는 그대로 추진력이 된다
     if (k.isPlayer) {
@@ -4821,6 +5051,7 @@ function makeKart(isPlayer, ci, name) {
         sprite: mine ? mine.sprite : KART_KEYS[ci],
         motif: mine ? mo(mine) : null,
         skin: mine ? skinOf(mine.id) : null,      // 입힌 스킨 (모양만)
+        rough: roughOf(mine || CARS[ci % CARS.length]), villiShake: 0,   // 울퉁불퉁한 길에 얼마나 덜컹이나
         x: 0, y: 0, ang: 0, vx: 0, vy: 0, speed: 0, slip: 0, steer: 0, wobble: Math.random() * TAU,
         si: 0, prevSi: 0, lap: 1, cpIndex: 0, cpDone: 0, progress: 0,
         finished: false, finishTime: 0, rank: 1,
@@ -4867,6 +5098,21 @@ function updateKart(k, dt) {
     // 이산화탄소가 가득 차면 숨이 차서 최고 속도가 준다 (최대 14%)
     if (k.co2 > 0) maxSp *= 1 - k.co2 * .14;
     if (up) maxSp *= up.speed();
+    /* 소장 융털 구간 — 울퉁불퉁해서 속도가 줄고 차가 덜컹인다. 험로에 강한 차일수록 덜하다 (버전 129) */
+    const secNow = track.secs[track.pts[k.si].sec];
+    if (secNow && secNow.villi) {
+        const rg = k.rough === undefined ? 1 : k.rough;
+        maxSp *= 1 - .13 * rg;
+        k.villiShake = Math.sin(raceTime * 27 + k.si * .8) * 2.8 * rg;
+        vR += Math.sin(raceTime * 17 + k.si) * 26 * rg * dt;          // 좌우로 조금씩 밀린다
+        if (k.isPlayer) {
+            cam.shake = Math.max(cam.shake || 0, 3.4 * rg);
+            if (!tipSeen.villi) {
+                tipSeen.villi = 1;
+                showToast('융털 지그재그', '울퉁불퉁한 소장. 바퀴 큰 차가 덜 튑니다 — 타이탄 프레임이 가장 강해요.');
+            }
+        }
+    } else k.villiShake = 0;
     if (k.offroad && k.starTime <= 0) maxSp = Math.min(maxSp, OFFROAD_MAX);
     // ── 드리프트로 파훼 : 미끄러뜨리면 붙잡힘·끈적임을 떨쳐낸다
     //    driftAmt 가 클수록 감속 효과가 약해지고, 게이지가 차면 완전히 벗어난다
@@ -5867,7 +6113,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
 
     cam.zoom = lerp(cam.zoom, cam.targetZoom, .14);
     // 빠를수록 살짝 뒤로 물러나 앞이 더 보이게 (코너 대비 시간 확보)
-    const spdOut = player ? lerp(1.06, .74, clamp(Math.abs(player.speed) / MAXSPEED, 0, 1)) : 1;
+    const spdOut = player ? lerp(1.02, .78, clamp(Math.abs(player.speed) / MAXSPEED, 0, 1)) : 1;   // 빠를 때 덜 물러난다
     let zoom = cam.zoom * spdOut * (1 - cam.kick * .1);
 
     // ── 카운트다운 : 하늘에서 카트로 훅 내려오는 도입 연출
@@ -7790,6 +8036,8 @@ function drawLabels(g, zoom) {
 /* 차 높이를 18 → 7 로 (버전 123). 그림 카트는 위에서 본 그림에 이미 입체감이 있어서,
    윗면을 18px 이나 띄우면 동그란 그림자와 떨어져 공중에 떠 보였다 (사용자 "자동차가 공중에 떠 보이는 것 같아"). */
 const KART_H = 7, KS = 1.8;      // 차 높이 / 카트 크기 배율
+/* 차 그림을 그리는 크기. 150 은 스킨 무늬가 보이지 않을 만큼 작았다 (버전 131) */
+const KART_DRAW = 182;
 
 /* 차 그림자 — 차 그림의 모양을 그대로 검게 · 흐리게 만든 것. 차 종류마다 한 장만 만든다.
    예전에는 64×44 짜리 동그라미가 차 방향과 상관없이 오른쪽 아래에 떠 있었다. */
@@ -7815,7 +8063,7 @@ function kartShadow(sprite) {
 }
 
 function drawKart(g, k, lift = 0) {
-    const bounce = Math.sin(k.wobble) * 1.2;
+    const bounce = Math.sin(k.wobble) * 1.2 + (k.villiShake || 0);
     // 공중에 있으면 포물선을 그리며 떠오른다 (그림자는 땅에 남는다)
     let airH = 0, airScale = 1;
     if (k.air > 0 && k.airMax > 0) {
@@ -7837,7 +8085,7 @@ function drawKart(g, k, lift = 0) {
     const shA = airH > 0 ? clamp(1 - airH / 240, .18, 1) : 1;
     const shImg = KART_SPRITES[k.sprite] && KART_SPRITES[k.sprite].ready ? kartShadow(k.sprite) : null;
     if (shImg) {
-        const S = 150, pad = SHADOW_PAD * S / SHADOW_N, sc = shA * (1 + airH / 900);
+        const S = KART_DRAW, pad = SHADOW_PAD * S / SHADOW_N, sc = shA * (1 + airH / 900);
         g.save();
         g.translate(4 + airH * .3, 6 + lift * .6 + airH);          // 땅으로 되돌리고 오른쪽 아래로 조금
         g.rotate(k.ang + (k.spin || 0));
@@ -7852,14 +8100,31 @@ function drawKart(g, k, lift = 0) {
         g.restore();
     }
 
-    // 부스터 불꽃 (지면 높이)
+    /* 부스터 불꽃 (지면 높이) — 버전 128 : 사용자 "터보 누르면 나오는 불꽃 더 길고 화려하게 하자"
+       겉불꽃(길고 투명) · 속불꽃(짧고 밝은 흰) · 불티 몇 점. 터보(최고 속도) 중에는 두 배로 길어진다. */
     if (k.boostTime > 0 || k.starTime > 0) {
+        const hot = k.turboTime > 0 ? 1.9 : 1;
+        const flick = .8 + Math.random() * .45;
+        const f = (54 + Math.random() * 34) * hot * flick;
         g.save(); g.rotate(k.ang);
-        const f = 32 + Math.random() * 28;
+        g.globalCompositeOperation = 'lighter';
         const grd = g.createLinearGradient(-20, 0, -20 - f, 0);
         flameStops(grd, sk);                            // 스킨마다 불꽃 색 (기본은 노랑 → 주황)
         g.fillStyle = grd;
-        g.beginPath(); g.moveTo(-18, -11); g.lineTo(-18 - f, 0); g.lineTo(-18, 11); g.closePath(); g.fill();
+        g.beginPath();                                  // 겉불꽃 : 뒤로 갈수록 좁아지는 긴 혀
+        g.moveTo(-18, -13 * hot); g.quadraticCurveTo(-18 - f * .55, -7 * hot, -18 - f, 0);
+        g.quadraticCurveTo(-18 - f * .55, 7 * hot, -18, 13 * hot);
+        g.closePath(); g.fill();
+        const f2 = f * .45;                             // 속불꽃 : 밝은 심지
+        const gr2 = g.createLinearGradient(-20, 0, -20 - f2, 0);
+        gr2.addColorStop(0, 'rgba(255,255,255,.95)'); gr2.addColorStop(1, 'rgba(255,230,150,0)');
+        g.fillStyle = gr2;
+        g.beginPath(); g.moveTo(-18, -6 * hot); g.lineTo(-18 - f2, 0); g.lineTo(-18, 6 * hot); g.closePath(); g.fill();
+        for (let i = 0; i < 3; i++) {                   // 불티
+            const d = 20 + Math.random() * f, r = 1.2 + Math.random() * 2.2 * hot;
+            g.fillStyle = `rgba(255,${180 + Math.random() * 60 | 0},90,${.25 + Math.random() * .5})`;
+            g.beginPath(); g.arc(-18 - d, (Math.random() - .5) * 16 * hot, r, 0, TAU); g.fill();
+        }
         g.restore();
     }
     if (k.driftAmt > .3 && k.driftCharge > 15) {
@@ -7891,7 +8156,7 @@ function drawKart(g, k, lift = 0) {
         g.translate(ox, oy + bounce);
         g.rotate(k.ang + (k.spin || 0));                // 공중에서는 빙글빙글
         g.scale(airScale, airScale);
-        const S = 150;
+        const S = KART_DRAW;
         g.drawImage(img, -S / 2, -S / 2, S, S);
         g.restore();
 
@@ -10026,7 +10291,7 @@ function startRace(id, timeAttack) {
     karts.forEach((k, i) => placeOnStart(k, i));
 
     cam.x = player.x; cam.y = player.y;
-    cam.targetZoom = .74; cam.zoom = .4;
+    cam.targetZoom = 1.15; cam.zoom = .5;        // 출발 전에는 내 차를 크게 비춘다 (버전 131)
     victory = null;
     setBanner(false);                                    // 달리는 동안에는 배너를 내린다
     document.body.classList.add('racing');               // 판 번호를 잠근다(진단 창 오작동 방지)
@@ -10674,7 +10939,9 @@ function victoryRows(G) {
 
 /* 완주 무대의 옆모습 그림 — 판을 시작할 때 내 차 것만 받아 둔다 (열 장을 처음부터 다 받지 않는다) */
 const SIDE_IMGS = {};
-const SIDE_FACES_LEFT = new Set(['rbc', 'plt', 'nerve', 'wbc', 'o2', 'atp', 'dna']);   // 옆모습 그림이 왼쪽을 보는 차
+/* 옆모습 그림이 왼쪽을 보는 차. 버전 131 부터 열 대 모두 왼쪽을 본다 — 오른쪽을 보던 셋(콜라겐 · 인슐린 · 미토)은
+   그림을 좌우로 뒤집고 번호만 제자리로 돌렸다 (사용자 "이 방향이 달라" · "대칭으로 못바꾸니?"). 원본은 참고/스킨원본/뒤집기전 */
+const SIDE_FACES_LEFT = new Set(CARS.map(c => c.sprite));
 function sideImg(sprite) {
     let im = SIDE_IMGS[sprite];
     if (!im) {
@@ -11003,7 +11270,8 @@ function loop(now) {
         el('bigMsg').textContent = n > 0 ? n : 'GO!';
         el('bigMsg').style.opacity = 1;
         if (!audioCtx) playBeep(1, .01);
-        if (countdown <= 0) { state = 'race'; sfxGo(); engineRev('engine_rev3', .30); setTimeout(() => el('bigMsg').style.opacity = 0, 550); }
+        if (countdown <= 0) { state = 'race'; sfxGo(); engineRev('engine_rev3', .30); cam.targetZoom = .86;   // 출발과 함께 스르륵 물러난다
+                              setTimeout(() => el('bigMsg').style.opacity = 0, 550); }
         karts.forEach(updateProgress);
     } else if (state === 'race') {
         raceTime += dt;
@@ -11232,6 +11500,7 @@ function drawMapCard(dir) {
     const best = taBestOf(sys.id);
     const card = el('mpCard');
     card.innerHTML =
+        `<div class="mpBig">${((EN[sys.name] || sys.id).split(/[ ,]/)[0] || '').toUpperCase()}</div>` +
         `<h3>${T(sys.name)}</h3>` +
         `<div class="kind">${T(ZOOM_MAPS.includes(sys.id) ? '기관 확대 코스' : '계통 순회 코스')}</div>` +
         `<canvas width="1120" height="600"></canvas>` +
@@ -11363,6 +11632,7 @@ function renderCarPick() {
     const picked = save.car === c.id;
 
     el('cpDetail').innerHTML =
+        `<div class="cpBig">${(EN[c.name] || c.id).toUpperCase()}</div><canvas class="cpHero" width="620" height="210"></canvas>` +
         `<div class="dn" style="color:${c.color}"><img class="dImg ${skinFx(skinOf(c.id))}" src="${skinThumb(c.sprite, skinOf(c.id))}" alt="">${T(c.name)}<small class="cell">${LANG === 'en' ? c.cellEn : c.cell}</small></div>
          <div class="dd">${T(c.desc)}</div><div class="cpStats">` +
         CAR_STATS.map(s => {
@@ -11385,6 +11655,9 @@ function renderCarPick() {
                    : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
          }</button>`;
 
+    const cpd = el('cpDetail');
+    if (cpd && cpd.style && cpd.style.setProperty) cpd.style.setProperty('--gc', c.color);
+    drawSideStage(cpd && cpd.querySelector ? cpd.querySelector('.cpHero') : null, c, skinById(skinOf(c.id)));
     const skr = el('skRowCar'); if (skr) skr.onclick = () => openSkinShop(c.id);
     const btn = el('cpBuyBtn');
     if (btn) btn.onclick = () => {
@@ -11614,6 +11887,18 @@ function renderSkinShop() {
         };
     });
 }
+/* 뽑기 창 색종이 — 레이스 결과의 것과 달리 이 창 안에서만 잠깐 흩날린다 */
+function confettiBurst(n, color) {
+    const box = el('skStage'); if (!box || !box.appendChild) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'skConf';
+    wrap.innerHTML = Array.from({ length: n }, () =>
+        `<i style="--x:${(Math.random() * 100).toFixed(1)}%;--r:${(Math.random() * 360) | 0}deg;` +
+        `--d:${(.7 + Math.random() * .7).toFixed(2)}s;--w:${4 + Math.random() * 5}px;` +
+        `--c:${Math.random() < .5 ? color : ['#ffd166', '#7ee081', '#7fd4ff', '#ff8a3c'][Math.random() * 4 | 0]}"></i>`).join('');
+    box.appendChild(wrap);
+    setTimeout(() => wrap.remove && wrap.remove(), 1800);
+}
 function showSkinCard(k, car, dup) {
     const t = tierOf(k), c = el('skCard');
     const on = k.car ? carById(k.car) : car;                         // 전용 스킨은 그 차 그림으로
@@ -11668,13 +11953,31 @@ function pullSkin(ticket) {
     renderSkinShop();
     el('skPoints').innerHTML = HEMO + (save.dia - (dup ? SKIN_REFUND : 0));
     el('skCard').classList.add('hidden');
-    const cap = el('skCap');
-    cap.style.setProperty('--tc', tierOf(k).color);
+    const tc = tierOf(k).color, stage = el('skStage'), cap = el('skCap');
+    /* 뜸 들이기 : 빛살이 돌며 점점 빨라진다. 등급 색은 마지막 0.3초에만 드러난다 —
+       처음부터 색이 보이면 무엇이 나올지 다 알아 버려 재미가 없다. */
+    stage.style.setProperty('--tc', '#ffffff');
+    cap.style.setProperty('--tc', '#ffffff');
+    stage.classList.remove('rev', 'pulling'); void stage.offsetWidth;
+    stage.classList.add('pulling');
     cap.className = 'skCap'; void cap.offsetWidth; cap.className = 'skCap shake';
     playBeep(620, .05);
-    [0, 220, 440, 660].forEach((ms, i) => setTimeout(() => { if (audioCtx) tone(520 + i * 90, .06, .05, 'triangle'); }, ms));
+    [0, 200, 380, 540, 680, 800, 900, 990].forEach((ms, i) =>
+        setTimeout(() => { if (audioCtx) tone(480 + i * 85, .05, .045, 'triangle'); }, ms));
+    setTimeout(() => {                                   // 등급 색이 드러나는 순간
+        stage.style.setProperty('--tc', tc); cap.style.setProperty('--tc', tc);
+        if (audioCtx) tone(1200, .1, .06, 'sine');
+    }, 1000);
+    setTimeout(() => {                                   // 터짐
+        stage.classList.add('rev');
+        const burst = el('skBurst');
+        if (burst) burst.innerHTML = Array.from({ length: 14 }, (_, i) =>
+            `<i style="--a:${i * 25.7}deg;--d:${60 + Math.random() * 70}px;--s:${.5 + Math.random()};--t:${Math.random() * .12}s"></i>`).join('');
+        if (tier === 'legend' || tier === 'epic') confettiBurst(tier === 'legend' ? 60 : 26, tc);
+    }, 1300);
     setTimeout(() => {
         skinBusy = false;
+        stage.classList.remove('pulling');
         renderSkinShop();
         showSkinCard(k, carById(skinCar), dup);
         checkCompletion();
@@ -11683,7 +11986,7 @@ function pullSkin(ticket) {
         else if (tier === 'epic') { bell(784, .6, .1, 0, 1); bell(1175, .7, .09, .12, 1); }
         else if (tier === 'rare') bell(1046, .5, .1, 0, 1);
         else tone(880, .12, .07, 'sine');
-    }, 950);
+    }, 1420);
 }
 el('skPull').onclick = () => pullSkin(false);
 el('skTicket').onclick = () => pullSkin(true);
@@ -11771,26 +12074,22 @@ function refreshModeUI() {
 /* 출발 장 오른쪽 무대 — 고른 차의 옆모습(스킨 그대로)을 크게, 뒤에는 모드 이름을 흐리게 크게.
    레이싱 게임 모드 화면처럼 (사용자 "이런식으로부탁해") */
 const GO_BIG = { 1: 'SOLO RACE', 3: 'TIME ATTACK', 2: 'ONLINE' };
-let goTries = 0;
-function renderGoHero() {
-    const cv = el('goCar'); if (!cv || !cv.getContext) return;
-    const selBtn = document.querySelector('.modeBtn.sel');
-    const mode = selBtn ? selBtn.dataset.mode : '1';
-    el('goBig').textContent = GO_BIG[mode] || '';
-    const sys = SYSTEMS[selectedId];
-    el('goCourse').innerHTML = sys ? `<b>${T(sys.name)}</b> · ${mode === '3' ? TA.laps : sys.laps} ${T('바퀴')}` : '';
-    const c = carById(save.car), sk = skinById(skinOf(c.id));
-    el('goCarName').innerHTML = `<b style="color:${c.color}">${T(c.name)}</b>${sk ? ' · ' + skinName(sk) : ''}`;
-    const hero = el('goHero');
-    if (hero && hero.style && hero.style.setProperty) hero.style.setProperty('--gc', c.color);   // 차 색으로 무대 뒤 빛
+/* 차 옆모습을 캔버스 무대에 크게 — 땅 그림자 · 전설 스킨 네온 · 스킨 그림 그대로.
+   출발 장 무대와 자동차 장 설명칸이 같이 쓴다. 그림이 아직 오는 중이면 조금 뒤 다시 그린다. */
+function drawSideStage(cv, c, sk) {
+    if (!cv || !cv.getContext) return;
     const g2 = cv.getContext('2d');
+    if (!g2 || !g2.clearRect) return;
     g2.clearRect(0, 0, cv.width, cv.height);
     const base = sideImg(c.sprite), img = sk ? skinImg(base, c.sprite, sk, 'side') : base;
-    if (!img || !img.ready || (sk && sk.car && img === base)) {       // 그림이 아직 오는 중 — 조금 뒤 다시
-        if (goTries++ < 40) setTimeout(renderGoHero, 150);
+    const waiting = !img || !img.ready || (sk && sk.car && img === base);
+    if (waiting) {
+        const n = +((cv.dataset && cv.dataset.tries) || 0);
+        if (n < 40 && cv.dataset) { cv.dataset.tries = n + 1; setTimeout(() => { if (cv.isConnected) drawSideStage(cv, c, sk); }, 150); }
         if (!img || !img.ready) return;
-    } else goTries = 0;
+    } else if (cv.dataset) cv.dataset.tries = 0;
     const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
+    if (!nw || !nh) return;
     let w = cv.width * .9, h = w * nh / nw;
     if (h > cv.height * .78) { h = cv.height * .78; w = h * nw / nh; }
     const cx = cv.width / 2, groundY = cv.height * .9;
@@ -11805,6 +12104,19 @@ function renderGoHero() {
         g2.fillStyle = rg; g2.beginPath(); g2.arc(0, 0, w * .58, 0, TAU); g2.fill(); g2.restore();
     }
     g2.drawImage(img, cx - w / 2, groundY - h * .97, w, h);
+}
+function renderGoHero() {
+    const cv = el('goCar'); if (!cv || !cv.getContext) return;
+    const selBtn = document.querySelector('.modeBtn.sel');
+    const mode = selBtn ? selBtn.dataset.mode : '1';
+    el('goBig').textContent = GO_BIG[mode] || '';
+    const sys = SYSTEMS[selectedId];
+    el('goCourse').innerHTML = sys ? `<b>${T(sys.name)}</b> · ${mode === '3' ? TA.laps : sys.laps} ${T('바퀴')}` : '';
+    const c = carById(save.car), sk = skinById(skinOf(c.id));
+    el('goCarName').innerHTML = `<b style="color:${c.color}">${T(c.name)}</b>${sk ? ' · ' + skinName(sk) : ''}`;
+    const hero = el('goHero');
+    if (hero && hero.style && hero.style.setProperty) hero.style.setProperty('--gc', c.color);   // 차 색으로 무대 뒤 빛
+    drawSideStage(cv, c, sk);
 }
 
 /* 난이도 단추를 그린다. 무엇이 달라지는지 한 줄로 같이 적는다 —
