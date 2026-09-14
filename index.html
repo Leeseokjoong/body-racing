@@ -1722,6 +1722,12 @@
 .gxSub .gxChip.dup { background: linear-gradient(180deg, #cfe6ff, #7fb2e0); }
 @media (max-height: 430px) { .gxTier { font-size: 19vmin !important; } .gxName { font-size: 11vmin !important; } #gxCar { max-height: 34vh !important; } .gxShow { gap: 0 !important; } }
 
+/* 버전 152 (사용자 "응 옆모습 작업해") : 스킨 카드의 차를 옆모습으로 크게 — 남는 높이를 차가 다 갖는다 */
+.skCard .skSide { flex: 1 1 0 !important; min-height: 44px; width: 96%; max-width: 560px; object-fit: contain; display: block; }
+.skCard > :not(.skSide) { flex-shrink: 0; }
+.skCard { justify-content: flex-start !important; padding-top: 10px !important; padding-bottom: 10px !important; }
+.skCard .skName { font: 900 clamp(17px, 2.4vw, 24px)/1.1 'BlackHanSans', sans-serif; font-style: italic; }
+
 /* ================= 버전 146 : 뽑기 연출 — 미스터리 상자 + 전체 화면 공개 =================
    사용자 "극적인 획득효과가 필요한 것 같아. 넌 지금 세포 분열을 표현한것 같은데" · "굳이 생명학을 적용할 필요 없어"
    흐름 : ① 상자가 흔들리며 틈으로 빛이 샌다 ② 빛이 흰색 → 파랑 → 보라 → 금색으로 한 단계씩 오른다(나온 등급에서 멈춤)
@@ -3033,6 +3039,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 152, d: '9월 14일', t: [
+        '스킨 카드의 차를 옆모습으로 크게 — 뽑은 스킨 무늬가 한눈에 보인다',
+        'Skin cards now show the car large from the side, so the pattern is easy to see'
+    ] },
     { v: 151, d: '9월 14일', t: [
         '차 그림의 흰 부스러기를 청소 — 테두리 흰 테 · 차 밑 가는 줄 · 떠 있는 가루를 150장 모두에서 지웠다',
         'Cleaned white specks from all 150 car images: white fringes, thin lines under cars and floating dust',
@@ -12492,7 +12502,7 @@ function showSkinCard(k, car, dup) {
     const on = k.car ? carById(k.car) : car;                         // 전용 스킨은 그 차 그림으로
     c.style.setProperty('--tc', t.color);
     c.innerHTML = `<div class="skTier">${T(t.name)}${k.car ? ' · ' + T(on.name) + ' ' + T('전용') : ''}</div>
-        <img src="${skinThumb(on.sprite, k.id)}" class="${skinFx(k.id)}" alt="">
+        <canvas class="skSide" width="760" height="280"></canvas>
         <div class="skName">${skinName(k)}</div>
         <div class="skFact">${skinFact(k)}</div>` +
         (dup === null ? '' : dup ? `<div class="skDup">${T('이미 가진 스킨')} · ${HEMO}+${SKIN_REFUND}</div>`
@@ -12500,6 +12510,7 @@ function showSkinCard(k, car, dup) {
         (skinOf(on.id) !== k.id ? `<button class="btn small" id="skWear">${T('이 차에 입히기')}</button>` : '');
     el('skCap').className = 'skCap pop';
     c.classList.remove('hidden');
+    drawSideStage(c.querySelector('.skSide'), on, k);   // 버전 152 : 위 모습 작은 그림 대신 옆모습을 크게 (전설은 네온까지)
     const wb = el('skWear');
     if (wb) wb.onclick = () => {
         save.skinOf[on.id] = k.id; writeSave(); playBeep(1300, .1);
