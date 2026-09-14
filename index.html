@@ -1728,6 +1728,38 @@
 .skCard { justify-content: flex-start !important; padding-top: 10px !important; padding-bottom: 10px !important; }
 .skCard .skName { font: 900 clamp(17px, 2.4vw, 24px)/1.1 'BlackHanSans', sans-serif; font-style: italic; }
 
+
+/* ================= 버전 154 : 차고 · 스킨 뽑기 역할 나누기 =================
+   차고(2장) = 차 고르기 + 그 차에 스킨 입히기 · 스킨 뽑기 = 뽑기만. 전에는 가진 스킨을 보려면 뽑기 창에 들어가야 했다. */
+.cxSkHead { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; font-size: 11px; color: #cfe6ff; }
+.cxSkHead b { font-size: 12.5px; color: #fff; } .cxSkHead b em { font-style: normal; }
+.cxSkHead i { margin-left: auto; font-style: normal; color: #9fd0ff; font-weight: bold; }
+.cxSkins { display: flex; gap: 5px; overflow-x: auto; padding: 3px 2px 5px; scrollbar-width: thin; flex-shrink: 0; }
+.cxSk { flex: none; width: 46px; height: 46px; border-radius: 9px; border: 2px solid var(--tc, #4d6f96); background: rgba(0,0,0,.35);
+        padding: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; }
+.cxSk img { width: 100%; height: 100%; object-fit: contain; }
+.cxSk.on { box-shadow: 0 0 0 3px #ffd166, 0 0 12px rgba(255,209,102,.6); background: rgba(255,209,102,.16); }
+.cxSk.lock { font: 900 18px/1 'BlackHanSans', sans-serif; color: var(--tc); opacity: .55; border-style: dashed; }
+#skinShop .skWrap { grid-template-columns: minmax(0, 1fr) !important; width: min(96vw, 620px) !important; }
+#skinShop .skRight { display: none !important; }
+#skGarage { background: #2c5f8f; border-color: #7fb8ec; color: #fff; }
+@media (max-height: 460px) {
+    .cxSkHead { margin-top: 1px; } .cxSk { width: 36px; height: 36px; border-radius: 7px; } .cxSkins { padding: 2px 1px 3px; gap: 4px; }
+    .cxInfo .gRow:nth-child(n+3) { display: none; }
+    #skinShop .skWrap { width: min(96vw, 560px) !important; }
+}
+
+/* 버전 154 : 플로우로 만든 배경 — 차고 진열대는 조명 받는 회전판, 뽑기 창은 금빛 보물 창고 */
+.cxStage { background: linear-gradient(180deg, rgba(6,12,26,.35), rgba(6,12,26,.1) 45%, rgba(6,12,26,.25)), url(assets/bg_garage.webp) center 62% / cover no-repeat !important; }
+.cxBig { color: rgba(255,255,255,.1); }
+#skinShop { background: linear-gradient(180deg, rgba(8,4,24,.55), rgba(8,4,24,.35) 40%, rgba(8,4,24,.7)), url(assets/bg_vault.webp) center / cover no-repeat; }
+#skinShop .skLeft { background: rgba(10,6,30,.35) !important; backdrop-filter: none; border-color: rgba(255,209,102,.35) !important; }
+#skinShop .skStage { background: radial-gradient(ellipse at 50% 60%, rgba(255,200,90,.18), transparent 60%); }
+.gxDim { background: linear-gradient(rgba(6,3,20,.78), rgba(6,3,20,.9)), url(assets/bg_vault.webp) center / cover no-repeat !important; }
+/* 태블릿 가로(키 800 안팎) : 차 작은 줄이 아래 [이전 · 다음] 밑에 깔렸다 — 넘기기 · 화살표로 충분하니 줄은 뺀다 */
+@media (orientation: landscape) and (max-height: 820px) { .cxDots { display: none !important; } .cx { grid-template-rows: minmax(0, 1fr) !important; } }
+@media (min-height: 501px) { #skinShop .skCap { width: 220px !important; height: 220px !important; } #skinShop .skStage { height: 340px; } }
+
 /* ================= 버전 146 : 뽑기 연출 — 미스터리 상자 + 전체 화면 공개 =================
    사용자 "극적인 획득효과가 필요한 것 같아. 넌 지금 세포 분열을 표현한것 같은데" · "굳이 생명학을 적용할 필요 없어"
    흐름 : ① 상자가 흔들리며 틈으로 빛이 샌다 ② 빛이 흰색 → 파랑 → 보라 → 금색으로 한 단계씩 오른다(나온 등급에서 멈춤)
@@ -2027,7 +2059,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
     <!-- 셋팅은 한 장에 하나씩. 좌우로 넘긴다. -->
     <div id="steps">
         <b data-step="0"><i>1</i><span>코스</span></b>
-        <b data-step="1"><i>2</i><span>자동차</span></b>
+        <b data-step="1"><i>2</i><span>차고</span></b>
         <b data-step="2"><i>3</i><span>출발</span></b>
     </div>
 
@@ -2046,7 +2078,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
       <section class="page hidden" data-step="1">
         <div id="carPick">
             <div class="cpHead">
-                <span>자동차 고르기</span>
+                <span>차고</span>
                 <button class="skOpen" id="skOpen">스킨 뽑기</button>
                 <span>보유 <b id="cpPoints">0 P</b> <b id="cpDia" class="cpDia"><i class="hemo"></i>0</b></span>
             </div>
@@ -2148,6 +2180,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
             </div>
             <div class="skBtns">
                 <button class="cpBuy" id="skPull">뽑기</button>
+                <button class="cpBuy" id="skGarage">차고에서 입히기</button>
                 <button class="cpBuy can hidden" id="skTicket">뽑기권</button>
                 <button class="cpBuy" id="skClose">닫기</button>
             </div>
@@ -2360,7 +2393,7 @@ const EN = {
 '레이스 시작': 'START RACE', '퀴즈방': 'QUIZ ROOM',
 '혼자 하기': 'Solo', '친구와 온라인': 'Play Online',
 '방 만들기': 'Create Room', '또는': 'or', '참가': 'Join', '코드 6자리': '6-digit code',
-'자동차 고르기': 'Choose Your Kart', '카트 성능 강화': 'Upgrades', '보유': 'You have',
+'자동차 고르기': 'Choose Your Kart', '차고': 'Garage', '스킨 입히기': 'Skins', '차고에서 입히기': 'Wear it in the Garage', '뽑으면 여기서 입힐 수 있어요': 'Draw skins, then wear them here', '카트 성능 강화': 'Upgrades', '보유': 'You have',
 '소리': 'Sound', '소리 꺼짐': 'Muted', '음악': 'Music', '음악 꺼짐': 'Music off', '전체 화면': 'Fullscreen', '창으로': 'Windowed',
 '나가기': 'Quit', '메뉴로': 'Menu', '← 그만두기': '← Give up',
 '다시 도전': 'Race Again', '맵 선택': 'Choose Map', '← 기록 다시 보기': '← Back to results',
@@ -3039,6 +3072,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 154, d: '9월 14일', t: [
+        '2장 "자동차" 를 "차고" 로 — 차를 넘겨 보며 그 차의 스킨을 바로 눌러 입힌다 (없는 스킨은 ? 칸, 누르면 뽑기로)',
+        'Step 2 is now the Garage: browse cars and tap a skin to wear it right there (missing skins show as ?, tap to draw)',
+        '스킨 뽑기 창은 뽑기만 — [차고에서 입히기] 로 바로 차고에 간다',
+        'The skin draw screen is now just for drawing, with a button that takes you to the Garage'
+    ] },
     { v: 153, d: '9월 14일', t: [
         '차 그림 148장의 가장자리를 다시 다듬었다 — 흰 테를 깎아 내고 검은 외곽선을 둘러, 어두운 판에서도 흰 점선이 보이지 않는다',
         'Re-edged 148 car images: trimmed the white fringe and added a clean black outline so no white dots show on dark screens'
@@ -12216,6 +12255,8 @@ function renderCarPick(dir) {
     const i = CARS.findIndex(c => c.id === carPreview), c = CARS[i], now = carById(save.car);
     const owned = save.cars.includes(c.id), can = !owned && save.points >= c.cost, picked = save.car === c.id;
     const sk = skinById(skinOf(c.id));
+    const mineSk = gachaPool().filter(k => k.car === c.id);                         // 이 차 전용 (없는 것도 ? 로)
+    const shared = gachaPool().filter(k => !k.car && save.skins.includes(k.id));    // 공용은 가진 것만
     box.innerHTML =
         `<div class="cxStage"><button class="cxArrow l" id="cxPrev" aria-label="prev"></button>
             <div class="cxView" id="cxView"><div class="cxBig">${(EN[c.name] || c.id).toUpperCase()}</div>
@@ -12232,8 +12273,15 @@ function renderCarPick(dir) {
                 <span class="gt"><i style="width:${pct(c[s2.key])}%"></i><u style="left:${pct(now[s2.key])}%"></u></span>
                 <span class="gv">${Math.round(c[s2.key] * 100)}</span></div>`;
         }).join('') +
-        `</div><div class="skRow" id="skRowCar"><span>${T('스킨')}</span>${sk
-            ? `<b style="color:${tierOf(sk).color}">${skinName(sk)}</b>` : `<b>${T('기본')}</b>`}<u>${T('바꾸기')}</u></div>
+        `</div><div class="cxSkHead"><span>${T('스킨 입히기')}</span><b>${sk ? `<em style="color:${tierOf(sk).color}">${skinName(sk)}</em>` : T('기본')}</b>` +
+            `<i>${mineSk.filter(k => save.skins.includes(k.id)).length}/${mineSk.length}</i></div>` +
+        `<div class="cxSkins" id="cxSkins">` +
+            `<button class="cxSk${sk ? '' : ' on'}" data-wear="" title="${T('기본')}"><img src="assets/kart_${c.sprite}.webp" alt=""></button>` +
+            mineSk.map(k => save.skins.includes(k.id)
+                ? `<button class="cxSk${sk && sk.id === k.id ? ' on' : ''}" data-wear="${k.id}" style="--tc:${tierOf(k).color}" title="${skinName(k)}"><img src="${skinThumb(c.sprite, k.id)}" alt=""></button>`
+                : `<button class="cxSk lock" data-draw="1" style="--tc:${tierOf(k).color}" title="${T(tierOf(k).name)}">?</button>`).join('') +
+            shared.map(k => `<button class="cxSk${sk && sk.id === k.id ? ' on' : ''}" data-wear="${k.id}" style="--tc:${tierOf(k).color}" title="${skinName(k)}"><img src="${skinThumb(c.sprite, k.id)}" alt=""></button>`).join('') +
+        `</div>
             <button class="cpBuy ${picked ? 'on' : (owned || can) ? 'can' : ''}" id="cpBuyBtn" ${picked || owned || can ? '' : 'disabled'}>${
                 picked ? T('이 차로 달리는 중') : owned ? T('이 차로 바꾸기') : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
             }</button></div>` +
@@ -12259,7 +12307,12 @@ function renderCarPick(dir) {
     view.onpointerdown = e => { sx = e.clientX; };
     view.onpointerup = e => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); };
     view.onpointercancel = () => { sx = null; };
-    el('skRowCar').onclick = () => openSkinShop(c.id);
+    box.querySelectorAll('[data-wear]').forEach(n => { n.onclick = () => {
+        const id = n.dataset.wear;
+        if (id) save.skinOf[c.id] = id; else delete save.skinOf[c.id];
+        writeSave(); playBeep(1150, .08); renderCarPick();
+    }; });
+    box.querySelectorAll('[data-draw]').forEach(n => { n.onclick = () => openSkinShop(c.id); });
     el('cpBuyBtn').onclick = () => {
         if (picked) return;
         if (!owned) {
@@ -12740,6 +12793,7 @@ function pullSkin(ticket) {
 el('skPull').onclick = () => pullSkin(false);
 el('skTicket').onclick = () => pullSkin(true);
 el('skClose').onclick = closeSkinShop;
+el('skGarage').onclick = () => { closeSkinShop(); carPreview = skinCar; if (state === 'menu') { setStep(1); renderCarPick(); } };
 el('skOpen').onclick = () => openSkinShop(typeof carPreview === 'string' && carPreview ? carPreview : save.car);
 
 function drawPreview(cv, sys) {
