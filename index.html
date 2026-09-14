@@ -2866,6 +2866,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 144, d: '9월 14일', t: [
+        '네온에서 테두리 선을 없앴다 — 차 밑에서 가장자리 없이 부드럽게 번지는 빛',
+        'Removed the outline from the neon: it is now a soft glow spreading out from under the kart'
+    ] },
     { v: 143, d: '9월 14일', t: [
         '전설 스킨 전부에 네온 — 형광 단백질 GFP 는 초록, 무지개 홍채는 색이 도는 네온',
         'Every Legendary skin now has neon: green for GFP Glow and color-cycling neon for Rainbow Iris'
@@ -8369,17 +8373,16 @@ function drawKart(g, k, lift = 0) {
         rg.addColorStop(0, `rgba(${c},${.75 * pul})`); rg.addColorStop(.55, `rgba(${c},${.35 * pul})`); rg.addColorStop(1, `rgba(${c},0)`);
         g.fillStyle = rg; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fill();
         g.restore();
-        const tube = (e) => {                           // 둥근 네 모서리 관 (roundRect 가 없는 폰도 있다)
-            const x0 = -L - e, y0 = -W - e, x1 = L + e, y1 = W + e, r = W * .9 + e;
+        /* 버전 144 (사용자 "네온효과에 테두리가 보이는 것은 좀 이상해") : 선으로 그린 관을 뺐다.
+           차 그림 밑에 숨는 크기의 판을 칠하고 그 '그림자 번짐' 만 차 밖으로 새어 나오게 — 가장자리 없는 바닥빛. */
+        const pad = (x0, y0, x1, y1, r) => {
             g.beginPath(); g.moveTo(x0 + r, y0); g.lineTo(x1 - r, y0); g.quadraticCurveTo(x1, y0, x1, y0 + r);
             g.lineTo(x1, y1 - r); g.quadraticCurveTo(x1, y1, x1 - r, y1); g.lineTo(x0 + r, y1);
             g.quadraticCurveTo(x0, y1, x0, y1 - r); g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0); g.closePath();
         };
-        g.shadowColor = `rgba(${c},1)`; g.shadowBlur = 34;
-        g.strokeStyle = `rgba(${c},${.9 * pul})`; g.lineWidth = 14; tube(2); g.stroke();   // 두꺼운 색 관
-        g.shadowBlur = 14; g.lineWidth = 7; g.strokeStyle = `rgba(${c},1)`; tube(2); g.stroke();
-        g.shadowBlur = 0; g.globalCompositeOperation = 'lighter';                          // 관 한가운데 밝은 심
-        g.strokeStyle = `rgba(255,255,255,${.5 * pul})`; g.lineWidth = 2.5; tube(2); g.stroke();
+        g.shadowColor = `rgba(${c},1)`; g.fillStyle = `rgba(${c},1)`;
+        g.shadowBlur = 55 * pul; pad(-L * .8, -W * .72, L * .8, W * .72, W * .6); g.fill();
+        g.shadowBlur = 26; pad(-L * .8, -W * .72, L * .8, W * .72, W * .6); g.fill();
         g.restore();
     }
     if (sk && sk.glow) {                                // 전설 스킨 : 둘레가 숨 쉬듯 빛난다
@@ -11382,7 +11385,7 @@ function drawVictory(g) {
             rg.addColorStop(0, `rgba(${uc},${pul})`); rg.addColorStop(.5, `rgba(${uc},${.45 * pul})`); rg.addColorStop(1, `rgba(${uc},0)`);
             g.fillStyle = rg; g.beginPath(); g.arc(0, 0, w * .72, 0, TAU); g.fill(); g.restore();
             g.save(); g.globalCompositeOperation = 'lighter'; g.shadowColor = `rgba(${uc},1)`; g.shadowBlur = 24;
-            g.fillStyle = `rgba(${uc},${.9 * pul})`; g.beginPath(); g.ellipse(0, -h * .02, w * .4, h * .035, 0, 0, TAU); g.fill(); g.restore();
+            g.shadowBlur = 40; g.fillStyle = `rgba(${uc},${.9 * pul})`; g.beginPath(); g.ellipse(0, -h * .05, w * .3, h * .02, 0, 0, TAU); g.fill(); g.restore();
         }
         g.drawImage(side, -w / 2, -h * .98, w, h);
         g.restore();
@@ -12479,8 +12482,8 @@ function drawSideStage(cv, c, sk) {
         rg.addColorStop(0, `rgba(${uc},1)`); rg.addColorStop(.5, `rgba(${uc},.45)`); rg.addColorStop(1, `rgba(${uc},0)`);
         g2.fillStyle = rg; g2.beginPath(); g2.arc(0, 0, w * .72, 0, TAU); g2.fill(); g2.restore();
         g2.save(); g2.translate(cx, groundY - h * .02); g2.globalCompositeOperation = 'lighter';
-        g2.shadowColor = `rgba(${uc},1)`; g2.shadowBlur = 22; g2.fillStyle = `rgba(${uc},.9)`;
-        g2.beginPath(); g2.ellipse(0, 0, w * .4, h * .035, 0, 0, TAU); g2.fill(); g2.restore();
+        g2.shadowColor = `rgba(${uc},1)`; g2.shadowBlur = 36; g2.fillStyle = `rgba(${uc},.9)`;
+        g2.beginPath(); g2.ellipse(0, -h * .03, w * .3, h * .02, 0, 0, TAU); g2.fill(); g2.restore();
     }
     g2.drawImage(img, cx - w / 2, groundY - h * .97, w, h);
 }
