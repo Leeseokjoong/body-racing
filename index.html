@@ -2955,6 +2955,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 149, d: '9월 14일', t: [
+        '터보 불꽃을 블렌더로 — 흰 심지와 주황 불 혀가 일렁이며 뒤로 흘러가는 진짜 불처럼. 터보 중에는 한 겹 더 겹쳐 더 뜨겁다',
+        'Turbo flames made in Blender: a flickering jet with a white-hot core and orange tongues streaming back, doubled up during turbo'
+    ] },
     { v: 148, d: '9월 14일', t: [
         '뽑기 특수효과를 블렌더로 — 상자 뒤에서 빛 고리가 돌며 기운이 모이고, 열리는 순간 빛줄기 · 충격파 고리 · 불똥이 등급 색으로 터진다',
         'Gacha VFX made in Blender: glowing arcs and gathering light swirl behind the chest, then light streaks, shockwave rings and sparks burst in the tier color'
@@ -8369,6 +8373,7 @@ function drawLabels(g, zoom) {
 const KART_H = 7, KS = 1.8;      // 차 높이 / 카트 크기 배율
 /* 차 그림을 그리는 크기. 150 은 스킨 무늬가 보이지 않을 만큼 작았다 (버전 131) */
 const KART_DRAW = 182;
+const FLAME_SHEET = new Image(); FLAME_SHEET.src = 'assets/fx_turbo_flame.webp';   // 버전 149 : 블렌더 터보 불꽃
 
 /* 차 그림자 — 차 그림의 모양을 그대로 검게 · 흐리게 만든 것. 차 종류마다 한 장만 만든다.
    예전에는 64×44 짜리 동그라미가 차 방향과 상관없이 오른쪽 아래에 떠 있었다. */
@@ -8439,6 +8444,34 @@ function drawKart(g, k, lift = 0) {
         const f = (54 + Math.random() * 34) * hot * flick;
         g.save(); g.rotate(k.ang);
         g.globalCompositeOperation = 'lighter';
+        /* 버전 149 (사용자 "터보 불꽃도 블랜더에서 만들어줘") : 기본 불꽃은 블렌더로 렌더링한 일렁이는 불 32장을 돌려 튼다.
+           tools/blender/turbo_flame.py → assets/fx_turbo_flame.webp (8×4, 칸 256×128, 오른쪽 끝이 배기구).
+           스킨마다 따로 정한 불꽃 색(초록 · 무지개 등)은 그 색이 보여야 하므로 예전 그리기를 쓴다. */
+        if (!(sk && sk.flame) && FLAME_SHEET.complete && FLAME_SHEET.naturalWidth) {
+            /* 그림은 투명도가 있는 불(색 + 알파). 한 번은 보통으로 칠해 밝은 길에서도 주황이 남고,
+               한 번은 더하기로 얹어 어두운 길에서 빛난다. 배기구는 차 뒤 범퍼(차 길이의 42%) 뒤. */
+            const cw = FLAME_SHEET.naturalWidth / 8, ch = FLAME_SHEET.naturalHeight / 4;
+            const fr = Math.floor(performance.now() / 1000 * 26 + (k.x | 0) % 7) % 32;
+            const tail = -KART_DRAW * .36;
+            const Lf = (150 + Math.random() * 22) * (hot > 1 ? 1.55 : 1), Hf = Lf * .5 * (hot > 1 ? .8 : 1);
+            const sx = (fr % 8) * cw, sy = Math.floor(fr / 8) * ch;
+            g.globalCompositeOperation = 'source-over';
+            g.drawImage(FLAME_SHEET, sx, sy, cw, ch, tail - Lf, -Hf / 2, Lf, Hf);
+            g.globalCompositeOperation = 'lighter'; g.globalAlpha = .45;
+            g.drawImage(FLAME_SHEET, sx, sy, cw, ch, tail - Lf, -Hf / 2, Lf, Hf);
+            if (hot > 1) {                                  // 터보 : 안쪽에 한 겹 더 — 더 뜨겁게
+                const fr2 = (fr + 13) % 32;
+                g.globalAlpha = .7;
+                g.drawImage(FLAME_SHEET, (fr2 % 8) * cw, Math.floor(fr2 / 8) * ch, cw, ch, tail - Lf * .7, -Hf * .3, Lf * .7, Hf * .6);
+            }
+            g.globalAlpha = 1;
+            for (let i = 0; i < 3; i++) {                   // 불티
+                const d = Math.random() * Lf, r = 1.5 + Math.random() * 2.6 * hot;
+                g.fillStyle = `rgba(255,${180 + Math.random() * 60 | 0},90,${.3 + Math.random() * .5})`;
+                g.beginPath(); g.arc(tail - d, (Math.random() - .5) * Hf * .5, r, 0, TAU); g.fill();
+            }
+            g.restore();
+        } else {
         const grd = g.createLinearGradient(-20, 0, -20 - f, 0);
         flameStops(grd, sk);                            // 스킨마다 불꽃 색 (기본은 노랑 → 주황)
         g.fillStyle = grd;
@@ -8457,6 +8490,7 @@ function drawKart(g, k, lift = 0) {
             g.beginPath(); g.arc(-18 - d, (Math.random() - .5) * 16 * hot, r, 0, TAU); g.fill();
         }
         g.restore();
+        }
     }
     if (k.driftAmt > .3 && k.driftCharge > 15) {
         g.save(); g.rotate(k.ang);
