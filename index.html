@@ -1691,7 +1691,9 @@
 .gxFlash.soft { animation: gxFlashS .35s ease-out; }
 @keyframes gxFlash { 0% { opacity: 1; } 35% { opacity: .55; } 100% { opacity: 0; } }
 @keyframes gxFlashS { 0% { opacity: .28; } 100% { opacity: 0; } }
-#gxP { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#gxP, .gxFx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* 캔버스 안에서 '더하기' 로 그려도 캔버스 자체의 검은 칸은 화면에 남는다 — 화면 섞기(screen)로 검은색을 투명하게 */
+.gxFx { mix-blend-mode: screen; }
 .gxShow { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
           gap: 1vmin; padding: 3vmin 3vmin calc(4vmin + 26px); box-sizing: border-box; text-align: center; }
 @media (max-height: 430px) { #gxCar { max-height: 38vh; } .gxTier { font-size: 9vmin; } .gxTap { bottom: 2vmin; font-size: 11px; } }
@@ -2036,8 +2038,9 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
 <!-- 퀴즈방 : 원할 때 들어와 코스 순서를 맞히고 포인트를 얻는다 -->
 <!-- 스킨 뽑기 · 도감 : 게임에서 번 포인트로만 뽑는다. 모양만 바뀐다. -->
 <div id="gx" class="hidden">
-    <div class="gxDim"></div><div class="gxRays"></div>
+    <div class="gxDim"></div><div class="gxRays"></div><canvas id="gxFxBack" class="gxFx"></canvas>
     <div class="gxBox"><img id="gxBoxImg" src="assets/gx_box_closed.webp" alt=""></div>
+    <canvas id="gxFxFront" class="gxFx"></canvas>
     <canvas id="gxP"></canvas>
     <div class="gxShow">
         <div class="gxTier" id="gxTier"></div>
@@ -2952,6 +2955,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 148, d: '9월 14일', t: [
+        '뽑기 특수효과를 블렌더로 — 상자 뒤에서 빛 고리가 돌며 기운이 모이고, 열리는 순간 빛줄기 · 충격파 고리 · 불똥이 등급 색으로 터진다',
+        'Gacha VFX made in Blender: glowing arcs and gathering light swirl behind the chest, then light streaks, shockwave rings and sparks burst in the tier color'
+    ] },
     { v: 147, d: '9월 14일', t: [
         '뽑기 상자를 그림으로 — 체커 무늬 레이싱 보물상자가 흔들리다 열리며 빛이 쏟아진다',
         'The draw box is now an illustrated racing treasure chest that shakes, then bursts open with light'
@@ -12396,6 +12403,53 @@ function checkCompletion() {
     }
 }
 
+
+/* ---- 블렌더로 만든 뽑기 효과 (버전 148) ----
+   tools/blender/gacha_fx.py 를 블렌더 배경 실행으로 렌더링한 연속 그림을 한 장에 모은 것.
+     fx_gacha_charge.webp  24장 (8×3, 칸 256) — 상자 뒤에서 도는 호 · 빨려 드는 빛 알갱이 (이음매 없이 반복)
+     fx_gacha_burst.webp   32장 (8×4)       — 상자가 열리는 순간의 번쩍 · 빛줄기 · 충격파 고리 · 불똥
+   검은 바탕에 흰빛으로 그렸다. '더하기(lighter)' 로 그리면 검은색은 사라지고 빛만 남는다.
+   등급 색은 곱하기로 입힌 사본을 만들어 흰 원본과 섞는다 — 가운데는 하얗게, 가장자리는 등급 색으로. */
+const GXFX = {
+    charge: { src: 'assets/fx_gacha_charge.webp', n: 24, cols: 8, fps: 20, loop: true },
+    burst:  { src: 'assets/fx_gacha_burst.webp',  n: 32, cols: 8, fps: 30, loop: false }
+};
+for (const k in GXFX) { const im = new Image(); im.src = GXFX[k].src; GXFX[k].img = im; }
+const gxTintCache = {};
+function gxTinted(kind, color) {
+    const key = kind + color, fx = GXFX[kind], im = fx.img;
+    if (gxTintCache[key]) return gxTintCache[key];
+    if (!im.complete || !im.naturalWidth) return null;
+    const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const g4 = c.getContext('2d'); g4.drawImage(im, 0, 0);
+    g4.globalCompositeOperation = 'multiply'; g4.fillStyle = color; g4.fillRect(0, 0, c.width, c.height);
+    return (gxTintCache[key] = c);
+}
+let gxFxPlay = { back: null, front: null };      // { kind, t0, color }
+function gxFxStart(layer, kind, color) { gxFxPlay[layer] = { kind, t0: performance.now(), color }; if (!gxRAF) gxLoop(); }
+function gxFxDraw(layer) {
+    const cv = el(layer === 'back' ? 'gxFxBack' : 'gxFxFront'), p = gxFxPlay[layer];
+    if (!cv || !cv.getContext) return false;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(innerWidth * dpr)) { cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr); }
+    const g5 = cv.getContext('2d'); g5.clearRect(0, 0, cv.width, cv.height);
+    if (!p) return false;
+    const fx = GXFX[p.kind], im = fx.img;
+    if (!im.complete || !im.naturalWidth) return true;
+    let f = Math.floor((performance.now() - p.t0) / 1000 * fx.fps);
+    if (fx.loop) f %= fx.n; else if (f >= fx.n) { gxFxPlay[layer] = null; return false; }
+    const color = layer === 'back' ? getComputedStyle(el('gx')).getPropertyValue('--tc').trim() || '#ffffff' : p.color;
+    const cell = im.naturalWidth / fx.cols, sx = (f % fx.cols) * cell, sy = Math.floor(f / fx.cols) * cell;
+    const S = Math.min(cv.width, cv.height) * (p.kind === 'burst' ? 1.25 : .95), x = (cv.width - S) / 2, y = (cv.height - S) / 2;
+    g5.globalCompositeOperation = 'lighter';
+    const tint = gxTinted(p.kind, color);
+    g5.globalAlpha = .45; g5.drawImage(im, sx, sy, cell, cell, x, y, S, S);          // 흰 심
+    if (tint) { g5.globalAlpha = 1; g5.drawImage(tint, sx, sy, cell, cell, x, y, S, S); }
+    if (p.kind === 'burst' && tint) { g5.globalAlpha = .6; g5.drawImage(tint, sx, sy, cell, cell, x - S * .1, y - S * .1, S * 1.2, S * 1.2); }
+    g5.globalAlpha = 1; g5.globalCompositeOperation = 'source-over';
+    return true;
+}
+
 /* ---- 뽑기 연출 (버전 146) ---- */
 const GX_EN = { common: 'COMMON', rare: 'RARE', epic: 'EPIC', legend: 'LEGENDARY' };
 let gxTimers = [], gxState = null, gxRAF = 0, gxParts = [], gxRain = false;
@@ -12434,7 +12488,8 @@ function gxLoop() {
         else { g3.beginPath(); g3.arc(p.x, p.y, p.r, 0, TAU); g3.fill(); }
     }
     g3.globalAlpha = 1; g3.globalCompositeOperation = 'source-over';
-    gxRAF = (gxParts.length || gxRain) && !el('gx').classList.contains('hidden') ? requestAnimationFrame(gxLoop) : 0;
+    const fxOn = gxFxDraw('back') | gxFxDraw('front');
+    gxRAF = (gxParts.length || gxRain || fxOn) && !el('gx').classList.contains('hidden') ? requestAnimationFrame(gxLoop) : 0;
 }
 function gachaShow(k, tier, dup) {
     const gx = el('gx'), order = ['common', 'rare', 'epic', 'legend'];
@@ -12446,6 +12501,7 @@ function gachaShow(k, tier, dup) {
     el('gxBoxImg').src = 'assets/gx_box_closed.webp';
     el('gxTap').textContent = T('화면을 누르면 계속');
     void gx.offsetWidth; gx.classList.add('charge');
+    gxFxStart('back', 'charge');
     if (audioCtx) [0, 160, 300, 420, 520].forEach((ms, i) => setTimeout(() => tone(300 + i * 60, .07, .05, 'triangle'), ms));
     const T0 = 620, STEP = tier === 'legend' ? 560 : 460;
     steps.forEach((id, i) => gxLater(T0 + i * STEP, () => {    // 한 단계씩 빛이 오른다
@@ -12470,6 +12526,7 @@ function gxOpen() {
     gx.classList.remove('charge', 'crack'); gx.classList.add('open', 'shake2');
     gxFlash('on'); gxRing(); setTimeout(gxRing, 120);
     gxBurst(tc, { common: 40, rare: 70, epic: 120, legend: 200 }[st.tier] || 50, st.tier === 'legend' ? 1.4 : 1);
+    gxFxPlay.back = null; gxFxStart('front', 'burst', tc);
     buzz(st.tier === 'legend' ? 180 : 60);
     if (audioCtx) { tone(160, .35, .14, 'triangle'); tone(1400, .25, .06, 'sine', .02); }
 }
@@ -12504,7 +12561,7 @@ function gxClose() {
     const st = gxState;
     if (st && !st.revealed) { gxReveal(); return; }                     // 연출 중에 누르면 바로 공개
     if (st && performance.now() - (st.shownAt || 0) < 450) return;        // 공개 직후 한 번 더 눌려 바로 닫히지 않게
-    gxTimers.forEach(clearTimeout); gxTimers = []; gxRain = false; gxParts = [];
+    gxTimers.forEach(clearTimeout); gxTimers = []; gxRain = false; gxParts = []; gxFxPlay = { back: null, front: null };
     el('gx').className = 'hidden'; gxState = null;
 }
 el('gx').addEventListener('click', gxClose);
