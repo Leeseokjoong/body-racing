@@ -952,8 +952,8 @@
     .skUnder { animation: skUnderA 1.5s ease-in-out infinite alternate; }
     .skU-cheongryong { --uc: rgba(70,180,255,.95); } .skU-baekho { --uc: rgba(190,245,255,.95); }
     .skU-jujak { --uc: rgba(255,110,40,.95); } .skU-hyeonmu { --uc: rgba(150,255,120,.95); }
-    @keyframes skUnderA { from { filter: drop-shadow(0 4px 3px var(--uc)); }
-                          to   { filter: drop-shadow(0 6px 8px var(--uc)) drop-shadow(0 0 3px var(--uc)); } }
+    @keyframes skUnderA { from { filter: drop-shadow(0 3px 4px var(--uc)) drop-shadow(0 0 3px var(--uc)); }
+                          to   { filter: drop-shadow(0 5px 10px var(--uc)) drop-shadow(0 0 6px var(--uc)) drop-shadow(0 0 2px var(--uc)); } }
     @media (max-height: 500px) {
         .skCars { margin-bottom: 3px; padding-bottom: 3px; }
         .skCarBtn { width: 42px; } .skCarBtn img { width: 30px; height: 22px; }
@@ -2813,7 +2813,7 @@ Object.assign(EN, {
 '간에서 독성이 약한 요소로 바뀝니다.': 'The liver turns it into less toxic urea.',
 '암모니아를 요소로 바꾸는 기관은?': 'Which organ turns ammonia into urea?',
 '심장': 'Heart', '코': 'Nose', '간': 'Liver',
-'산소 교환!': 'Oxygen swap!', '버텨!': 'HOLD IT!', '놓쳤다!': 'Lost it!',
+'산소 교환!': 'Oxygen swap!', '버텨!': 'HOLD IT!', '놓쳤다!': 'Lost it!', '다시 붙었다': 'Grip back',
 '큰굽이 순환': 'Greater curve loop',
 '융털 지그재그': 'Villi zigzag',
 '대장 테두리': 'Colon rim',
@@ -2866,6 +2866,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 141, d: '9월 14일', t: [
+        '드리프트가 쉬워졌다 — 쉬움 · 보통에서는 한계를 넘겨도 빙글 돌지 않고 타이어가 다시 붙으며 모은 터보를 준다 (어려움 · 전설은 그대로)',
+        'Drifting is easier: on Easy and Normal, holding past the limit no longer spins you out; the tires regrip and you keep the turbo (Hard and Legendary unchanged)',
+        '전설 스킨 네온이 훨씬 밝고 크게 — 달릴 때 차 둘레에 네온관이 빛나고 바닥빛이 차 밖까지 번진다',
+        'Legendary neon is much brighter: a glowing neon tube around the kart and light spilling onto the road'
+    ] },
     { v: 140, d: '9월 14일', t: [
         '뽑기가 무늬를 먼저 고른다 — 단청 · 해태만 자꾸 나오지 않고, 방금 나온 무늬는 연달아 잘 안 나온다',
         'The gacha now picks a pattern first, so Dancheong and Haechi no longer flood Epic pulls and the same pattern rarely repeats',
@@ -4449,13 +4455,13 @@ const SAVE_KEY = 'bodyRacing.save.v1';
      turbo     봇이 곧은 길에서 터보를 켜는 간격(초). 0 이면 안 켠다
    쉬움은 아이들용이라 예전 그대로 둔다. */
 const LEVELS = [
-    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1, aid: 2.0,
+    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1, aid: 2.0, spin: false,
       rub: .34, reach: 700,  cornerRub: .8, turbo: 0 },
-    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .6, item: 1, pay: 1.20, wait: 0, aid: 1.3,
+    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .6, item: 1, pay: 1.20, wait: 0, aid: 1.3, spin: false,
       rub: .40, reach: 900,  cornerRub: .9, turbo: 16 },
-    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.08, slump: .25, item: 1.6, pay: 1.45, wait: 0, aid: .9,
+    { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.08, slump: .25, item: 1.6, pay: 1.45, wait: 0, aid: .9, spin: true,
       rub: .50, reach: 1300, cornerRub: 1, turbo: 9 },
-    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.15, slump: .08, item: 2.2, pay: 1.80, wait: 0, aid: .6,
+    { id: 'legend', name: '전설',   en: 'Legendary', guide: false, bot: 1.15, slump: .08, item: 2.2, pay: 1.80, wait: 0, aid: .6, spin: true,
       rub: .60, reach: 1700, cornerRub: 1, turbo: 6 }
 ];
 const LV_OF = id => LEVELS.find(l => l.id === id) || LEVELS[0];
@@ -5415,7 +5421,13 @@ function updateKart(k, dt) {
                 cam.flash = Math.max(cam.flash || 0, .3);
             }
         }
-        if (k.driftHold >= holdMax + DRIFT_OVER) spinOut(k);       // 끝내 못 놓으면 빙글
+        /* 끝내 못 놓으면 — 버전 141 (사용자 "드리프트가 너무 어려워졌더라" → "그냥 고쳐")
+           재 보니 코너 끝까지 버튼을 누르고 있는 아이는 한 바퀴에 14번 빙글 돌았다. 드리프트가 '어렵다' 의 정체.
+           쉬움 · 보통은 타이어가 스스로 다시 물며 그때까지 모은 게이지를 터보로 준다. 어려움 · 전설만 빙글. */
+        if (k.driftHold >= holdMax + DRIFT_OVER) {
+            if (!k.isPlayer || curLevel().spin) spinOut(k);
+            else { k.driftLocked = DRIFT_COOLDOWN; if (k.isPlayer) popup(k.x, k.y, T('다시 붙었다'), '#9fd0ff'); }
+        }
     } else { k.driftHold = 0; k.overDrift = false; }
 
     if (k.drifting) {
@@ -8329,12 +8341,27 @@ function drawKart(g, k, lift = 0) {
     }
 
     // --- 블렌더 스프라이트가 로드됐으면 그걸로 그린다
-    if (sk && sk.under) {                               // 전설 그림 스킨 : 차 밑 네온 (차 방향으로 길쭉하게)
-        const pul = .75 + Math.sin(performance.now() / 300) * .25;
-        g.save(); g.translate(ox, oy + bounce + 6); g.rotate(k.ang + (k.spin || 0)); g.scale(1, .55);
-        const rg = g.createRadialGradient(0, 0, 8, 0, 0, 88);
-        rg.addColorStop(0, `rgba(${sk.under},${.8 * pul})`); rg.addColorStop(.55, `rgba(${sk.under},${.32 * pul})`); rg.addColorStop(1, `rgba(${sk.under},0)`);
-        g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.beginPath(); g.arc(0, 0, 88, 0, TAU); g.fill();
+    if (sk && sk.under) {                               // 전설 그림 스킨 : 차 밑 네온
+        /* 버전 141 (사용자 "네온 효과가 너무 약하다") : 예전 빛은 반지름 88 을 세로로 눌러 그려
+           차(길이 182)보다 작았다 — 차 그림이 거의 다 덮었다. 이제 차보다 크게 번지는 바닥빛 + 차 둘레 네온관. */
+        const c = sk.under, pul = .82 + Math.sin(performance.now() / 230) * .18;
+        const L = KART_DRAW * .47, W = KART_DRAW * .27;
+        g.save(); g.translate(ox, oy + bounce + 4); g.rotate(k.ang + (k.spin || 0));
+        g.globalCompositeOperation = 'lighter';
+        g.save(); g.scale(1, W / L);
+        const R = L * 1.75, rg = g.createRadialGradient(0, 0, R * .2, 0, 0, R);
+        rg.addColorStop(0, `rgba(${c},${.95 * pul})`); rg.addColorStop(.5, `rgba(${c},${.42 * pul})`); rg.addColorStop(1, `rgba(${c},0)`);
+        g.fillStyle = rg; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fill();
+        g.restore();
+        const tube = () => {                            // 둥근 네 모서리 관 (roundRect 가 없는 폰도 있다)
+            const x0 = -L, y0 = -W, x1 = L, y1 = W, r = W * .9;
+            g.beginPath(); g.moveTo(x0 + r, y0); g.lineTo(x1 - r, y0); g.quadraticCurveTo(x1, y0, x1, y0 + r);
+            g.lineTo(x1, y1 - r); g.quadraticCurveTo(x1, y1, x1 - r, y1); g.lineTo(x0 + r, y1);
+            g.quadraticCurveTo(x0, y1, x0, y1 - r); g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0); g.closePath();
+        };
+        g.shadowColor = `rgba(${c},1)`; g.shadowBlur = 26;
+        g.strokeStyle = `rgba(${c},${.95 * pul})`; g.lineWidth = 8; tube(); g.stroke();
+        g.shadowBlur = 0; g.strokeStyle = `rgba(255,255,255,${.55 * pul})`; g.lineWidth = 2.5; tube(); g.stroke();
         g.restore();
     }
     if (sk && sk.glow) {                                // 전설 스킨 : 둘레가 숨 쉬듯 빛난다
@@ -11330,11 +11357,13 @@ function drawVictory(g) {
         g.fillStyle = 'rgba(0,0,0,.28)';                                  // 땅 그림자
         g.beginPath(); g.ellipse(0, 0, w * .46, h * .09, 0, 0, TAU); g.fill();
         if (pSkin && pSkin.under) {                                      // 전설 그림 스킨 : 완주 무대에서도 차 밑 네온
-            const pul = .75 + Math.sin(t * 5) * .25;
-            g.save(); g.scale(1, .16); g.globalCompositeOperation = 'lighter';
-            const rg = g.createRadialGradient(0, 0, 4, 0, 0, w * .56);
-            rg.addColorStop(0, `rgba(${pSkin.under},${.85 * pul})`); rg.addColorStop(1, `rgba(${pSkin.under},0)`);
-            g.fillStyle = rg; g.beginPath(); g.arc(0, 0, w * .56, 0, TAU); g.fill(); g.restore();
+            const pul = .8 + Math.sin(t * 5) * .2;          // 버전 141 : 더 넓고 밝게 + 가운데 밝은 줄
+            g.save(); g.scale(1, .24); g.globalCompositeOperation = 'lighter';
+            const rg = g.createRadialGradient(0, 0, 4, 0, 0, w * .72);
+            rg.addColorStop(0, `rgba(${pSkin.under},${pul})`); rg.addColorStop(.5, `rgba(${pSkin.under},${.45 * pul})`); rg.addColorStop(1, `rgba(${pSkin.under},0)`);
+            g.fillStyle = rg; g.beginPath(); g.arc(0, 0, w * .72, 0, TAU); g.fill(); g.restore();
+            g.save(); g.globalCompositeOperation = 'lighter'; g.shadowColor = `rgba(${pSkin.under},1)`; g.shadowBlur = 24;
+            g.fillStyle = `rgba(${pSkin.under},${.9 * pul})`; g.beginPath(); g.ellipse(0, -h * .02, w * .4, h * .035, 0, 0, TAU); g.fill(); g.restore();
         }
         g.drawImage(side, -w / 2, -h * .98, w, h);
         g.restore();
@@ -12424,11 +12453,14 @@ function drawSideStage(cv, c, sk) {
     g2.fillStyle = 'rgba(0,0,0,.45)'; g2.filter = 'blur(6px)';
     g2.beginPath(); g2.ellipse(cx, groundY, w * .47, h * .1, 0, 0, TAU); g2.fill();
     g2.restore();
-    if (sk && sk.under) {                                              // 전설 스킨 네온
-        g2.save(); g2.translate(cx, groundY); g2.scale(1, .18); g2.globalCompositeOperation = 'lighter';
-        const rg = g2.createRadialGradient(0, 0, 4, 0, 0, w * .58);
-        rg.addColorStop(0, `rgba(${sk.under},.9)`); rg.addColorStop(1, `rgba(${sk.under},0)`);
-        g2.fillStyle = rg; g2.beginPath(); g2.arc(0, 0, w * .58, 0, TAU); g2.fill(); g2.restore();
+    if (sk && sk.under) {                                              // 전설 스킨 네온 (버전 141 : 더 넓고 밝게)
+        g2.save(); g2.translate(cx, groundY); g2.scale(1, .26); g2.globalCompositeOperation = 'lighter';
+        const rg = g2.createRadialGradient(0, 0, 4, 0, 0, w * .72);
+        rg.addColorStop(0, `rgba(${sk.under},1)`); rg.addColorStop(.5, `rgba(${sk.under},.45)`); rg.addColorStop(1, `rgba(${sk.under},0)`);
+        g2.fillStyle = rg; g2.beginPath(); g2.arc(0, 0, w * .72, 0, TAU); g2.fill(); g2.restore();
+        g2.save(); g2.translate(cx, groundY - h * .02); g2.globalCompositeOperation = 'lighter';
+        g2.shadowColor = `rgba(${sk.under},1)`; g2.shadowBlur = 22; g2.fillStyle = `rgba(${sk.under},.9)`;
+        g2.beginPath(); g2.ellipse(0, 0, w * .4, h * .035, 0, 0, TAU); g2.fill(); g2.restore();
     }
     g2.drawImage(img, cx - w / 2, groundY - h * .97, w, h);
 }
