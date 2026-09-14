@@ -3072,6 +3072,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 155, d: '9월 14일', t: [
+        '뽑기 소리를 새 녹음으로 — 상자 흔들림 · 등급이 오를 때마다 높아지는 종소리 · 터지는 소리 · 전설 팡파레 · 영웅 · 일반 획득음',
+        'New recorded gacha sounds: chest rattle, a chime that rises with each tier step, the burst, and legendary, epic and common reveal sounds'
+    ] },
     { v: 154, d: '9월 14일', t: [
         '2장 "자동차" 를 "차고" 로 — 차를 넘겨 보며 그 차의 스킨을 바로 눌러 입힌다 (없는 스킨은 ? 칸, 누르면 뽑기로)',
         'Step 2 is now the Garage: browse cars and tap a skin to wear it right there (missing skins show as ?, tap to draw)',
@@ -12473,6 +12477,7 @@ let skinCar = 'rbc', skinBusy = false;
 /* 상자 그림 두 장은 뽑기 창을 열 때 미리 받아 둔다 — 누르는 순간 받으면 연출 중에 그림이 비어 보인다 */
 ['assets/gx_box_closed.webp', 'assets/gx_box_open.webp'].forEach(src => { const im = new Image(); im.src = src; });
 function openSkinShop(carId) {
+    if (audioCtx) ['gx_shake', 'gx_step', 'gx_open', 'gx_legend', 'gx_epic', 'gx_common'].forEach(n => wantSample(n, () => {}));   // 누르기 전에 받아 둔다
     skinCar = carId || save.car;
     skinBusy = false;
     el('skCard').classList.add('hidden');
@@ -12685,12 +12690,13 @@ function gachaShow(k, tier, dup) {
     el('gxTap').textContent = T('화면을 누르면 계속');
     void gx.offsetWidth; gx.classList.add('charge');
     gxFxStart('back', 'charge');
-    if (audioCtx) [0, 160, 300, 420, 520].forEach((ms, i) => setTimeout(() => tone(300 + i * 60, .07, .05, 'triangle'), ms));
+    /* 버전 155 : 일레븐랩스로 사용자가 뽑은 녹음 (없거나 아직 못 받았으면 예전 합성음) */
+    if (audioCtx && !playOne('gx_shake', .75)) [0, 160, 300, 420, 520].forEach((ms, i) => setTimeout(() => tone(300 + i * 60, .07, .05, 'triangle'), ms));
     const T0 = 620, STEP = tier === 'legend' ? 560 : 460;
     steps.forEach((id, i) => gxLater(T0 + i * STEP, () => {    // 한 단계씩 빛이 오른다
         gx.style.setProperty('--tc', colorOf(id)); gx.style.setProperty('--amp', 1.6 + i * 2.4);
         gxRing(); gxFlash('soft'); buzz(15 + i * 22);
-        if (audioCtx) { tone(520 + i * 260, .16, .08, 'sine'); tone(780 + i * 390, .12, .04, 'triangle', .05); }
+        if (audioCtx && !playOne('gx_step', .7, 1 + i * .14)) { tone(520 + i * 260, .16, .08, 'sine'); tone(780 + i * 390, .12, .04, 'triangle', .05); }   // 한 칸 오를 때마다 음이 올라간다
     }));
     let tOpen = T0 + steps.length * STEP;
     if (tier === 'legend') {                                   // 전설 : 한 번 더 뜸 — 상자가 터질 듯 달아오른다
@@ -12711,7 +12717,7 @@ function gxOpen() {
     gxBurst(tc, { common: 40, rare: 70, epic: 120, legend: 200 }[st.tier] || 50, st.tier === 'legend' ? 1.4 : 1);
     gxFxPlay.back = null; gxFxStart('front', 'burst', tc);
     buzz(st.tier === 'legend' ? 180 : 60);
-    if (audioCtx) { tone(160, .35, .14, 'triangle'); tone(1400, .25, .06, 'sine', .02); }
+    if (audioCtx && !playOne('gx_open', 1)) { tone(160, .35, .14, 'triangle'); tone(1400, .25, .06, 'sine', .02); }
 }
 function gxReveal() {
     const st = gxState, gx = el('gx'); if (!st || st.revealed) return;
@@ -12733,10 +12739,13 @@ function gxReveal() {
     showSkinCard(k, carById(skinCar), dup);
     checkCompletion();
     if (audioCtx) {
-        if (tier === 'legend') sfxWin(true);
-        else if (tier === 'epic') { bell(784, .6, .1, 0, 1); bell(1175, .7, .09, .12, 1); }
-        else if (tier === 'rare') bell(1046, .5, .1, 0, 1);
-        else tone(880, .12, .07, 'sine');
+        const rec = tier === 'legend' ? playOne('gx_legend', .95) : tier === 'epic' ? playOne('gx_epic', .8) : playOne('gx_common', .7, tier === 'rare' ? 1.12 : 1);
+        if (!rec) {
+            if (tier === 'legend') sfxWin(true);
+            else if (tier === 'epic') { bell(784, .6, .1, 0, 1); bell(1175, .7, .09, .12, 1); }
+            else if (tier === 'rare') bell(1046, .5, .1, 0, 1);
+            else tone(880, .12, .07, 'sine');
+        }
     }
     st.shownAt = performance.now();
 }
