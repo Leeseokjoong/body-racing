@@ -1662,6 +1662,8 @@ body.touchUI #lapCard .lbl { padding-left: 60px; line-height: 32px; }
 body.touchUI #resPanel { top: 134px; width: auto; }
 /* 버전 글자가 조향 패드 밑에 깔렸다 — 달리는 동안에는 필요 없다 */
 body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
+/* 버전 145 : 키가 520 넘는 화면(태블릿 · 큰 폰 가로)에서는 미니맵이 커서(168 → ×0.72 = 약 200) 드리프트 게이지(위 112)가 미니맵 아래를 덮었다 */
+@media (min-height: 521px) { body.touchUI #gaugeWrap { top: 226px; } }
 
 /* ③ 결과 화면 : 키 낮은 가로 폰 + 아래 배너면 상자가 300px 남짓이라
    1장은 '신기록' 줄이 [포인트 받기] 밑에 깔리고, 2장은 강화 목록이 버튼 줄에 거의 다 가려졌다.
@@ -2866,6 +2868,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 145, d: '9월 14일', t: [
+        '태블릿 · 큰 화면에서 드리프트 게이지가 미니맵을 덮던 것을 고쳤다',
+        'Fixed the drift gauge covering the minimap on tablets and larger screens'
+    ] },
     { v: 144, d: '9월 14일', t: [
         '네온에서 테두리 선을 없앴다 — 차 밑에서 가장자리 없이 부드럽게 번지는 빛',
         'Removed the outline from the neon: it is now a soft glow spreading out from under the kart'
