@@ -3093,6 +3093,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 160, d: '9월 14일', t: [
+        '기관 사이 게이트를 철골 아치 그림으로, 출발 · 골인선은 검정 · 흰색 체커 아치와 넓은 체커 라인으로',
+        'Organ gates are now steel gantry arches, and the start/finish has a checkered arch and a wider checkered line',
+        '관중석을 그림으로 — 귀여운 세포 관중 얼굴이 보이는 큰 관중석. 내 차가 가까이 지나가면 일어나 깃발을 흔들며 환호한다',
+        'Grandstands are now big illustrations of cute cell fans with visible faces, who jump up and wave flags as you pass'
+    ] },
     { v: 159, d: '9월 14일', t: [
         '차고의 [스킨 뽑기] 버튼을 크게 — 보물상자 그림이 붙고 은은하게 빛난다',
         'The Skin Draw button in the Garage is now bigger, with a treasure chest icon and a soft glow'
@@ -5261,10 +5267,23 @@ function buildTrack(sys) {
             // 코스가 휘는 반대쪽(바깥)에 세운다
             const nx = pts[(best + 6) % N], side = angDiff(nx.ang, p.ang) > 0 ? -1 : 1;
             const off = (p.hw || hw) + 128;
-            stands.push({
-                x: p.x - p.dy * off * side, y: p.y + p.dx * off * side,
-                ang: p.ang, side, len: 330 + rng() * 190, seed: rng()
-            });
+            /* 버전 160 : 관중석이 그림으로 커지며(그리는 길이 = len × 1.35, 깊이 = 길이 × 0.28) 옆 도로를 덮는 곳이 생겼다.
+               놓기 전에 관중석 칸 안에 도로가 있는지 재 보고, 겹치면 줄이고 그래도 겹치면 세우지 않는다. */
+            const sx = p.x - p.dy * off * side, sy = p.y + p.dx * off * side;
+            let len = 330 + rng() * 190, ok = false;
+            for (let tries = 0; tries < 3 && !ok; tries++, len *= .75) {
+                const L = len * 1.35, D = L * .28, ca = Math.cos(p.ang), sa = Math.sin(p.ang);
+                ok = true;
+                for (let u = -.5; u <= .5 && ok; u += .125) for (let v = 0; v <= 1 && ok; v += .25) {
+                    const lx = u * L, ly = (22 + v * D) * side;                // 관중석 좌표 → 세상 좌표 (drawStands 와 같은 틀)
+                    const wx = sx + lx * ca - ly * sa, wy = sy + lx * sa + ly * ca;
+                    for (let q = 0; q < N; q += 3) {
+                        const r = pts[q], rh = (r.hw || hw) + 26;
+                        if ((r.x - wx) ** 2 + (r.y - wy) ** 2 < rh * rh) { ok = false; break; }
+                    }
+                }
+            }
+            if (ok) stands.push({ x: sx, y: sy, ang: p.ang, side, len: len / .75, seed: rng() });
         }
     }
 
@@ -6985,56 +7004,28 @@ function drawLighting(g, zoom) {
    계단식 스탠드 세 단과 그 위에서 응원하는 세포들.
    관중은 혈관 밖의 세포다 — 이 게임에서는 그게 맞고, 동그라미라 그리기도 쉽다.
    달리는 카트를 따라 고개를 돌리고, 가까이 지날 때 더 크게 들썩인다. */
+const STAND_IMG = new Image(); STAND_IMG.src = 'assets/stand_crowd.webp';   // 버전 160 : 플로우 관중석 (위 = 앉아 박수 · 아래 = 일어나 환호)
 function drawStands(g, inView) {
     if (!track.stands) return;
     const t = performance.now() / 1000;
+    const ready = STAND_IMG.complete && STAND_IMG.naturalWidth;
     for (const st of track.stands) {
-        if (!inView(st.x, st.y, st.len)) continue;
-        const L = st.len, D = 92;                       // 길이 / 깊이(단 세 개)
-        g.save(); g.translate(st.x, st.y); g.rotate(st.ang);
-
-        // 뒤쪽 벽
-        g.fillStyle = '#2b3442';
-        g.beginPath(); g.roundRect(-L / 2, -D * st.side, L, D, 10); g.fill();
-        g.strokeStyle = '#151b24'; g.lineWidth = 4; g.stroke();
-
-        // 계단 세 단 : 코스에서 멀수록 높다
-        for (let row = 0; row < 3; row++) {
-            const y0 = (-D + row * (D / 3)) * st.side;
-            g.fillStyle = row % 2 ? '#3a4658' : '#44536a';
-            g.fillRect(-L / 2 + 6, Math.min(y0, y0 + (D / 3) * st.side), L - 12, D / 3);
-        }
-
-        // 관중 : 줄지어 앉은 세포들
-        const cols = Math.floor(L / 26);
-        for (let row = 0; row < 3; row++) {
-            for (let c = 0; c < cols; c++) {
-                const seed = st.seed * 97 + row * 13 + c * 7;
-                if ((seed * 9301 % 233) / 233 < .12) continue;      // 빈자리
-                const x = -L / 2 + 16 + c * ((L - 32) / (cols - 1 || 1));
-                const y = (-D + (row + .5) * (D / 3)) * st.side;
-                // 카트가 가까울수록 크게 들썩인다
-                const near = player ? clamp(1 - Math.hypot(player.x - st.x, player.y - st.y) / 1400, 0, 1) : .3;
-                const jump = Math.abs(Math.sin(t * (3 + near * 5) + seed)) * (2 + near * 7);
-                const hue = (seed * 53) % 360;
-                g.fillStyle = 'rgba(0,0,0,.3)';
-                g.beginPath(); g.ellipse(x, y + 5, 7, 3.5, 0, 0, TAU); g.fill();
-                g.fillStyle = `hsl(${hue},52%,${58 + (seed % 5) * 4}%)`;
-                g.beginPath(); g.arc(x, y - jump, 7.5, 0, TAU); g.fill();
-                g.strokeStyle = 'rgba(20,14,20,.65)'; g.lineWidth = 2; g.stroke();
-                // 눈 두 개 — 카트 쪽을 본다
-                if (near > .25) {
-                    g.fillStyle = '#1b1420';
-                    const look = clamp((player.x - st.x) / 700, -1, 1) * 1.6;
-                    g.beginPath(); g.arc(x - 2.4 + look, y - jump - 1, 1.5, 0, TAU); g.fill();
-                    g.beginPath(); g.arc(x + 2.4 + look, y - jump - 1, 1.5, 0, TAU); g.fill();
-                }
-            }
-        }
-
-        // 코스 쪽 난간
-        g.strokeStyle = '#8fa4bd'; g.lineWidth = 3;
-        g.beginPath(); g.moveTo(-L / 2 + 4, 0); g.lineTo(L / 2 - 4, 0); g.stroke();
+        /* 버전 160 (사용자 "관중들을 이미지 뽑아서 잘 배치해봐 지금 너무 작아서 뭔 벌레 같아" · "관중석이라는 것은 관중들 모습이 보여야지")
+           예전 : 지름 15 짜리 동그라미 세 줄 → 멀리서 벌레처럼 보였다.
+           이제 관중 얼굴이 보이는 그림을 두 배 크기로. 내 차가 가까우면 일어나 환호하는 그림과 번갈아 들썩인다. */
+        const L = st.len * 1.35, D = ready ? L * (STAND_IMG.naturalHeight / 2) / STAND_IMG.naturalWidth : 180;
+        if (!inView(st.x, st.y, L)) continue;
+        g.save(); g.translate(st.x, st.y); g.rotate(st.ang + (st.side > 0 ? Math.PI : 0));   // 그림 위(지붕)가 도로 반대쪽
+        if (!ready) { g.fillStyle = '#2b3442'; g.fillRect(-L / 2, -D - 20, L, D); g.restore(); continue; }
+        const near = player ? clamp(1 - Math.hypot(player.x - st.x, player.y - st.y) / 1600, 0, 1) : 0;
+        const cheer = near > .15 ? Math.sin(t * (6 + near * 6) + st.seed * 9) > -.2 : Math.sin(t * 1.3 + st.seed * 9) > .75;
+        const hop = cheer ? Math.abs(Math.sin(t * 9 + st.seed * 5)) * (3 + near * 5) : 0;
+        g.fillStyle = 'rgba(0,0,0,.28)';                            // 바닥 그림자
+        g.fillRect(-L / 2 + 10, -D - 14, L - 4, D + 10);
+        const sh = STAND_IMG.naturalHeight / 2;
+        g.drawImage(STAND_IMG, 0, cheer ? sh : 0, STAND_IMG.naturalWidth, sh, -L / 2, -D - 22 - hop, L, D);
+        g.strokeStyle = '#c9d3df'; g.lineWidth = 4;                 // 코스 쪽 난간
+        g.beginPath(); g.moveTo(-L / 2, -18); g.lineTo(L / 2, -18); g.stroke();
         g.restore();
     }
 }
@@ -8183,11 +8174,45 @@ function drawCheckerLine(g, p, hw, rows) {
    구간 색이 바뀌는 자리가 곧 기관이 바뀌는 자리다. 거기에 문을 세우면
    색이 끊기는 게 어색하지 않고, 문에 적힌 이름이 지날 때마다 눈에 들어온다.
    달리다 보면 저절로 순서가 외워지는 것이 이 게임의 목적이다. */
-function drawGate(g, p, cp) {
+const GATE_IMG = { cp: new Image(), finish: new Image() };                      // 버전 160 : 플로우 게이트 (철골 아치 · 체커 골인)
+GATE_IMG.cp.src = 'assets/gate_cp.webp'; GATE_IMG.finish.src = 'assets/gate_finish.webp';
+function drawGate(g, p, cp, isFinish) {
     const hw = (p.hw || track.halfWidth);
     const col = cp.node.color;
     const label = T(cp.node.name);
     const up = p.up || 0;                         // 다리 위라면 같이 올라간다
+    const gimg = isFinish ? GATE_IMG.finish : GATE_IMG.cp;
+    if (gimg.complete && gimg.naturalWidth) {
+        /* 버전 160 (사용자 "도로 연결 부분 게이트도 바꿀수 있니?" · "도착지점 검은색흰색 골인지점")
+           노면에는 기관 색 문턱을 얇게 깔고, 그 위에 길을 가로지르는 철골 아치 그림. 골인선은 체커 아치. */
+        g.save(); g.translate(p.x, p.y - up); g.rotate(p.ang);
+        if (!isFinish) {
+            g.fillStyle = shade(col, -.3); g.fillRect(-18, -hw - 8, 36, (hw + 8) * 2);
+            g.fillStyle = col; g.fillRect(-12, -hw - 8, 24, (hw + 8) * 2);
+        }
+        const W = (hw + 110) * 2, H = W * gimg.naturalHeight / gimg.naturalWidth * 1.45;   // 위에서 봐도 굵게 보이게 조금 두껍게
+        g.fillStyle = 'rgba(0,0,0,.25)';                               // 아치 그림자
+        g.beginPath(); g.ellipse(22, 0, H * .32, W * .5, 0, 0, TAU); g.fill();
+        g.rotate(Math.PI / 2);
+        g.drawImage(gimg, -W / 2, -H * .62, W, H);
+        g.restore();
+        // 기관 이름 : 아치 간판 자리에
+        g.save(); g.translate(p.x, p.y - up);
+        let a = p.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
+        g.rotate(a);
+        if (isFinish) g.translate(0, -H * .1);
+        g.font = 'bold 50px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        const w = g.measureText(label).width + 58;
+        g.fillStyle = 'rgba(10,12,20,.92)';
+        g.beginPath(); g.roundRect(-w / 2, -36, w, 72, 14); g.fill();
+        g.strokeStyle = col; g.lineWidth = 6; g.shadowColor = col; g.shadowBlur = 14;
+        g.beginPath(); g.roundRect(-w / 2, -36, w, 72, 14); g.stroke(); g.shadowBlur = 0;
+        g.fillStyle = col; g.beginPath(); g.arc(-w / 2 + 26, 0, 17, 0, TAU); g.fill();
+        g.fillStyle = '#12161e'; g.font = 'bold 22px sans-serif'; g.fillText(cp.num, -w / 2 + 26, 1);
+        g.fillStyle = '#fff'; g.font = 'bold 50px sans-serif'; g.fillText(label, 18, 2);
+        g.restore();
+        return;
+    }
 
     g.save(); g.translate(p.x, p.y - up); g.rotate(p.ang);
 
@@ -8243,8 +8268,8 @@ function drawGates(g, inView) {
     track.checkpoints.forEach(cp => {
         const p = track.pts[cp.si];
         if (!inView(p.x, p.y)) return;
-        if (cp.si === startSi) drawCheckerLine(g, p, (p.hw || track.halfWidth) + 12, 3);  // 여기만 골인선
-        drawGate(g, p, cp);
+        if (cp.si === startSi) drawCheckerLine(g, p, (p.hw || track.halfWidth) + 12, 5);  // 여기만 골인선 (버전 160 : 더 넓게)
+        drawGate(g, p, cp, cp.si === startSi);
     });
     if (!track.closed) drawCheckerLine(g, track.pts[track.N - 2], track.halfWidth + 16, 3);
     drawLapFlags(g, inView);
