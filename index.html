@@ -2866,6 +2866,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 143, d: '9월 14일', t: [
+        '전설 스킨 전부에 네온 — 형광 단백질 GFP 는 초록, 무지개 홍채는 색이 도는 네온',
+        'Every Legendary skin now has neon: green for GFP Glow and color-cycling neon for Rainbow Iris'
+    ] },
     { v: 142, d: '9월 14일', t: [
         '전설 네온을 더 진하게 — 분홍 · 노랑 같은 밝은 길에서도 네온 색이 하얗게 날아가지 않고 또렷하다',
         'Legendary neon is bolder: its color now stays vivid on bright pink and yellow roads instead of washing out to white'
@@ -4357,11 +4361,11 @@ const SKINS = [
       fact: '백혈구는 혈관 벽 틈을 비집고 나가 세균을 잡으러 갑니다.',
       factEn: 'White blood cells squeeze through gaps in blood vessel walls to hunt germs.' },
 
-    { id: 'gfp', tier: 'legend', hue: 130, lit: 1.1, glow: '98,255,138', trail: '120,255,160',
+    { id: 'gfp', tier: 'legend', hue: 130, lit: 1.1, glow: '98,255,138', under: '98,255,138', trail: '120,255,160',
       flame: ['230,255,235', '98,255,138', '40,200,90'], name: '형광 단백질 GFP', en: 'GFP Glow',
       fact: '해파리에서 찾은 초록 형광 단백질(GFP)은 세포 속을 비추는 등불이 되어 노벨상을 받았습니다.',
       factEn: 'Green fluorescent protein (GFP), found in jellyfish, lights up the inside of cells and won a Nobel Prize.' },
-    { id: 'iris', tier: 'legend', hue: 0, rainbow: true, trail: 'rainbow', flame: 'rainbow', name: '무지개 홍채', en: 'Rainbow Iris',
+    { id: 'iris', tier: 'legend', hue: 0, rainbow: true, under: 'rainbow', trail: 'rainbow', flame: 'rainbow', name: '무지개 홍채', en: 'Rainbow Iris',
       fact: '홍채 무늬는 사람마다 달라서 지문처럼 본인 확인에 쓰입니다.',
       factEn: 'Every iris pattern is unique, so it can identify a person like a fingerprint.' }
 ];
@@ -4422,6 +4426,12 @@ const KOREA = ['dancheong', 'haechi'];
     const d = DRAWN_LOOKS[look];
     SKINS.push({ id: car + '__' + look, car, look, tier: d.tier, name: d.name, en: d.en, fact: d.fact, factEn: d.factEn, under: d.under });
 }));
+/* 네온 색 'r,g,b' — 무지개 스킨은 시간에 따라 색이 돈다 (버전 143 : 전설 스킨 전부에 네온) */
+function neonRGB(sk) {
+    if (sk.under !== 'rainbow') return sk.under;
+    const h = (performance.now() / 12) % 360, f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (1 - Math.max(0, Math.min(k, 4 - k, 1)))); };
+    return f(5) + ',' + f(3) + ',' + f(1);
+}
 const skinById = id => (id && SKINS.find(k => k.id === id)) || null;
 const tierOf = sk => SKIN_TIERS.find(t => t.id === sk.tier) || SKIN_TIERS[0];
 /* 뽑기에 나오는 스킨. 나중에 파는 스킨(paid)은 여기서 빠진다 */
@@ -8350,7 +8360,7 @@ function drawKart(g, k, lift = 0) {
            버전 142 (사용자 "아직 네온 효과가 잘 안보이네") : 빛을 '더하기(lighter)' 로 그렸더니
            분홍 · 노랑 같은 밝은 길에서는 색이 하얗게 날아가 네온 색이 안 보였다.
            이제 색을 그대로 칠하고(진한 색 관 + 번짐) 가운데만 살짝 밝힌다 — 어느 길에서도 색이 남는다. */
-        const c = sk.under, now = performance.now();
+        const c = neonRGB(sk), now = performance.now();
         const pul = .78 + Math.sin(now / 210) * .22;
         const L = KART_DRAW * .5, W = KART_DRAW * .29;
         g.save(); g.translate(ox, oy + bounce + 4); g.rotate(k.ang + (k.spin || 0));
@@ -11365,13 +11375,14 @@ function drawVictory(g) {
         g.fillStyle = 'rgba(0,0,0,.28)';                                  // 땅 그림자
         g.beginPath(); g.ellipse(0, 0, w * .46, h * .09, 0, 0, TAU); g.fill();
         if (pSkin && pSkin.under) {                                      // 전설 그림 스킨 : 완주 무대에서도 차 밑 네온
+            const uc = neonRGB(pSkin);
             const pul = .8 + Math.sin(t * 5) * .2;          // 버전 141 : 더 넓고 밝게 + 가운데 밝은 줄
             g.save(); g.scale(1, .24); g.globalCompositeOperation = 'lighter';
             const rg = g.createRadialGradient(0, 0, 4, 0, 0, w * .72);
-            rg.addColorStop(0, `rgba(${pSkin.under},${pul})`); rg.addColorStop(.5, `rgba(${pSkin.under},${.45 * pul})`); rg.addColorStop(1, `rgba(${pSkin.under},0)`);
+            rg.addColorStop(0, `rgba(${uc},${pul})`); rg.addColorStop(.5, `rgba(${uc},${.45 * pul})`); rg.addColorStop(1, `rgba(${uc},0)`);
             g.fillStyle = rg; g.beginPath(); g.arc(0, 0, w * .72, 0, TAU); g.fill(); g.restore();
-            g.save(); g.globalCompositeOperation = 'lighter'; g.shadowColor = `rgba(${pSkin.under},1)`; g.shadowBlur = 24;
-            g.fillStyle = `rgba(${pSkin.under},${.9 * pul})`; g.beginPath(); g.ellipse(0, -h * .02, w * .4, h * .035, 0, 0, TAU); g.fill(); g.restore();
+            g.save(); g.globalCompositeOperation = 'lighter'; g.shadowColor = `rgba(${uc},1)`; g.shadowBlur = 24;
+            g.fillStyle = `rgba(${uc},${.9 * pul})`; g.beginPath(); g.ellipse(0, -h * .02, w * .4, h * .035, 0, 0, TAU); g.fill(); g.restore();
         }
         g.drawImage(side, -w / 2, -h * .98, w, h);
         g.restore();
@@ -12133,7 +12144,7 @@ function skinThumb(sprite, skinId) {
     return url;
 }
 const skinFx = skinId => { const sk = skinById(skinId);
-    return !sk ? '' : sk.under ? 'skUnder skU-' + sk.look : sk.rainbow ? 'skRainbow' : sk.glow ? 'skGlow' : ''; };
+    return !sk ? '' : sk.under && sk.look ? 'skUnder skU-' + sk.look : sk.rainbow ? 'skRainbow' : sk.glow ? 'skGlow' : ''; };
 const skinName = sk => LANG === 'en' ? sk.en : sk.name;
 const skinFact = sk => LANG === 'en' ? sk.factEn : sk.fact;
 const FLAME0 = ['255,238,160', '255,140,50', '255,80,40'];
@@ -12462,12 +12473,13 @@ function drawSideStage(cv, c, sk) {
     g2.beginPath(); g2.ellipse(cx, groundY, w * .47, h * .1, 0, 0, TAU); g2.fill();
     g2.restore();
     if (sk && sk.under) {                                              // 전설 스킨 네온 (버전 141 : 더 넓고 밝게)
+        const uc = neonRGB(sk);
         g2.save(); g2.translate(cx, groundY); g2.scale(1, .26); g2.globalCompositeOperation = 'lighter';
         const rg = g2.createRadialGradient(0, 0, 4, 0, 0, w * .72);
-        rg.addColorStop(0, `rgba(${sk.under},1)`); rg.addColorStop(.5, `rgba(${sk.under},.45)`); rg.addColorStop(1, `rgba(${sk.under},0)`);
+        rg.addColorStop(0, `rgba(${uc},1)`); rg.addColorStop(.5, `rgba(${uc},.45)`); rg.addColorStop(1, `rgba(${uc},0)`);
         g2.fillStyle = rg; g2.beginPath(); g2.arc(0, 0, w * .72, 0, TAU); g2.fill(); g2.restore();
         g2.save(); g2.translate(cx, groundY - h * .02); g2.globalCompositeOperation = 'lighter';
-        g2.shadowColor = `rgba(${sk.under},1)`; g2.shadowBlur = 22; g2.fillStyle = `rgba(${sk.under},.9)`;
+        g2.shadowColor = `rgba(${uc},1)`; g2.shadowBlur = 22; g2.fillStyle = `rgba(${uc},.9)`;
         g2.beginPath(); g2.ellipse(0, 0, w * .4, h * .035, 0, 0, TAU); g2.fill(); g2.restore();
     }
     g2.drawImage(img, cx - w / 2, groundY - h * .97, w, h);
