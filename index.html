@@ -1647,6 +1647,81 @@
     transform: rotate(10deg); animation: skCardShine 1.1s ease-out .12s; pointer-events: none; }
 @keyframes skCardShine { from { left: -40%; } to { left: 130%; } }
 
+
+/* ================= 버전 150 : 자동차 고르기 = 넘겨 보는 큰 진열대 =================
+   사용자 "지금 자동차 스킨이 너무 작게 보인다. 차량들 사이즈가 너무 작아서 장난감 같아" · "옆으로 넘기면서 고르게 하면 어떨까? 그러면 크게 보일거 아냐"
+   예전 : 작은 카드 10장 + 옆 설명칸 → 폰에서 차 그림이 손톱만 했다. 이제 한 대씩 크게, 좌우로 넘긴다. */
+#carPick .cpList, #carPick .cpDetail { display: none !important; }
+#carPick .cpBody { display: block !important; }
+.cx { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
+      gap: 8px 12px; height: 100%; min-height: 0; }
+.cxStage { grid-column: 1; grid-row: 1; position: relative; display: flex; align-items: center; min-height: 0;
+           border-radius: 14px; overflow: hidden; border: 2px solid #2f5580;
+           background: radial-gradient(ellipse at 50% 80%, rgba(74,208,255,.22), transparent 62%), linear-gradient(180deg, #0f2440, #0a1628); }
+.cxView { position: relative; flex: 1; height: 100%; min-height: 150px; touch-action: pan-y; cursor: grab; }
+.cxBig { position: absolute; left: 0; right: 0; top: 6%; text-align: center; font: 900 clamp(26px, 7vw, 74px)/1 'BlackHanSans', sans-serif;
+         font-style: italic; color: rgba(255,255,255,.07); letter-spacing: .02em; white-space: nowrap; pointer-events: none; }
+.cxCar { position: absolute; left: 2%; top: 4%; width: 96%; height: 96%; object-fit: contain; }
+.cxCar.inL { animation: cxInL .38s cubic-bezier(.2,1.1,.3,1); } .cxCar.inR { animation: cxInR .38s cubic-bezier(.2,1.1,.3,1); }
+@keyframes cxInL { from { transform: translateX(-38%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cxInR { from { transform: translateX(38%); opacity: 0; } to { transform: none; opacity: 1; } }
+.cxCar.lock { filter: brightness(.18) saturate(0) drop-shadow(0 0 10px rgba(120,170,255,.45)); }
+.cxLock { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); font: 900 clamp(15px, 2.6vw, 24px)/1.2 'BlackHanSans', sans-serif;
+          color: #ffd166; text-align: center; text-shadow: 0 2px 0 #000; pointer-events: none; }
+.cxLock small { display: block; font-size: .72em; color: #cfe6ff; }
+.cxIdx { position: absolute; right: 10px; top: 8px; font-size: 11px; font-weight: bold; color: #9fd0ff; }
+.cxArrow { flex: none; width: 46px; height: 64px; margin: 0 4px; border: 0; border-radius: 10px; cursor: pointer; z-index: 2; padding: 0;
+           background: linear-gradient(180deg, #ffd84a, #e8a020); box-shadow: 0 4px 0 #7a4b00; transform: skewX(-8deg); position: relative; }
+.cxArrow::before { content: ''; position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-top: 11px solid transparent; border-bottom: 11px solid transparent; }
+.cxArrow.l::before { border-right: 15px solid #2a1800; transform: translate(-60%, -50%); }
+.cxArrow.r::before { border-left: 15px solid #2a1800; transform: translate(-40%, -50%); }
+.cxInfo { grid-column: 2; grid-row: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;
+          background: rgba(0,0,0,.28); border: 2px solid #2f5580; border-radius: 12px; padding: 8px 11px; text-align: left; }
+.cxName { font: 900 clamp(18px, 2.8vw, 28px)/1.1 'BlackHanSans', sans-serif; }
+.cxName small { font-size: 11px; color: #9fd0ff; margin-left: 6px; font-family: 'Malgun Gothic', sans-serif; font-weight: bold; }
+.cxDesc { font-size: 11.5px; color: #9fd0ff; line-height: 1.4; }
+.cxInfo .cpBuy { margin-top: auto; }
+.cxDots { grid-column: 1 / -1; grid-row: 2; display: flex; justify-content: center; gap: 5px; overflow-x: auto; padding: 1px 2px 2px; }
+.cxDot { flex: none; width: 50px; height: 34px; border-radius: 7px; border: 2px solid #2f5580; background: rgba(0,0,0,.3);
+         display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.cxDot img { width: 40px; height: 28px; object-fit: contain; }
+.cxDot.lock img { filter: grayscale(1) brightness(.75); opacity: .7; }
+.cxDot.on { border-color: #ffd166; background: rgba(255,209,102,.18); box-shadow: 0 0 0 2px rgba(255,209,102,.3); }
+@media (max-height: 460px) {
+    /* 키 낮은 가로 폰 : 진열대 칸이 130px 남짓 — 작은 줄은 빼고(좌우 넘기기로 충분) 차 그림에 높이를 다 준다 */
+    .cx { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .cxDots { display: none; }
+    .cxView { min-height: 0; }
+    .cxInfo .gRow:nth-child(n+4) { display: none; }
+    .cxName { font-size: 18px; }
+    .cx { gap: 5px 8px; }
+    .cxArrow { width: 34px; height: 50px; }
+    .cxDesc { display: none; }
+    .cxInfo { padding: 5px 8px; gap: 1px; } .cxInfo .gRow { margin: 1px 0; }
+    .cxDot { width: 40px; height: 28px; } .cxDot img { width: 32px; height: 22px; }
+    .cxInfo .cpBuy { padding: 5px; font-size: 12px; margin-top: 3px; }
+}
+@media (orientation: portrait) and (max-width: 640px) {
+    .cx { grid-template-columns: 1fr; grid-template-rows: auto auto auto; height: auto; }
+    .cxStage { grid-column: 1; grid-row: 1; height: 46vw; min-height: 170px; }
+    .cxDots { grid-row: 2; justify-content: flex-start; }
+    .cxInfo { grid-column: 1; grid-row: 3; overflow: visible; }
+}
+
+/* 뽑기 공개 글씨 : 등급 · 스킨 이름 · '○○ 전용' 을 크고 굵게 (사용자 "글씨체가 너무 작아서 너무 평이" · "문구도 글씨체가 획기적이어야") */
+.gxTier { font-size: clamp(54px, 15vmin, 140px) !important; font-style: italic; transform-origin: 50% 60%;
+          -webkit-text-stroke: 2px rgba(0,0,0,.35); }
+.gxTier small { font: 900 .24em/1 'BlackHanSans', sans-serif !important; letter-spacing: .6em !important; font-style: normal; }
+.gxName { font-size: clamp(34px, 9vmin, 84px) !important; font-style: italic; letter-spacing: .02em;
+          text-shadow: 0 0 22px var(--tc), 0 4px 0 #000, 0 0 2px #000 !important; -webkit-text-stroke: 1.5px rgba(0,0,0,.5); }
+.gxSub { display: flex; gap: .5em; align-items: center; justify-content: center; flex-wrap: wrap; font-size: clamp(15px, 3.4vmin, 26px) !important; }
+.gxSub .gxChip { font: 900 1em/1 'BlackHanSans', sans-serif; font-style: italic; padding: .38em .9em .3em; border-radius: .5em;
+          transform: skewX(-10deg); background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 85%, #fff), var(--tc));
+          color: #140b00; box-shadow: 0 3px 0 rgba(0,0,0,.55), 0 0 18px var(--tc); }
+.gxSub .gxChip.new { background: linear-gradient(180deg, #fff6c4, #ffd166); }
+.gxSub .gxChip.dup { background: linear-gradient(180deg, #cfe6ff, #7fb2e0); }
+@media (max-height: 430px) { .gxTier { font-size: 19vmin !important; } .gxName { font-size: 11vmin !important; } #gxCar { max-height: 34vh !important; } .gxShow { gap: 0 !important; } }
+
 /* ================= 버전 146 : 뽑기 연출 — 미스터리 상자 + 전체 화면 공개 =================
    사용자 "극적인 획득효과가 필요한 것 같아. 넌 지금 세포 분열을 표현한것 같은데" · "굳이 생명학을 적용할 필요 없어"
    흐름 : ① 상자가 흔들리며 틈으로 빛이 샌다 ② 빛이 흰색 → 파랑 → 보라 → 금색으로 한 단계씩 오른다(나온 등급에서 멈춤)
@@ -1970,6 +2045,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
             <div class="cpBody">
                 <div class="cpList" id="cpList2"></div>
                 <div class="cpDetail" id="cpDetail"></div>
+                <div class="cx" id="cpCx"></div>
             </div>
         </div>
       </section>
@@ -2955,6 +3031,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 150, d: '9월 14일', t: [
+        '자동차 고르기를 큰 진열대로 — 한 대씩 크게 보고 좌우로 밀어 넘긴다. 아래 작은 줄로 바로 건너뛸 수 있고, 안 가진 차는 검은 실루엣',
+        'Car select is now a big showroom: one car at a time, swipe left or right, jump from the small row below; locked cars show as silhouettes',
+        '뽑기 공개 글씨를 크고 굵게 — 등급 · 스킨 이름은 큰 기울임 글씨, "○○ 전용" · "새 스킨!" 은 반짝이는 딱지',
+        'Bigger, bolder reveal text: huge italic tier and skin name, with "exclusive" and "new skin" shown as glowing tags'
+    ] },
     { v: 149, d: '9월 14일', t: [
         '터보 불꽃을 블렌더로 — 흰 심지와 주황 불 혀가 일렁이며 뒤로 흘러가는 진짜 불처럼. 터보 중에는 한 겹 더 겹쳐 더 뜨겁다',
         'Turbo flames made in Blender: a flickering jet with a white-hot core and orange tongues streaming back, doubled up during turbo'
@@ -12104,68 +12186,59 @@ const statRange = key => {
     return { lo: Math.min(...vs) - .06, hi: Math.max(...vs) + .04 };
 };
 
-function renderCarPick() {
-    const list = el('cpList2'); if (!list) return;
+function renderCarPick(dir) {
+    const box = el('cpCx'); if (!box) return;
     if (!carPreview || !CARS.some(c => c.id === carPreview)) carPreview = save.car;
     el('cpPoints').textContent = save.points + ' P';
     el('cpDia').innerHTML = HEMO + save.dia;
-
-    list.innerHTML = CARS.map(c => {
-        const owned = save.cars.includes(c.id);
-        const can = !owned && save.points >= c.cost;
-        return `<div class="cpCar${carPreview === c.id ? ' on' : ''}${owned ? '' : ' locked'}" data-cp="${c.id}">
-            <div class="em"><img src="${skinThumb(c.sprite, skinOf(c.id))}" class="${skinFx(skinOf(c.id))}" alt="">${owned ? '' : `<span>${T('잠김')}</span>`}</div>
-            <div class="nm">${T(c.name)}</div>
-            <div class="pr ${owned ? 'own' : can ? 'can' : ''}">${
-                save.car === c.id ? T('사용 중') : owned ? T('보유') : c.cost + ' P'}</div>
-        </div>`;
-    }).join('');
-    list.querySelectorAll('[data-cp]').forEach(n => {
-        n.onclick = () => {
-            carPreview = n.dataset.cp;
-            const fresh = !audioCtx;
-            if (fresh) playBeep(900, .05);                  // 소리 장치는 첫 터치에서 만들어진다
-            /* 그 차 엔진을 한 번 밟아 들려준다. 녹음을 받는 중이면 우선 딸깍, 받는 대로 부릉 */
-            if (!playCarVoice(carById(carPreview)) && !fresh) playBeep(900, .05);
-            renderCarPick();
-        };
-    });
-
-    const c = carById(carPreview), now = carById(save.car);
-    const owned = save.cars.includes(c.id);
-    const can = !owned && save.points >= c.cost;
-    const picked = save.car === c.id;
-
-    el('cpDetail').innerHTML =
-        `<div class="cpBig">${(EN[c.name] || c.id).toUpperCase()}</div><canvas class="cpHero" width="620" height="210"></canvas>` +
-        `<div class="dn" style="color:${c.color}"><img class="dImg ${skinFx(skinOf(c.id))}" src="${skinThumb(c.sprite, skinOf(c.id))}" alt="">${T(c.name)}<small class="cell">${LANG === 'en' ? c.cellEn : c.cell}</small></div>
-         <div class="dd">${T(c.desc)}</div><div class="cpStats">` +
-        CAR_STATS.map(s => {
-            const { lo, hi } = statRange(s.key);
+    const i = CARS.findIndex(c => c.id === carPreview), c = CARS[i], now = carById(save.car);
+    const owned = save.cars.includes(c.id), can = !owned && save.points >= c.cost, picked = save.car === c.id;
+    const sk = skinById(skinOf(c.id));
+    box.innerHTML =
+        `<div class="cxStage"><button class="cxArrow l" id="cxPrev" aria-label="prev"></button>
+            <div class="cxView" id="cxView"><div class="cxBig">${(EN[c.name] || c.id).toUpperCase()}</div>
+                <canvas class="cxCar${owned ? '' : ' lock'}${dir ? (dir > 0 ? ' inR' : ' inL') : ''}" width="900" height="330"></canvas>
+                ${owned ? '' : `<div class="cxLock">🔒 ${T('잠김')}<small>${c.cost} P</small></div>`}
+                <div class="cxIdx">${i + 1} / ${CARS.length}</div></div>
+            <button class="cxArrow r" id="cxNext" aria-label="next"></button></div>` +
+        `<div class="cxInfo"><div class="cxName" style="color:${c.color}">${T(c.name)}<small>${LANG === 'en' ? c.cellEn : c.cell}</small></div>
+            <div class="cxDesc">${T(c.desc)}</div><div class="cpStats">` +
+        CAR_STATS.map(s2 => {
+            const { lo, hi } = statRange(s2.key);
             const pct = v => clamp((v - lo) / (hi - lo), .04, 1) * 100;
-            return `<div class="gRow">
-                <span class="gl">${T(s.label)}</span>
-                <span class="gt"><i style="width:${pct(c[s.key])}%"></i>
-                    <u style="left:${pct(now[s.key])}%"></u></span>
-                <span class="gv">${Math.round(c[s.key] * 100)}</span>
-            </div>`;
+            return `<div class="gRow"><span class="gl">${T(s2.label)}</span>
+                <span class="gt"><i style="width:${pct(c[s2.key])}%"></i><u style="left:${pct(now[s2.key])}%"></u></span>
+                <span class="gv">${Math.round(c[s2.key] * 100)}</span></div>`;
         }).join('') +
-        `<div class="dd" style="margin:8px 0 0;font-size:11px">${T('흰 눈금 = 지금 타는 차')} · ${T(now.name)}</div>
-            <div class="skRow" id="skRowCar"><span>${T('스킨')}</span>${skinOf(c.id)
-                ? `<b style="color:${tierOf(skinById(skinOf(c.id))).color}">${skinName(skinById(skinOf(c.id)))}</b>`
-                : `<b>${T('기본')}</b>`}<u>${T('바꾸기')}</u></div></div>
-         <button class="cpBuy ${picked ? 'on' : (owned || can) ? 'can' : ''}"
-                 id="cpBuyBtn" ${picked || owned || can ? '' : 'disabled'}>${
-            picked ? T('이 차로 달리는 중') : owned ? T('이 차로 바꾸기')
-                   : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
-         }</button>`;
+        `</div><div class="skRow" id="skRowCar"><span>${T('스킨')}</span>${sk
+            ? `<b style="color:${tierOf(sk).color}">${skinName(sk)}</b>` : `<b>${T('기본')}</b>`}<u>${T('바꾸기')}</u></div>
+            <button class="cpBuy ${picked ? 'on' : (owned || can) ? 'can' : ''}" id="cpBuyBtn" ${picked || owned || can ? '' : 'disabled'}>${
+                picked ? T('이 차로 달리는 중') : owned ? T('이 차로 바꾸기') : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
+            }</button></div>` +
+        `<div class="cxDots">${CARS.map(d => `<button class="cxDot${d.id === c.id ? ' on' : ''}${save.cars.includes(d.id) ? '' : ' lock'}" data-cp="${d.id}" title="${T(d.name)}">
+            <img src="${skinThumb(d.sprite, skinOf(d.id))}" alt=""></button>`).join('')}</div>`;
 
-    const cpd = el('cpDetail');
-    if (cpd && cpd.style && cpd.style.setProperty) cpd.style.setProperty('--gc', c.color);
-    drawSideStage(cpd && cpd.querySelector ? cpd.querySelector('.cpHero') : null, c, skinById(skinOf(c.id)));
-    const skr = el('skRowCar'); if (skr) skr.onclick = () => openSkinShop(c.id);
-    const btn = el('cpBuyBtn');
-    if (btn) btn.onclick = () => {
+    drawSideStage(box.querySelector('.cxCar'), c, sk);
+    const go = (id, d) => {
+        if (id === carPreview) return;
+        carPreview = id;
+        const fresh = !audioCtx;
+        if (fresh) playBeep(900, .05);
+        if (!playCarVoice(carById(carPreview)) && !fresh) playBeep(900, .05);   // 그 차 엔진을 한 번 밟아 들려준다
+        renderCarPick(d);
+        const dot = box.querySelector('.cxDot.on'); if (dot && dot.scrollIntoView) dot.scrollIntoView({ block: 'nearest', inline: 'center' });
+    };
+    const step = d => go(CARS[(i + d + CARS.length) % CARS.length].id, d);
+    el('cxPrev').onclick = () => step(-1);
+    el('cxNext').onclick = () => step(1);
+    box.querySelectorAll('[data-cp]').forEach(n => { n.onclick = () => { const j = CARS.findIndex(d => d.id === n.dataset.cp); go(n.dataset.cp, j > i ? 1 : -1); }; });
+    const view = el('cxView');                           // 손가락으로 밀어 넘기기
+    let sx = null;
+    view.onpointerdown = e => { sx = e.clientX; };
+    view.onpointerup = e => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); };
+    view.onpointercancel = () => { sx = null; };
+    el('skRowCar').onclick = () => openSkinShop(c.id);
+    el('cpBuyBtn').onclick = () => {
         if (picked) return;
         if (!owned) {
             if (save.points < c.cost) return;
@@ -12573,8 +12646,8 @@ function gxReveal() {
     const car = carById(k.car || skinCar);
     el('gxTier').innerHTML = `${T(t.name)}<small>${GX_EN[tier] || ''}</small>`;
     el('gxName').textContent = skinName(k);
-    el('gxSub').innerHTML = (k.car ? T(car.name) + ' ' + T('전용') + ' · ' : '') +
-        (dup ? `${T('이미 가진 스킨')} · ${HEMO}+${SKIN_REFUND}` : T('새 스킨!'));
+    el('gxSub').innerHTML = (k.car ? `<span class="gxChip">${T(car.name)} ${T('전용')}</span>` : '') +
+        (dup ? `<span class="gxChip dup">${T('이미 가진 스킨')} ${HEMO}+${SKIN_REFUND}</span>` : `<span class="gxChip new">${T('새 스킨!')}</span>`);
     gx.classList.remove('charge', 'crack'); gx.classList.add('show');
     if (tier === 'legend') { gx.classList.add('legend'); gxRain = true; if (!gxRAF) gxLoop(); }
     const cv = el('gxCar'); if (cv.dataset) cv.dataset.tries = 0;
