@@ -1891,6 +1891,21 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
    CSS 의 남색은 파란 결을 55% 남기고 밝기를 72% 로 — 먹빛 남색. 금색 · 밝은 글자 · 네온 · 트랙 색은 그대로. */
 .overlay { background: radial-gradient(circle at 50% 24%, #172238, #05080f 72%) !important; }
 #skinShop.overlay { background: linear-gradient(180deg, rgba(5,8,16,.55), rgba(5,8,16,.35) 40%, rgba(5,8,16,.75)), url(assets/bg_vault.webp) center / cover no-repeat !important; }
+
+/* 버전 159 (사용자 "스킨 뽑기 버튼이 너무 작다") : 차고 머리의 [스킨 뽑기] 를 보물상자 그림이 붙은 큰 버튼으로 */
+#skOpen.skOpen { display: inline-flex; align-items: center; gap: 8px; font-size: 17px !important; padding: 5px 20px 5px 8px !important;
+    border-radius: 10px !important; border: 2px solid #ffe39a !important; color: #fff !important; letter-spacing: .02em;
+    background: linear-gradient(180deg, #9b5cff, #5b2bc4) !important; box-shadow: 0 4px 0 #2e1470, 0 0 18px rgba(155,92,255,.55);
+    animation: skOpenGlow 1.8s ease-in-out infinite alternate; }
+#skOpen.skOpen::before { content: ''; width: 34px; height: 34px; flex: none; transform: skewX(10deg);
+    background: url(assets/gx_box_closed.webp) center / contain no-repeat; filter: drop-shadow(0 0 6px rgba(255,209,102,.8)); }
+#skOpen.skOpen:hover { filter: brightness(1.12); }
+#skOpen.skOpen:active { transform: skewX(-10deg) translateY(3px); box-shadow: 0 1px 0 #2e1470; }
+@keyframes skOpenGlow { from { box-shadow: 0 4px 0 #2e1470, 0 0 10px rgba(155,92,255,.4); } to { box-shadow: 0 4px 0 #2e1470, 0 0 24px rgba(190,130,255,.85); } }
+#skOpen.skOpen, .cpHead > span { white-space: nowrap; }
+@media (max-width: 420px) { #skOpen.skOpen { font-size: 14px !important; padding: 3px 12px 3px 5px !important; gap: 5px; } #skOpen.skOpen::before { width: 26px; height: 26px; }
+    .cpHead > span:last-child { font-size: 11px; } }
+@media (max-height: 500px) { #skOpen.skOpen { font-size: 14px !important; padding: 2px 14px 2px 5px !important; gap: 5px; } #skOpen.skOpen::before { width: 26px; height: 26px; } }
 </style>
 <!-- 애드센스 : 아래 client 를 본인 계정 ID 로 바꾸고 주석을 풀면 실제 광고가 나갑니다.
      스크립트 주소의 client 와 body-racing.html 안의 AD.client 를 같은 값으로 맞춰 주세요.
@@ -3078,6 +3093,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 159, d: '9월 14일', t: [
+        '차고의 [스킨 뽑기] 버튼을 크게 — 보물상자 그림이 붙고 은은하게 빛난다',
+        'The Skin Draw button in the Garage is now bigger, with a treasure chest icon and a soft glow'
+    ] },
     { v: 158, d: '9월 14일', t: [
         '메뉴 · 창 · 계기판을 먹빛 남색(남색 + 검정)으로 — 금색이 더 돋보인다',
         'Menus, windows and the HUD now use a deep ink-navy so the gold stands out'
