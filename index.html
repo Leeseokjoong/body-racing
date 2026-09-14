@@ -1729,7 +1729,9 @@
 .skCap { border: none !important; border-radius: 0 !important; background: url(assets/gx_box_closed.webp) center / contain no-repeat !important;
     box-shadow: none !important; filter: drop-shadow(0 0 14px rgba(90,220,255,.55)) drop-shadow(0 6px 6px rgba(0,0,0,.45)); width: 150px !important; height: 150px !important; }
 .skCap::before, .skCap::after { content: none !important; display: none !important; }
-.skCap.shake, .skCap.pop { animation: skFloat 1.8s ease-in-out infinite alternate !important; display: block !important; }
+.skCap.shake { animation: skFloat 1.8s ease-in-out infinite alternate !important; display: block !important; }
+/* 버전 151 (사용자 "스킨 뽑고 나면 상자는 안보여야 하는거 아니니?") : 카드가 뜨면 상자는 숨긴다 — 버전 147 에서 상자를 늘 보이게 덮어써 카드 뒤에 비쳤다 */
+.skCap.pop { display: none !important; }
 @media (max-height: 500px) { .skCap { width: 86px !important; height: 86px !important; } }
 
 #gx { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; overflow: hidden;
@@ -3031,6 +3033,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 151, d: '9월 14일', t: [
+        '차 그림의 흰 부스러기를 청소 — 테두리 흰 테 · 차 밑 가는 줄 · 떠 있는 가루를 150장 모두에서 지웠다',
+        'Cleaned white specks from all 150 car images: white fringes, thin lines under cars and floating dust',
+        '스킨을 뽑고 카드가 뜨면 뒤의 보물상자가 사라진다',
+        'The treasure chest now disappears behind the skin card after a draw'
+    ] },
     { v: 150, d: '9월 14일', t: [
         '자동차 고르기를 큰 진열대로 — 한 대씩 크게 보고 좌우로 밀어 넘긴다. 아래 작은 줄로 바로 건너뛸 수 있고, 안 가진 차는 검은 실루엣',
         'Car select is now a big showroom: one car at a time, swipe left or right, jump from the small row below; locked cars show as silhouettes',
@@ -12711,6 +12719,7 @@ function pullSkin(ticket) {
     renderSkinShop();
     el('skPoints').innerHTML = HEMO + (save.dia - (dup ? SKIN_REFUND : 0));
     el('skCard').classList.add('hidden');
+    el('skCap').className = 'skCap';                 // 다시 뽑으면 상자가 돌아온다
     gachaShow(k, tier, dup);
 }
 el('skPull').onclick = () => pullSkin(false);
