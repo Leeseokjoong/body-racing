@@ -3093,6 +3093,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 162, d: '9월 14일', t: [
+        '골인선 · 게이트가 차를 덮던 것을 고쳤다 — 도로를 가로지르던 아치 막대를 빼고 양쪽 기둥만, 체커 골인선 · 기관 이름판은 바닥에 깔려 차가 그 위를 지나간다',
+        'Finish line and gates no longer cover cars: the overhead beams are gone, pillars stand at the road edges, and the checkered line and organ signs are painted on the road'
+    ] },
     { v: 161, d: '9월 14일', t: [
         '모든 맵에 관중석을 훨씬 많이 — 코스를 따라 도로 양쪽 빈자리마다 크고 작은 관중석을 세운다',
         'Many more grandstands on every map, placed in open spots along both sides of the course'
@@ -6732,6 +6736,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     drawVilli(g, inView);                        // 창자 속이므로 길 위에 얹는다
     drawSkids(g);
     drawPads(g);
+    drawGates(g, inView, 'floor');     // 버전 162 : 골인선 · 문턱은 바닥이다 — 차보다 먼저
     drawItems(g, inView);
     drawHazards(g, inView);
     drawLabels(g, zoom);
@@ -6747,7 +6752,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
 
     // 기관 게이트는 맨 위에. 다리가 그 위를 덮으면 이름이 묻히고,
     //   구간이 맞물리는 자리의 어색한 이음매도 가려 주지 못한다.
-    drawGates(g, inView);
+    drawGates(g, inView, 'top');
 
     drawBubbles(g);                    // 말풍선은 카트보다 위, 화면 표시보다 아래
 
@@ -8191,40 +8196,53 @@ function drawCheckerLine(g, p, hw, rows) {
    달리다 보면 저절로 순서가 외워지는 것이 이 게임의 목적이다. */
 const GATE_IMG = { cp: new Image(), finish: new Image() };                      // 버전 160 : 플로우 게이트 (철골 아치 · 체커 골인)
 GATE_IMG.cp.src = 'assets/gate_cp.webp'; GATE_IMG.finish.src = 'assets/gate_finish.webp';
-function drawGate(g, p, cp, isFinish) {
+function drawGate(g, p, cp, isFinish, pass) {
     const hw = (p.hw || track.halfWidth);
     const col = cp.node.color;
     const label = T(cp.node.name);
     const up = p.up || 0;                         // 다리 위라면 같이 올라간다
     const gimg = isFinish ? GATE_IMG.finish : GATE_IMG.cp;
     if (gimg.complete && gimg.naturalWidth) {
+        /* 버전 162 (사용자 "골인지점 바닥 페인트가 차량 위로 보여진다") : 바닥(문턱 · 체커 라인)은 차보다 먼저, 아치 · 간판은 차 뒤에 그린다 */
+        if (pass === 'floor') {
+            g.save(); g.translate(p.x, p.y - up); g.rotate(p.ang);
+            if (!isFinish) {
+                g.fillStyle = shade(col, -.3); g.fillRect(-18, -hw - 8, 36, (hw + 8) * 2);
+                g.fillStyle = col; g.fillRect(-12, -hw - 8, 24, (hw + 8) * 2);
+            }
+            g.restore();
+            // 기관 이름 : 아치 간판 자리에
+            g.save(); g.translate(p.x, p.y - up);
+            let a = p.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
+            g.rotate(a);
+            g.font = 'bold 50px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+            const w = g.measureText(label).width + 58;
+            g.fillStyle = 'rgba(10,12,20,.92)';
+            g.beginPath(); g.roundRect(-w / 2, -36, w, 72, 14); g.fill();
+            g.strokeStyle = col; g.lineWidth = 6; g.shadowColor = col; g.shadowBlur = 14;
+            g.beginPath(); g.roundRect(-w / 2, -36, w, 72, 14); g.stroke(); g.shadowBlur = 0;
+            g.fillStyle = col; g.beginPath(); g.arc(-w / 2 + 26, 0, 17, 0, TAU); g.fill();
+            g.fillStyle = '#12161e'; g.font = 'bold 22px sans-serif'; g.fillText(cp.num, -w / 2 + 26, 1);
+            g.fillStyle = '#fff'; g.font = 'bold 50px sans-serif'; g.fillText(label, 18, 2);
+            g.restore();
+            return;
+        }
         /* 버전 160 (사용자 "도로 연결 부분 게이트도 바꿀수 있니?" · "도착지점 검은색흰색 골인지점")
            노면에는 기관 색 문턱을 얇게 깔고, 그 위에 길을 가로지르는 철골 아치 그림. 골인선은 체커 아치. */
         g.save(); g.translate(p.x, p.y - up); g.rotate(p.ang);
-        if (!isFinish) {
-            g.fillStyle = shade(col, -.3); g.fillRect(-18, -hw - 8, 36, (hw + 8) * 2);
-            g.fillStyle = col; g.fillRect(-12, -hw - 8, 24, (hw + 8) * 2);
+        /* 버전 162 (사용자 "골인지점 바닥 페인트가 차량 위로 보여진다" · "내말이 맞지?") : 위에서 보는 게임이라
+           도로를 가로지르는 아치 막대가 차를 덮어 지저분했다. 막대는 빼고 그림의 양 끝 기둥만 도로 가장자리에 세운다.
+           골인은 바닥 체커 라인(차 아래)이 맡는다. */
+        const iw = gimg.naturalWidth, ih = gimg.naturalHeight, cw = iw * .16;
+        const PW = 84, PH = PW * ih / cw;                              // 기둥 한 개 크기
+        for (const side of [-1, 1]) {
+            g.save(); g.translate(0, (hw + PW * .75) * side); g.rotate(Math.PI / 2);
+            g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(6, 20, PW * .45, PH * .28, 0, 0, TAU); g.fill();
+            if (side < 0) g.drawImage(gimg, 0, 0, cw, ih, -PW / 2, -PH * .62, PW, PH);
+            else g.drawImage(gimg, iw - cw, 0, cw, ih, -PW / 2, -PH * .62, PW, PH);
+            g.restore();
         }
-        const W = (hw + 110) * 2, H = W * gimg.naturalHeight / gimg.naturalWidth * 1.45;   // 위에서 봐도 굵게 보이게 조금 두껍게
-        g.fillStyle = 'rgba(0,0,0,.25)';                               // 아치 그림자
-        g.beginPath(); g.ellipse(22, 0, H * .32, W * .5, 0, 0, TAU); g.fill();
-        g.rotate(Math.PI / 2);
-        g.drawImage(gimg, -W / 2, -H * .62, W, H);
-        g.restore();
-        // 기관 이름 : 아치 간판 자리에
-        g.save(); g.translate(p.x, p.y - up);
-        let a = p.ang; if (a > Math.PI / 2 || a < -Math.PI / 2) a += Math.PI;
-        g.rotate(a);
-        if (isFinish) g.translate(0, -H * .1);
-        g.font = 'bold 50px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-        const w = g.measureText(label).width + 58;
-        g.fillStyle = 'rgba(10,12,20,.92)';
-        g.beginPath(); g.roundRect(-w / 2, -36, w, 72, 14); g.fill();
-        g.strokeStyle = col; g.lineWidth = 6; g.shadowColor = col; g.shadowBlur = 14;
-        g.beginPath(); g.roundRect(-w / 2, -36, w, 72, 14); g.stroke(); g.shadowBlur = 0;
-        g.fillStyle = col; g.beginPath(); g.arc(-w / 2 + 26, 0, 17, 0, TAU); g.fill();
-        g.fillStyle = '#12161e'; g.font = 'bold 22px sans-serif'; g.fillText(cp.num, -w / 2 + 26, 1);
-        g.fillStyle = '#fff'; g.font = 'bold 50px sans-serif'; g.fillText(label, 18, 2);
+        const H = 0;
         g.restore();
         return;
     }
@@ -8278,15 +8296,18 @@ function drawGate(g, p, cp, isFinish) {
     g.restore();
 }
 
-function drawGates(g, inView) {
+function drawGates(g, inView, pass) {
     const startSi = track.closed ? track.checkpoints[0].si : -1;
+    const imgs = GATE_IMG.cp.complete && GATE_IMG.cp.naturalWidth;
     track.checkpoints.forEach(cp => {
         const p = track.pts[cp.si];
         if (!inView(p.x, p.y)) return;
-        if (cp.si === startSi) drawCheckerLine(g, p, (p.hw || track.halfWidth) + 12, 5);  // 여기만 골인선 (버전 160 : 더 넓게)
-        drawGate(g, p, cp, cp.si === startSi);
+        if (pass === 'floor') {
+            if (cp.si === startSi) drawCheckerLine(g, p, (p.hw || track.halfWidth) + 12, 5);  // 여기만 골인선 — 바닥이라 차보다 먼저
+            if (imgs) drawGate(g, p, cp, cp.si === startSi, 'floor');
+        } else drawGate(g, p, cp, cp.si === startSi, 'top');
     });
-    if (!track.closed) drawCheckerLine(g, track.pts[track.N - 2], track.halfWidth + 16, 3);
+    if (pass === 'floor') { if (!track.closed) drawCheckerLine(g, track.pts[track.N - 2], track.halfWidth + 16, 3); return; }
     drawLapFlags(g, inView);
 }
 
