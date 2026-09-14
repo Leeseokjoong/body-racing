@@ -2866,6 +2866,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 142, d: '9월 14일', t: [
+        '전설 네온을 더 진하게 — 분홍 · 노랑 같은 밝은 길에서도 네온 색이 하얗게 날아가지 않고 또렷하다',
+        'Legendary neon is bolder: its color now stays vivid on bright pink and yellow roads instead of washing out to white'
+    ] },
     { v: 141, d: '9월 14일', t: [
         '드리프트가 쉬워졌다 — 쉬움 · 보통에서는 한계를 넘겨도 빙글 돌지 않고 타이어가 다시 붙으며 모은 터보를 준다 (어려움 · 전설은 그대로)',
         'Drifting is easier: on Easy and Normal, holding past the limit no longer spins you out; the tires regrip and you keep the turbo (Hard and Legendary unchanged)',
@@ -8342,26 +8346,30 @@ function drawKart(g, k, lift = 0) {
 
     // --- 블렌더 스프라이트가 로드됐으면 그걸로 그린다
     if (sk && sk.under) {                               // 전설 그림 스킨 : 차 밑 네온
-        /* 버전 141 (사용자 "네온 효과가 너무 약하다") : 예전 빛은 반지름 88 을 세로로 눌러 그려
-           차(길이 182)보다 작았다 — 차 그림이 거의 다 덮었다. 이제 차보다 크게 번지는 바닥빛 + 차 둘레 네온관. */
-        const c = sk.under, pul = .82 + Math.sin(performance.now() / 230) * .18;
-        const L = KART_DRAW * .47, W = KART_DRAW * .27;
+        /* 버전 141 (사용자 "네온 효과가 너무 약하다") : 예전 빛은 반지름 88 을 세로로 눌러 그려 차(길이 182)보다 작았다.
+           버전 142 (사용자 "아직 네온 효과가 잘 안보이네") : 빛을 '더하기(lighter)' 로 그렸더니
+           분홍 · 노랑 같은 밝은 길에서는 색이 하얗게 날아가 네온 색이 안 보였다.
+           이제 색을 그대로 칠하고(진한 색 관 + 번짐) 가운데만 살짝 밝힌다 — 어느 길에서도 색이 남는다. */
+        const c = sk.under, now = performance.now();
+        const pul = .78 + Math.sin(now / 210) * .22;
+        const L = KART_DRAW * .5, W = KART_DRAW * .29;
         g.save(); g.translate(ox, oy + bounce + 4); g.rotate(k.ang + (k.spin || 0));
-        g.globalCompositeOperation = 'lighter';
-        g.save(); g.scale(1, W / L);
-        const R = L * 1.75, rg = g.createRadialGradient(0, 0, R * .2, 0, 0, R);
-        rg.addColorStop(0, `rgba(${c},${.95 * pul})`); rg.addColorStop(.5, `rgba(${c},${.42 * pul})`); rg.addColorStop(1, `rgba(${c},0)`);
+        g.save(); g.scale(1, W / L);                   // 길 위로 번지는 색
+        const R = L * 1.9, rg = g.createRadialGradient(0, 0, R * .3, 0, 0, R);
+        rg.addColorStop(0, `rgba(${c},${.75 * pul})`); rg.addColorStop(.55, `rgba(${c},${.35 * pul})`); rg.addColorStop(1, `rgba(${c},0)`);
         g.fillStyle = rg; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fill();
         g.restore();
-        const tube = () => {                            // 둥근 네 모서리 관 (roundRect 가 없는 폰도 있다)
-            const x0 = -L, y0 = -W, x1 = L, y1 = W, r = W * .9;
+        const tube = (e) => {                           // 둥근 네 모서리 관 (roundRect 가 없는 폰도 있다)
+            const x0 = -L - e, y0 = -W - e, x1 = L + e, y1 = W + e, r = W * .9 + e;
             g.beginPath(); g.moveTo(x0 + r, y0); g.lineTo(x1 - r, y0); g.quadraticCurveTo(x1, y0, x1, y0 + r);
             g.lineTo(x1, y1 - r); g.quadraticCurveTo(x1, y1, x1 - r, y1); g.lineTo(x0 + r, y1);
             g.quadraticCurveTo(x0, y1, x0, y1 - r); g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0); g.closePath();
         };
-        g.shadowColor = `rgba(${c},1)`; g.shadowBlur = 26;
-        g.strokeStyle = `rgba(${c},${.95 * pul})`; g.lineWidth = 8; tube(); g.stroke();
-        g.shadowBlur = 0; g.strokeStyle = `rgba(255,255,255,${.55 * pul})`; g.lineWidth = 2.5; tube(); g.stroke();
+        g.shadowColor = `rgba(${c},1)`; g.shadowBlur = 34;
+        g.strokeStyle = `rgba(${c},${.9 * pul})`; g.lineWidth = 14; tube(2); g.stroke();   // 두꺼운 색 관
+        g.shadowBlur = 14; g.lineWidth = 7; g.strokeStyle = `rgba(${c},1)`; tube(2); g.stroke();
+        g.shadowBlur = 0; g.globalCompositeOperation = 'lighter';                          // 관 한가운데 밝은 심
+        g.strokeStyle = `rgba(255,255,255,${.5 * pul})`; g.lineWidth = 2.5; tube(2); g.stroke();
         g.restore();
     }
     if (sk && sk.glow) {                                // 전설 스킨 : 둘레가 숨 쉬듯 빛난다
