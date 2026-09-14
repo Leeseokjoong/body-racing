@@ -187,6 +187,14 @@
         -webkit-text-stroke: 5px #12161c; paint-order: stroke fill;
     }
 
+    /* 버전 163 : 코스 미리보기 */
+    /* 미리보기 동안에는 계기판 · 조작 버튼을 숨겨 폰에서 코스가 가려지지 않게 */
+    body.previewing #hud > :not(#bigMsg):not(#previewSkip), body.previewing #touch { visibility: hidden !important; }
+    #bigMsg.pv { font-size: clamp(34px, 7vw, 76px); top: 18%; transform: translate(-50%,-50%) rotate(-2deg); white-space: nowrap;
+                 font-family: 'BlackHanSans', sans-serif; font-style: italic; color: #ffe39a; transition: opacity .2s; }
+    #previewSkip { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%) skewX(-8deg); z-index: 9; pointer-events: auto;
+                   font: 900 15px/1 'BlackHanSans', sans-serif; padding: 11px 22px; border-radius: 10px; cursor: pointer;
+                   color: #241500; background: linear-gradient(180deg, #ffd84a, #e8a020); border: 2px solid #fff1b8; box-shadow: 0 4px 0 #7a4b00; }
     #bigMsg {
         position: absolute; left: 50%; top: 38%; transform: translate(-50%,-50%) rotate(-4deg);
         font-size: 110px; font-weight: 900; z-index: 7; pointer-events: none; color: #fff;
@@ -1973,6 +1981,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
     <!-- 끊기면 알려 준다. 아무 말 없이 상대가 멈추면 게임이 고장 난 줄 안다. -->
     <div id="netWarn">연결이 끊겼습니다 · 다시 잇는 중</div>
     <div id="bigMsg"></div>
+    <button id="previewSkip" class="hidden">코스 미리보기 · 눌러서 건너뛰기 ▶</button>
 </div>
 
 <!-- 폰에는 개발자 콘솔이 없다. 문제가 생기면 화면에 그대로 보여 준다. -->
@@ -3093,6 +3102,10 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 163, d: '9월 14일', t: [
+        '출발 전 코스 미리보기 — 코스 전체를 멀리서 보여 주고, 빛 점이 기관 순서대로 한 바퀴 달리며 이름이 크게 뜬 뒤 내 차로 줌인',
+        'Course preview before the start: the whole track is shown from above while a light runs the route naming each organ, then the camera zooms into your kart'
+    ] },
     { v: 162, d: '9월 14일', t: [
         '골인선 · 게이트가 차를 덮던 것을 고쳤다 — 도로를 가로지르던 아치 막대를 빼고 양쪽 기둥만, 체커 골인선 · 기관 이름판은 바닥에 깔려 차가 그 위를 지나간다',
         'Finish line and gates no longer cover cars: the overhead beams are gone, pillars stand at the road edges, and the checkered line and organ signs are painted on the road'
@@ -6692,7 +6705,19 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
         const want = clamp(player.steer * clamp(Math.abs(player.speed) / MAXSPEED, 0, 1), -1, 1);
         cam.tilt = lerp(cam.tilt || 0, want, .06);
     } else cam.tilt = lerp(cam.tilt || 0, 0, .1);
-    if (fullMap) {
+    if (state === 'preview' && preview && player) {
+        /* 코스 선의 실제 테두리로 맞춘다 — track.bounds 는 섬 · 여유가 한쪽으로 커서 폰에서 코스가 왼쪽으로 쏠렸다 */
+        if (!track.pvBox) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+            for (const q of track.pts) { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }
+            const m = track.halfWidth * 2.2; track.pvBox = { x: x0 - m, y: y0 - m, w: x1 - x0 + m * 2, h: y1 - y0 + m * 2 }; }
+        const bx = track.pvBox, full = Math.min(VW / bx.w, VH * .82 / bx.h);
+        const cx = bx.x + bx.w / 2, cy = bx.y + bx.h / 2 - (VH * .06) / full;
+        const z = clamp((preview.t - PREVIEW_RUN) / PREVIEW_ZOOM, 0, 1), e = z * z * (3 - 2 * z);
+        const endZoom = cam.zoom * .34;                                    // 카운트다운 첫 장면과 같은 높이에서 이어진다
+        zoom = full * Math.pow(endZoom / full, e);
+        cam.x = lerp(cx, player.x, e); cam.y = lerp(cy, player.y, e);
+        cam.intro = 1;
+    } else if (fullMap) {
         zoom = Math.min(VW / track.bounds.w, VH / track.bounds.h) * .95;
         cam.x = lerp(cam.x, track.bounds.x + track.bounds.w / 2, .18);
         cam.y = lerp(cam.y, track.bounds.y + track.bounds.h / 2, .18);
@@ -6753,7 +6778,7 @@ function renderView(g, cam, player, VX, VY, VW, VH) {
     // 기관 게이트는 맨 위에. 다리가 그 위를 덮으면 이름이 묻히고,
     //   구간이 맞물리는 자리의 어색한 이음매도 가려 주지 못한다.
     drawGates(g, inView, 'top');
-
+    if (state === 'preview' && preview) drawPreviewRun(g, zoom);
     drawBubbles(g);                    // 말풍선은 카트보다 위, 화면 표시보다 아래
 
     drawSticky(g);
@@ -8296,6 +8321,22 @@ function drawGate(g, p, cp, isFinish, pass) {
     g.restore();
 }
 
+/* 미리보기 : 출발선부터 지금 자리까지 빛 띠 + 앞머리 빛 점 (화면이 멀어도 보이게 굵기를 줌에 맞춘다) */
+function drawPreviewRun(g, zoom) {
+    const u = Math.min(1, preview.t / PREVIEW_RUN), end = Math.floor(u * (track.N - 1));
+    const zf = clamp((preview.t - PREVIEW_RUN) / PREVIEW_ZOOM, 0, 1), W = 9 / zoom, pts = track.pts;
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.globalAlpha = 1 - zf;          // 줌인하며 사라진다
+    g.strokeStyle = 'rgba(255,230,120,.9)'; g.lineWidth = W; g.shadowColor = '#ffd84a'; g.shadowBlur = 30;
+    g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 2; i <= end; i += 2) g.lineTo(pts[i].x, pts[i].y - (pts[i].up || 0));
+    g.stroke();
+    if (u < 1) {
+        const h = pts[end], pul = 1 + Math.sin(performance.now() / 90) * .25;
+        g.fillStyle = '#fff'; g.shadowColor = '#fff'; g.shadowBlur = 50;
+        g.beginPath(); g.arc(h.x, h.y - (h.up || 0), W * 1.3 * pul, 0, TAU); g.fill();
+    }
+    g.restore();
+}
 function drawGates(g, inView, pass) {
     const startSi = track.closed ? track.checkpoints[0].si : -1;
     const imgs = GATE_IMG.cp.complete && GATE_IMG.cp.naturalWidth;
@@ -9825,7 +9866,7 @@ const bgmBuf = {};          // 지금 트는 곡 하나만 남긴다
 function bgmWant() {
     if (!audioCtx || !save.music || bgmAd || document.hidden) return '';
     if (state === 'menu') return 'menu';
-    if (state === 'countdown' || state === 'race' || state === 'finish') return 'race';
+    if (state === 'preview' || state === 'countdown' || state === 'race' || state === 'finish') return 'race';
     return '';
 }
 function bgmLevel(key) {
@@ -11030,6 +11071,14 @@ function netInterp(dt) {
    ========================================================================== */
 let track = null, karts = [], player = null;
 let state = 'menu', raceTime = 0, countdown = 0, fullMap = false, selectedId = 'circulatory';
+let preview = null;                          // 버전 163 : 코스 미리보기 { t, cp }
+const PREVIEW_RUN = 3.6, PREVIEW_ZOOM = 1.1;  // 빛 점이 한 바퀴 도는 시간 · 줌인 시간(초)
+function endPreview() {
+    if (state !== 'preview') return;
+    state = 'countdown'; countdown = 3.99; countShown = -1; preview = null;
+    el('previewSkip').classList.add('hidden'); el('bigMsg').style.opacity = 0; el('bigMsg').classList.remove('pv');
+    document.body.classList.remove('previewing');
+}
 
 function placeOnStart(k, lane) {
     const p = track.pts[0];
@@ -11096,7 +11145,10 @@ function startRace(id, timeAttack) {
     victory = null;
     setBanner(false);                                    // 달리는 동안에는 배너를 내린다
     document.body.classList.add('racing');               // 판 번호를 잠근다(진단 창 오작동 방지)
-    raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false; driftHint = 0; escapeHint = 0; backHint = 0; countShown = -1; stickyHint = 0;
+    raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false;
+    /* 버전 163 : 출발 전에 코스 전체를 멀리서 보여 주고, 빛 점이 출발선부터 기관 순서대로 한 바퀴 달린 뒤 내 차로 줌인 */
+    preview = null;
+    if (!net.on) { state = 'preview'; preview = { t: 0, cp: -1 }; el('previewSkip').classList.remove('hidden'); document.body.classList.add('previewing'); } driftHint = 0; escapeHint = 0; backHint = 0; countShown = -1; stickyHint = 0;
     subTimer = 0; lastSubKey = ''; el('subtitle').classList.remove('show');
 
     stopCarVoice(); engineUseCar(); skidUseCar(); sideImg(carById(save.car).sprite); skinWarm(carById(save.car).sprite, skinOf(save.car));            // 고른 차의 엔진 · 타이어 소리로
@@ -12072,7 +12124,20 @@ let last = performance.now();
 function loop(now) {
     const dt = raceHold && (state === 'race' || state === 'countdown') ? 0 : Math.min((now - last) / 1000, .05); last = now;
 
-    if (state === 'countdown') {
+    if (state === 'preview') {
+        preview.t += dt;
+        const u = Math.min(1, preview.t / PREVIEW_RUN);
+        // 빛 점이 지나는 체크포인트 이름을 크게 띄운다
+        const si = Math.floor(u * (track.N - 1));
+        let cpi = -1; track.checkpoints.forEach((c, j) => { if (c.si <= si) cpi = j; });
+        if (u < 1 && cpi !== preview.cp) {
+            preview.cp = cpi;
+            const c = track.checkpoints[cpi];
+            if (c) { const m = el('bigMsg'); m.classList.add('pv'); m.textContent = c.num + '. ' + T(c.node.name); m.style.opacity = 1; playBeep(700 + cpi * 90, .05); }
+        }
+        if (u >= 1 && preview.cp !== 'done') { preview.cp = 'done'; el('bigMsg').style.opacity = 0; }
+        if (preview.t >= PREVIEW_RUN + PREVIEW_ZOOM) endPreview();
+    } else if (state === 'countdown') {
         countdown -= dt;
         const n = Math.ceil(countdown);
         if (n !== countShown) { countShown = n; if (n > 0) sfxCount(); if (n === 3) { engineRev('engine_rev1', .28); if (engineHasShots(engineFlavor)) playOne('engine_' + engineFlavor + '_rev', .5); } }
@@ -13694,13 +13759,14 @@ function askBox(msg, noTxt, yesTxt, onYes, onNo) {
     el('exitAsk').classList.remove('hidden');
 }
 function askLeaveRace() {
-    if (state !== 'race' && state !== 'countdown') return;
+    if (state !== 'race' && state !== 'countdown' && state !== 'preview') return;
     if (!net.on) raceHold = true;
     askBox('레이스를 그만두고 메뉴로 나갈까요?', '계속 달리기', '나가기',
-        () => { raceHold = false; if (state === 'race' || state === 'countdown') backToMenu(); },
+        () => { raceHold = false; if (state === 'race' || state === 'countdown' || state === 'preview') { el('previewSkip').classList.add('hidden'); backToMenu(); } },
         () => { raceHold = false; });
 }
 el('exitRace').onclick = askLeaveRace;
+el('previewSkip').onclick = e => { e.stopPropagation(); endPreview(); };
 
 el('retryBtn').onclick = () => {
     const id = track.sys.id;
@@ -13717,6 +13783,7 @@ el('menuBtn').onclick = () => {
 };
 /* 화면만 메뉴로 되돌린다. 방에 남아 있는 채로 로비로 갈 때도 쓴다. */
 function showMenu() {
+    document.body.classList.remove('previewing'); preview = null; el('previewSkip').classList.add('hidden');
     toggleEmotePad(false);
     state = 'menu';
     document.body.classList.remove('racing');
@@ -14081,6 +14148,7 @@ if (IS_TOUCH && !(window.Capacitor && window.Capacitor.isNativePlatform && windo
                 if (setupStep > 0) { setStep(setupStep - 1); return; }
                 askExit(); return;
             }
+            if (state === 'preview') { endPreview(); return; }             // 뒤로가기 : 미리보기는 건너뛰기
             if (state === 'race' || state === 'countdown') { askLeaveRace(); return; }
             if (open('result')) { const mb = el('menuBtn'); if (mb) mb.click(); }  // 결과 화면 → 맵 선택
         });
