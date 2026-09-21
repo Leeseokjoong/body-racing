@@ -258,6 +258,15 @@
               flex-direction: column; gap: 1px; }
     #tBrake i { font-style: normal; font-size: 10px; font-weight: 700;
                 color: #9fd0ff; letter-spacing: -.3px; }
+    /* 버전 165 : 멈춰 있을 때 — 버튼이 노랗게 뛰고 위에 말풍선 */
+    #tBrake.stuckHelp { animation: brkHelp .5s ease-in-out infinite alternate; border-color: #ffd166;
+                        background: rgba(90,70,10,.8); }
+    #tBrake.stuckHelp::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 10px);
+        transform: translateX(-30%); white-space: nowrap; padding: 7px 12px; border-radius: 12px;
+        font: 900 15px/1 'BlackHanSans', sans-serif; color: #241500; background: #ffd166;
+        box-shadow: 0 3px 0 #7a4b00; pointer-events: none; }
+    @keyframes brkHelp { from { transform: scale(1); box-shadow: 0 0 0 rgba(255,209,102,0); }
+                         to   { transform: scale(1.14); box-shadow: 0 0 22px rgba(255,209,102,.9); } }
     #tGas   { display: none; }               /* 가속 자동 */
 
     /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
@@ -2034,7 +2043,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
     <div class="tbtn" id="tDrift">드리프트</div>
     <div class="tbtn" id="tTurbo">터보<i id="tTurboN"></i></div>
     <div class="tbtn" id="tItem">아이템</div>
-    <div class="tbtn" id="tBrake">브레이크<i>후진</i></div>
+    <div class="tbtn" id="tBrake">브레이크<i>꾹 = 후진</i></div>
     <!-- 정해진 말 한마디. 자유 입력은 없다. -->
     <div class="tbtn" id="tTalk">말</div>
 </div>
@@ -2463,7 +2472,8 @@ const EN = {
 '순위': 'Rank', '기록': 'Time', '최고 속도': 'Top speed', '최고 기록': 'Best',
 '최대 충전!': 'MAX CHARGE!',
 '명중!': 'HIT!', '붙잡았다!': 'GRABBED!',
-'후진': 'Reverse',
+'후진': 'Reverse', '꾹 = 후진': 'hold = reverse', '꾹 누르면 뒤로 가요!': 'Hold to back up!',
+'길로 돌려놨어요': 'Back on the road!',
 '몸속 기관을 달려라! · 코스는 각 계통의 실제 흐름(flow)에서 자동 생성됩니다.':
     'Race through a living body! Every course is built from how that system actually flows.',
 'W 가속 · A/D 좌우 · S 브레이크(계속 누르면 후진) ·':
@@ -3102,6 +3112,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 165, d: '9월 21일', t: [
+        '쉬움 · 보통 드리프트가 쉬워졌다 — 덜 미끄러지고 길을 따라 잡아 준다 (폰으로 하는 아이 기준 벽 부딪힘 쉬움 26 → 5번, 보통 49 → 14번 / 한 바퀴)',
+        'Drifting on Easy and Normal is easier: less sliding and the car keeps following the road (wall hits per lap for a phone player: Easy 26 to 5, Normal 49 to 14)',
+        '브레이크 버튼에 "꾹 = 후진" 이 레이스 중에도 보인다 — 예전엔 출발하자마자 지워졌다. 멈춰 있으면 버튼이 반짝이며 "꾹 누르면 뒤로 가요!"',
+        'The brake button keeps its "hold = reverse" label during races (it used to vanish at the start); when you are stuck it pulses with "Hold to back up!"',
+        '벽에 박혀 4.5초 넘게 못 움직이면 길 가운데로 돌려놓는다',
+        'If you are stuck against a wall for over 4.5 seconds, you are put back on the road'
+    ] },
     { v: 164, d: '9월 14일', t: [
         '터보 불꽃은 터보(드리프트로 모은 터보 · 가속 아이템)에만 — 발판 · 점프 · 산소 교환 가속은 차 뒤로 흐르는 바람선',
         'Turbo flames now appear only for turbo (drift turbo and speed item); pads, jumps and oxygen swaps show wind streaks instead'
@@ -4805,9 +4823,9 @@ const SAVE_KEY = 'bodyRacing.save.v1';
      turbo     봇이 곧은 길에서 터보를 켜는 간격(초). 0 이면 안 켠다
    쉬움은 아이들용이라 예전 그대로 둔다. */
 const LEVELS = [
-    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1, aid: 2.0, spin: false,
+    { id: 'easy',   name: '쉬움',   en: 'Easy',      guide: true,  bot: .94, slump: 1.6, item: .6, pay: 1.00, wait: 1, aid: 2.0, spin: false, drift: [3.0, .7, 1.6],
       rub: .34, reach: 700,  cornerRub: .8, turbo: 0 },
-    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .6, item: 1, pay: 1.20, wait: 0, aid: 1.3, spin: false,
+    { id: 'normal', name: '보통',   en: 'Normal',    guide: false, bot: 1.00, slump: .6, item: 1, pay: 1.20, wait: 0, aid: 1.3, spin: false, drift: [2.4, .85, 1.3],
       rub: .40, reach: 900,  cornerRub: .9, turbo: 16 },
     { id: 'hard',   name: '어려움', en: 'Hard',      guide: false, bot: 1.08, slump: .25, item: 1.6, pay: 1.45, wait: 0, aid: .9, spin: true,
       rub: .50, reach: 1300, cornerRub: 1, turbo: 9 },
@@ -5481,7 +5499,8 @@ const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움
 //   기본 상태로는 게이지를 절반쯤밖에 못 채운다.
 //   '드리프트 지속'을 올려야 오래 물 수 있고, 그래야 슈퍼 부스터가 열린다.
 const DRIFT_HOLD = 1.05, DRIFT_FILL = 45;
-const DRIFT_COOLDOWN = .3;   // 한계 뒤 타이어가 다시 물기까지 쉬는 시간(초)
+const DRIFT_COOLDOWN = .3;
+const DRIFT_FEEL0 = [GRIP_DRIFT, 1, .22];   // 드리프트 [접지, 미끄럼 배율, 길 보조] 기본값 (어려움 · 전설 · 봇)   // 한계 뒤 타이어가 다시 물기까지 쉬는 시간(초)
 /* ---- 버티기 ----
    한계에 닿아도 바로 안 풀린다. 이만큼은 더 물 수 있고, 그동안 게이지가 훨씬 빨리 찬다.
    여기서 놓으면 큰 보상. 이것마저 넘기면 타이어가 완전히 놓쳐 빙글 돈다.
@@ -5720,6 +5739,14 @@ function updateKart(k, dt) {
             backHint = 12;
             popup(k.x, k.y, T('브레이크를 계속 누르면 후진!'), '#ffd166');
         }
+        /* 버전 165 : 후진을 몰라도 갇혀 있지 않게 — 4.5초 넘게 멈춰 있으면(후진 중이 아닐 때) 길 가운데로.
+           봇은 2초면 돌려놓는데 사람만 벽에 박혀 레이스를 잃고 있었다. */
+        if (k.stillT > 4.5 && throttle >= 0) {
+            const rp = track.pts[k.si];
+            k.x = rp.x; k.y = rp.y; k.ang = rp.ang; k.vx = k.vy = 0; k.stillT = 0;
+            popup(k.x, k.y, T('길로 돌려놨어요'), '#9fd0ff');
+            cam.flash = Math.max(cam.flash || 0, .25);
+        }
     }
 
     if (throttle > 0) vF += ACCEL * (boosting ? 2 : 1) * (up ? up.accel() : 1) * dt;
@@ -5748,7 +5775,11 @@ function updateKart(k, dt) {
     else k.drifting = turning;                                  // 진입 : 방향키가 필요
     // 접지력을 한 번에 풀지 않고 서서히 — 차가 튕기듯 도는 것을 막는다
     k.driftAmt = lerp(k.driftAmt, k.drifting ? 1 : 0, 1 - Math.pow(DRIFT_EASE, dt));
-    vR *= Math.max(0, 1 - lerp(GRIP_NORMAL * (up ? up.grip() : 1), GRIP_DRIFT, k.driftAmt) * dt);
+    /* 버전 165 : 드리프트 손맛을 난이도별로 (LEVELS.drift = [접지, 미끄럼 배율, 길 보조]).
+       재 보니 0.2초 늦게 반응하는 폰 아이는 드리프트를 누르면 벽에 부딪히는 횟수가 한 바퀴 16 → 49 로 세 배가 됐다.
+       미끄러짐이 크고 길 보조가 거의 꺼져서다. 쉬움 · 보통은 덜 미끄러지고 보조를 남긴다. 어려움 · 전설은 예전 그대로. */
+    const DF = (k.isPlayer && curLevel().drift) || DRIFT_FEEL0;
+    vR *= Math.max(0, 1 - lerp(GRIP_NORMAL * (up ? up.grip() : 1), DF[0], k.driftAmt) * dt);
 
     // 저속에선 잘 돌고, 고속에선 안정적으로 — 예민함을 줄이는 핵심
     const spd = clamp(Math.abs(vF) / 170, 0, 1);
@@ -5764,7 +5795,7 @@ function updateKart(k, dt) {
     if (aid > 0 && Math.abs(vF) > 55) {
         const road = track.pts[k.si].ang;
         let w = Math.abs(steerIn) < .05 ? 1 : ASSIST_TURNING;
-        w = lerp(w, .22, k.driftAmt);          // 드리프트 중에도 약하게 유지 → 스핀 방지
+        w = lerp(w, DF[2], k.driftAmt);        // 드리프트 중에도 유지 → 스핀 방지 (버전 165 : 난이도별)
         // 빠를수록 보조를 키운다 — 부스터로 폭주할 때 제어를 잃지 않게
         const fastAid = 1 + clamp((Math.abs(vF) - MAXSPEED) / (MAXSPEED * .6), 0, 1) * 1.1;
         k.ang += clamp(angDiff(road, k.ang), -.9, .9) * aid * w * fastAid * dt;
@@ -5806,7 +5837,7 @@ function updateKart(k, dt) {
     } else { k.driftHold = 0; k.overDrift = false; }
 
     if (k.drifting) {
-        vR += k.steer * DRIFT_SLIDE * k.driftAmt * dt;             // 미끄러짐도 서서히
+        vR += k.steer * DRIFT_SLIDE * DF[1] * k.driftAmt * dt;     // 미끄러짐도 서서히
         // 버티는 중에는 훨씬 빨리 차고, 100 을 넘어 128 까지 간다
         k.driftCharge = Math.min(k.overDrift ? DRIFT_MAX_CHARGE : 100,
             k.driftCharge + DRIFT_FILL * dt * (k.overDrift ? DRIFT_OVER_FILL : 1));
@@ -9046,8 +9077,17 @@ function updateHud() {
     // 브레이크 버튼은 후진 페달이기도 하다.
     //   달릴 때 누르면 감속, 멈춘 뒤에도 누르고 있으면 뒤로 간다.
     //   지금 뭘 하고 있는지 버튼 이름으로 알려 준다.
+    /* 버전 165 : 예전에는 textContent 로 덮어써서 레이스가 시작되자마자 아래 '후진' 글자가 지워졌다.
+       아이들이 후진을 모르던 진짜 이유. 이제 두 줄을 유지하고, 바뀔 때만 고친다. */
     const bBtn = el('tBrake');
-    if (bBtn) bBtn.textContent = T(player.speed < -8 ? '후진 중' : '브레이크');
+    const bMode = player.speed < -8 ? 'rev' : 'brk';
+    if (bBtn && bBtn.dataset.mode !== bMode) {
+        bBtn.dataset.mode = bMode;
+        bBtn.innerHTML = bMode === 'rev' ? T('후진 중') + '<i>◀◀</i>' : T('브레이크') + '<i>' + T('꾹 = 후진') + '</i>';
+    }
+    // 멈춰 있으면 브레이크 버튼이 반짝이며 '꾹 누르면 뒤로' 말풍선을 단다
+    if (bBtn && !bBtn.dataset.tip) bBtn.dataset.tip = T('꾹 누르면 뒤로 가요!');
+    if (bBtn) bBtn.classList.toggle('stuckHelp', (player.stillT || 0) > 1.2 && player.speed > -8 && state === 'race');
 
     // 역주행 : 벽에 박혀 방향이 돌아갔을 때 스스로 알아채기 어렵다
     const road = track.pts[player.si].ang;
