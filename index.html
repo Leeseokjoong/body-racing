@@ -2519,6 +2519,7 @@ const EN = {
 '헤모글로빈은 매일 접속 · 1등으로 모아요': 'Earn haemoglobin by visiting daily and finishing first',
 '헤모글로빈을 받았어요': 'You got haemoglobin',
 '후진 중': 'REVERSING',
+'적혈이': 'Reddy', '백구': 'Whitey', '효소맨': 'Enzyme', '몸속 기관을 달려라!': 'Race through a living body!', '팡!': 'BAM!',
 '희귀 이상 뽑기권': 'Rare-or-better draw ticket',
 '순환계 서킷': 'Circulatory Circuit',
 '우심방': 'Right Atrium',
@@ -6112,7 +6113,7 @@ const ASSIST = 4.2;          // 기본값(난이도 표가 없을 때만 쓰인�
 const ASSIST_TURNING = .5;   // 조향 중에도 유지되는 보조 비율
 const BOT_ASSIST = 2.0;      // 봇이 받는 보조 — 난이도와 무관하게 깔끔한 라인을 돈다
 const CAR_COLORS = ['#d4353f', '#3f74c4', '#2f9e4f', '#e8628e'];
-const AI_NAMES = ['적혈이', '백구', '효소맨'];
+const AI_NAMES = ['적혈이', '백구', '효소맨'];   // 영어판 이름은 EN 사전에 (버전 166)
 
 /* ---- 맵 고르는 화면의 카드 그림 ----
    있으면 그림, 없으면 코드로 그린 코스 선. 그림은 고를 때만 쓰므로
@@ -7099,7 +7100,7 @@ function kartCollisions() {
                 const push = (50 - d) / 2; dx /= d; dy /= d;
                 a.x -= dx * push; a.y -= dy * push; b.x += dx * push; b.y += dy * push;
                 a.vx -= dx * 65; a.vy -= dy * 65; b.vx += dx * 65; b.vy += dy * 65;
-                if (a.isPlayer || b.isPlayer) { cam.shake = 6; sfxCrash(.5); popup((a.x + b.x) / 2, (a.y + b.y) / 2, '팡!', '#fff'); }
+                if (a.isPlayer || b.isPlayer) { cam.shake = 6; sfxCrash(.5); popup((a.x + b.x) / 2, (a.y + b.y) / 2, T('팡!'), '#fff'); }
             }
         }
 }
@@ -11744,7 +11745,7 @@ function startRace(id, timeAttack) {
     //   서로 다른 자리에 있게 되므로, 같이 달리는 느낌을 오히려 망친다.
     if (!net.on && !TA.on) {
         for (let i = 0; i < 3; i++) {
-            const ai = makeKart(false, i + 1, AI_NAMES[i]);
+            const ai = makeKart(false, i + 1, T(AI_NAMES[i]));
             ai.maxMul = botPower(i); ai.aiOffset = (i - 1) * 24;
             karts.push(ai);
         }
