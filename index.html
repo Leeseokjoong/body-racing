@@ -12,6 +12,23 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0e13">
 <title>오장육부 레이싱 · Organ Racing</title>
+<!-- 방문자 세기 (구글 애널리틱스 GA4 · 버전 169).
+     웹으로 들어온 사람 수 · 나라 · 머문 시간만 본다. 이름 · 기록은 보내지 않는다.
+     앱(Capacitor)에서는 file:// 로 열려 애널리틱스가 받지 않으므로, 웹 주소로 열었을 때만 붙인다.
+     앱 쪽 통계는 Play 콘솔과 AdMob 에 이미 있다. -->
+<script>
+(function () {
+    if (location.protocol !== 'https:' && location.protocol !== 'http:') return;   // 앱 안에서는 건너뛴다
+    var ID = 'G-7XGFZ5RNQB';
+    var sc = document.createElement('script');
+    sc.async = true; sc.src = 'https://www.googletagmanager.com/gtag/js?id=' + ID;
+    document.head.appendChild(sc);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', ID, { anonymize_ip: true });
+})();
+</script>
 <style>
 /* 글씨체 : 블랙한산스 (구글 폰트 · OFL, assets/fonts/OFL.txt). 제목 · 버튼 · 카드 이름에만 쓴다 —
    설명글까지 굵은 글씨로 하면 읽기 어렵다. 사용자(2026-09-13) "글씨체도 멋지게 해줘" → '블랙한산스' 선택 */
@@ -3722,6 +3739,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 169, d: '9월 28일', t: [
+        '웹판에 방문자 세기를 붙였다 — 몇 명이 들어오는지, 어느 코스를 많이 하는지 보려고',
+        'Added visitor counting to the web version, to see how many people come and which courses they play',
+        '이름 · 기록은 보내지 않는다. 앱에서는 아예 동작하지 않는다',
+        'No names or scores are sent, and it does not run inside the app at all'
+    ] },
     { v: 168, d: '9월 28일', t: [
         '코스가 차례로 열린다 — 앞 코스를 완주하면 다음 코스가 열려요 (등수는 보지 않아요)',
         'Courses now unlock in order: finish one and the next opens (your finishing position does not matter)',
@@ -11790,6 +11813,10 @@ function botPower(i) {
     return (.93 + i * .035) * curLevel().bot * follow;
 }
 
+/* 구글 애널리틱스에 사건 하나 보내기. 없으면 아무 일도 하지 않는다 (앱 · 차단기).
+   이름을 tally 로 둔 것은 track 이 이미 '지금 달리는 코스' 를 뜻하기 때문이다. */
+function tally(name, data) { try { if (window.gtag) gtag('event', name, data || {}); } catch (e) {} }
+
 function startRace(id, timeAttack) {
     // 모드는 시작할 때 한 번만 정한다. 도중에 바뀌면 기록의 뜻이 흐려진다.
     TA.on = timeAttack !== undefined ? !!timeAttack
@@ -11825,6 +11852,7 @@ function startRace(id, timeAttack) {
     setBanner(false);                                    // 달리는 동안에는 배너를 내린다
     document.body.classList.add('racing');               // 판 번호를 잠근다(진단 창 오작동 방지)
     raceTime = 0; countdown = 3.99; state = 'countdown'; fullMap = false;
+    tally('race_start', { course: id, car: save.car, level: curLevel().id });
     /* 버전 163 : 출발 전에 코스 전체를 멀리서 보여 주고, 빛 점이 출발선부터 기관 순서대로 한 바퀴 달린 뒤 내 차로 줌인 */
     preview = null;
     if (!net.on) { state = 'preview'; preview = { t: 0, cp: -1 }; el('previewSkip').classList.remove('hidden'); document.body.classList.add('previewing'); } driftHint = 0; escapeHint = 0; backHint = 0; countShown = -1; stickyHint = 0;
@@ -12723,6 +12751,7 @@ function endRace() {
         isBest = !save.best[id] || player.finishTime < save.best[id];
         bestBonus = isBest ? 50 : 0;
         const firstClear = !save.best[id];                 // 버전 168 : 이번에 처음 완주했나
+        tally('race_finish', { course: id, rank: player.rank, first_clear: firstClear ? 1 : 0 });
         if (isBest) save.best[id] = player.finishTime;
         if (firstClear) {
             const ids = MAP_IDS(), i = ids.indexOf(id);
