@@ -267,6 +267,12 @@
         box-shadow: 0 3px 0 #7a4b00; pointer-events: none; }
     @keyframes brkHelp { from { transform: scale(1); box-shadow: 0 0 0 rgba(255,209,102,0); }
                          to   { transform: scale(1.14); box-shadow: 0 0 22px rgba(255,209,102,.9); } }
+    /* 버전 168 : 잠긴 코스 */
+    #mpCard.locked canvas { opacity: .3; filter: grayscale(1); }
+    #mpCard.locked .route { display: none; }
+    .mpLock { margin: 10px auto 4px; padding: 7px 14px; border-radius: 11px; display: block; position: relative; z-index: 2; width: fit-content;
+              font-weight: 900; font-size: 13px; color: #ffd166; background: rgba(0,0,0,.45);
+              border: 2px solid rgba(255,209,102,.55); }
     #tGas   { display: none; }               /* 가속 자동 */
 
     /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
@@ -2518,7 +2524,8 @@ const EN = {
 '체크포인트': 'Checkpoint',
 '헤모글로빈은 매일 접속 · 1등으로 모아요': 'Earn haemoglobin by visiting daily and finishing first',
 '헤모글로빈을 받았어요': 'You got haemoglobin',
-'후진 중': 'REVERSING',
+'후진 중': 'REVERSING', '잠김': 'LOCKED', '완주하면 열려요': 'to unlock', '잠긴 코스예요': 'This course is locked',
+'새 코스가 열렸어요!': 'New course unlocked!',
 '적혈이': 'Reddy', '백구': 'Whitey', '효소맨': 'Enzyme', '몸속 기관을 달려라!': 'Race through a living body!', '팡!': 'BAM!',
 '희귀 이상 뽑기권': 'Rare-or-better draw ticket',
 '순환계 서킷': 'Circulatory Circuit',
@@ -3715,6 +3722,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 168, d: '9월 28일', t: [
+        '코스가 차례로 열린다 — 앞 코스를 완주하면 다음 코스가 열려요 (등수는 보지 않아요)',
+        'Courses now unlock in order: finish one and the next opens (your finishing position does not matter)',
+        '이미 완주한 코스는 그대로 열려 있어요',
+        'Courses you have already finished stay open'
+    ] },
     { v: 167, d: '9월 28일', t: [
         '각지게 꺾이던 이음매를 둥글게 폈다 — 코너 반지름이 순환계 37 → 119, 신경계 28 → 90 으로 (도로 반폭은 178)',
         'Sharp kinks where road segments met are now rounded: corner radius went from 37 to 119 on the circulatory map and 28 to 90 on the nervous map (the road half-width is 178)',
@@ -12709,7 +12722,13 @@ function endRace() {
     } else {
         isBest = !save.best[id] || player.finishTime < save.best[id];
         bestBonus = isBest ? 50 : 0;
+        const firstClear = !save.best[id];                 // 버전 168 : 이번에 처음 완주했나
         if (isBest) save.best[id] = player.finishTime;
+        if (firstClear) {
+            const ids = MAP_IDS(), i = ids.indexOf(id);
+            const nextId = i >= 0 && i + 1 < ids.length ? ids[i + 1] : null;
+            if (nextId) setTimeout(() => showToast(T('새 코스가 열렸어요!'), T(SYSTEMS[nextId].name)), 900);
+        }
     }
     const gradeBonus = { S: 80, A: 50, B: 30, C: 15, D: 5 }[G.grade];
     /* 어려운 단계일수록 많이 준다. 이것이 없으면 다들 쉬움에만 머무른다 —
@@ -12887,7 +12906,7 @@ window.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         e.preventDefault();
         if (state === 'race') useItemFor(player);
-        else if (state === 'menu') startRace(selectedId);
+        else if (state === 'menu' && !mapLocked(selectedId)) startRace(selectedId);
     }
     if (e.key === 'm' || e.key === 'M' || e.code === 'KeyM') fullMap = !fullMap;
     if (e.key === '+' || e.key === '=') zoomBy(1.18);
@@ -13002,6 +13021,23 @@ cvs.addEventListener('touchend', () => { pinchDist = 0; });
    청각계는 달팽이관 길이 좁아(반폭 124) 바퀴마다 벽 충돌 10번으로 가장 어렵다. 표에 없는 코스는 뒤에 붙는다. */
 const MAP_ORDER = ['circulatory', 'visual', 'digestive', 'nervous', 'urinary', 'liver', 'glomerulus', 'respiratory', 'auditory'];
 const MAP_IDS = () => MAP_ORDER.filter(id => SYSTEMS[id]).concat(Object.keys(SYSTEMS).filter(id => !MAP_ORDER.includes(id)));
+
+/* ---- 코스 차례로 열기 (버전 168) ----
+   열한 코스가 처음부터 다 열려 있으면 아이가 어디부터 할지 헤맨다.
+   앞 코스를 한 번 완주하면 다음 코스가 열린다. 등수는 보지 않는다 — 막히면 그만두기 때문이다.
+   예전부터 하던 사람이 당황하지 않도록, 이미 완주한 코스(save.best 에 기록이 있는 코스)는 늘 열어 둔다.
+   개발자 코드는 save.allMaps 를 켜서 전부 연다. */
+const mapDone = id => !!(save.best && save.best[id]);
+function mapLocked(id) {
+    if (save.allMaps || mapDone(id)) return false;
+    const ids = MAP_IDS(), i = ids.indexOf(id);
+    if (i <= 0) return false;                       // 첫 코스는 늘 열려 있다
+    return !mapDone(ids[i - 1]);
+}
+const prevMapName = id => {
+    const ids = MAP_IDS(), i = ids.indexOf(id);
+    return i > 0 ? T(SYSTEMS[ids[i - 1]].name) : '';
+};
 let mapAt = 0;                     // 지금 보고 있는 코스
 let setupStep = 0;                 // 지금 보고 있는 장
 
@@ -13022,12 +13058,14 @@ function drawMapCard(dir) {
         `<div class="kind">${T(ZOOM_MAPS.includes(sys.id) ? '기관 확대 코스' : '계통 순회 코스')}</div>` +
         `<canvas width="1120" height="600"></canvas>` +
         `<div class="route">${sys.flow.map(f => T(f.name)).join(' → ')}</div>` +
+        (mapLocked(sys.id) ? `<div class="mpLock">${T('잠김')} · ${prevMapName(sys.id)} ${T('완주하면 열려요')}</div>` : '') +
         `<div class="facts">` +
             `<span class="fact">${T('바퀴')}<b>${sys.laps}</b></span>` +
             `<span class="fact">${T('체크포인트')}<b>${sys.flow.length}</b></span>` +
             `<span class="fact">${T('아이템')}<b>${sys.pickups.length}</b></span>` +
             (best ? `<span class="fact">${T('최고 랩')}<b>${fmtTime(best)}</b></span>` : '') +
         `</div>`;
+    card.classList.toggle('locked', mapLocked(sys.id));
     drawPreview(card.querySelector('canvas'), sys);
 
     // 넘어온 방향으로 살짝 미끄러지게
@@ -13057,6 +13095,12 @@ function attachSwipe(node, onSwipe) {
 
 function setStep(n) {
     const pages = document.querySelectorAll('#setup .page');
+    // 버전 168 : 잠긴 코스면 차 고르기로 넘어가지 않고 이유를 알려 준다
+    if (n > 0 && setupStep === 0 && mapLocked(selectedId)) {
+        showToast(T('잠긴 코스예요'), prevMapName(selectedId) + ' ' + T('완주하면 열려요'));
+        playBeep(240, .12);
+        return;
+    }
     setupStep = clamp(n, 0, pages.length - 1);
     pages.forEach(p => p.classList.toggle('hidden', +p.dataset.step !== setupStep));
     document.querySelectorAll('#steps b').forEach(b => {
@@ -13892,6 +13936,7 @@ el('joinRoom').onclick = joinRoom;
 el('roomInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
 el('startBtn').onclick = () => {
+    if (mapLocked(selectedId)) { showToast(T('잠긴 코스예요'), prevMapName(selectedId) + ' ' + T('완주하면 열려요')); playBeep(240, .12); return; }
     // 달리는 동안 주소창이 보이면 화면이 좁아진다. 시작할 때 한 번 더 전체 화면을 청한다.
     //   다만 이건 곁다리다 — 거부되든 응답이 없든 레이스는 반드시 시작되어야 한다.
     if (IS_TOUCH && !isFullscreen()) { try { goFullscreen(); } catch (e) {} }
