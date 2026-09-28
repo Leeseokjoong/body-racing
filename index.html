@@ -3715,6 +3715,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 167, d: '9월 28일', t: [
+        '각지게 꺾이던 이음매를 둥글게 폈다 — 코너 반지름이 순환계 37 → 119, 신경계 28 → 90 으로 (도로 반폭은 178)',
+        'Sharp kinks where road segments met are now rounded: corner radius went from 37 to 119 on the circulatory map and 28 to 90 on the nervous map (the road half-width is 178)',
+        '벽에 정면으로 박아도 멈추지 않는다 — 느려지기만 하고 길 쪽으로 흘러 나간다. 후진으로 빠져나올 일이 없다',
+        'Hitting a wall head-on no longer stops you: you just slow down and slide along the road, so you never have to reverse out',
+        '폰으로 하는 아이 기준 한 바퀴에 16번이던 갇힘이 0번으로, 완주가 5맵 중 0 → 4 맵으로',
+        'For a phone player, getting stuck went from 16 times a lap to none, and laps finished went from 0 of 5 maps to 4 of 5'
+    ] },
     { v: 166, d: '9월 26일', t: [
         '영어판 완성 — 기관 이름 · 설명 · 차 · 스킨까지 모두 영어로 (전에는 메뉴만 영어였고 기관 이름과 설명은 한국어로 남았다)',
         'English is complete: organ names, descriptions, karts and skins are all translated (before, only the menus were English)',
@@ -5527,6 +5535,9 @@ const SPAWN_HAZARDS = false;
    2. flow → 트랙 생성
    ========================================================================== */
 const SEG_SAMPLES = 20;
+/* 버전 167 : 이음매 펴기 세기. 굽은 각이 이만큼(라디안) 넘는 곳만 손본다. */
+const SMOOTH_PASSES = 120, SMOOTH_MIN_BEND = .03;
+const smoothLimit = sys => (sys.halfWidth || 178) * 1.4;
 function catmull(p0, p1, p2, p3, t) {
     const t2 = t * t, t3 = t2 * t;
     return [
@@ -5550,6 +5561,35 @@ function buildTrack(sys) {
             pts.push({ x: p[0], y: p[1] });
         }
     if (!closed) pts.push({ x: ctrl[n - 1][0], y: ctrl[n - 1][1] });
+
+    /* 버전 167 : 각지게 꺾이는 이음매 펴기 (테스터 "각진 길 때문에 스트레스")
+       제어점이 급하게 꺾이면 스플라인이 'ㄱ' 모양으로 접힌다. 재 보니 순환계는
+       코너 반지름이 37, 신경계는 28 까지 내려갔다 — 도로 반폭(178)보다 훨씬 작다.
+       즉 도로 폭 안에서는 돌 수 없는 각이라, 벽에 박고 후진해야 빠져나왔다.
+       굽은 곳만 이웃 평균 쪽으로 조금씩 당겨 둥글게 만든다. 완만한 곳은 건드리지
+       않으므로 기관 모양(코스의 뜻)은 그대로 남는다. 많이 움직이지 않도록
+       원래 자리에서 도로 반폭의 0.7 배까지만 허용한다. */
+    (function smoothCorners() {
+        const M = pts.length, lim = smoothLimit(sys), orig = pts.map(p => ({ x: p.x, y: p.y }));
+        const idx = i => closed ? (i % M + M) % M : clamp(i, 0, M - 1);
+        for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
+            const next = pts.map(p => ({ x: p.x, y: p.y }));
+            for (let i = 0; i < M; i++) {
+                if (!closed && (i < 2 || i > M - 3)) continue;          // 출발 · 도착은 그대로
+                const a = pts[idx(i - 4)], b = pts[i], c = pts[idx(i + 4)];
+                const a1 = Math.atan2(b.y - a.y, b.x - a.x), a2 = Math.atan2(c.y - b.y, c.x - b.x);
+                const bend = Math.abs(angDiff(a2, a1));
+                if (bend < SMOOTH_MIN_BEND) continue;                  // 완만하면 두고 본다
+                const w = clamp((bend - SMOOTH_MIN_BEND) / .35, 0, 1) * .5;
+                let nx = b.x + ((a.x + c.x) / 2 - b.x) * w;
+                let ny = b.y + ((a.y + c.y) / 2 - b.y) * w;
+                const o = orig[i], dx = nx - o.x, dy = ny - o.y, d = Math.hypot(dx, dy);
+                if (d > lim) { nx = o.x + dx / d * lim; ny = o.y + dy / d * lim; }
+                next[i].x = nx; next[i].y = ny;
+            }
+            for (let i = 0; i < M; i++) { pts[i].x = next[i].x; pts[i].y = next[i].y; }
+        }
+    })();
 
     const N = pts.length;
     let total = 0;
@@ -6051,6 +6091,9 @@ const DRIFT_EASE = .015;     // 접지력이 풀리고 돌아오는 부드러움
 //   '드리프트 지속'을 올려야 오래 물 수 있고, 그래야 슈퍼 부스터가 열린다.
 const DRIFT_HOLD = 1.05, DRIFT_FILL = 45;
 const DRIFT_COOLDOWN = .3;
+const WALL_SLIDE_MIN = 120;   // 버전 167 : 벽에 박혀도 이 속도로는 계속 흘러간다
+/* 각도를 짧은 쪽으로 섞는다 (벽에서 코를 길 쪽으로 돌릴 때) */
+function lerp2(a, b, t) { return a + angDiff(b, a) * t; }
 const DRIFT_FEEL0 = [GRIP_DRIFT, 1, .22];   // 드리프트 [접지, 미끄럼 배율, 길 보조] 기본값 (어려움 · 전설 · 봇)   // 한계 뒤 타이어가 다시 물기까지 쉬는 시간(초)
 /* ---- 버티기 ----
    한계에 닿아도 바로 안 풀린다. 이만큼은 더 물 수 있고, 그동안 게이지가 훨씬 빨리 찬다.
@@ -6683,6 +6726,17 @@ function applyBarrier(k) {
         const keep = lerp(.99, .5, clamp(headOn * 1.7, 0, 1));
         k.vx *= keep; k.vy *= keep;
         if (headOn > .45 && k.hitCool <= 0) { k.wallHits++; k.hitCool = .8; }
+        /* 버전 167 : 벽에 코를 박아도 멈추지 않는다 (테스터 "후진으로 빠져나가는 게 스트레스")
+           정면으로 박으면 속도가 0 이 되어, 후진을 아는 사람만 빠져나올 수 있었다.
+           이제 박은 순간 도로가 가는 쪽으로 밀어 준다 — 느려지기만 하고 계속 나아간다. */
+        if (headOn > .3) {
+            const ca = Math.cos(p.ang), sa = Math.sin(p.ang);
+            const fwd = k.vx * ca + k.vy * sa;                       // 도로 방향 속도
+            const keepGo = Math.max(WALL_SLIDE_MIN, Math.abs(fwd));
+            k.vx = ca * keepGo * (fwd < -20 ? -1 : 1);
+            k.vy = sa * keepGo * (fwd < -20 ? -1 : 1);
+            k.ang = lerp2(k.ang, p.ang + (fwd < -20 ? Math.PI : 0), .35);   // 코도 길 쪽으로 돌려 준다
+        }
         if (k.isPlayer && headOn > .3) { cam.shake = 4 + headOn * 10; addDust(k); sfxCrash(clamp(headOn * 1.4, .2, 1)); }
     }
     k.centerDist = limit;
