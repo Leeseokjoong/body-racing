@@ -290,6 +290,31 @@
     .mpLock { margin: 10px auto 4px; padding: 7px 14px; border-radius: 11px; display: block; position: relative; z-index: 2; width: fit-content;
               font-weight: 900; font-size: 13px; color: #ffd166; background: rgba(0,0,0,.45);
               border: 2px solid rgba(255,209,102,.55); }
+    /* 버전 171 : 연속 접속 7칸 */
+    /* 한 줄로 납작하게 — 코스 카드 자리를 뺏지 않는다 */
+    #streakBar { margin: 6px auto 0; max-width: 620px; }
+    #streakDays { display: flex; gap: 4px; justify-content: center; }
+    .stDay { flex: 0 1 auto; min-width: 0; padding: 3px 7px; border-radius: 8px; text-align: center;
+             background: rgba(18,24,34,.75); border: 2px solid #26313f; white-space: nowrap;
+             display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .stDay b { font-size: 10px; color: #7f93ab; font-weight: 700; }
+    .stDay span { font-size: 11px; font-weight: 900; color: #ffd166; }
+    .stDay em { font-style: normal; font-size: 10px; color: #9fd0ff; }
+    .stDay.got { border-color: #2e6b46; background: rgba(28,60,42,.8); }
+    .stDay.got span { color: #7ee081; }
+    .stDay.now { border-color: #ffd166; background: rgba(90,70,14,.8); box-shadow: 0 0 12px rgba(255,209,102,.4); }
+    #streakNote { margin-top: 4px; text-align: center; font-size: 11px; color: #9fb3c8; }
+    /* 폰 가로처럼 낮은 화면 : 칸을 납작하게, 코스 카드의 경로 글씨는 한 줄로 줄인다
+       (버전 171 — 7칸이 붙으면서 카드가 짧아져 경로 글씨가 아래 칸과 겹쳤다) */
+    @media (max-height: 430px) {
+        .stDay { padding: 3px 1px 2px; } .stDay b { font-size: 9px; } .stDay span { font-size: 10px; }
+        .stDay em { font-size: 9px; }
+        #streakNote { font-size: 10px; margin-top: 2px; }
+        /* 낮은 화면에서는 코스 경로 글씨를 접는다 — 7칸 자리를 내주기 위해.
+           경로는 달리는 중에 체크포인트 이름으로 계속 보인다. */
+        #mpCard .route { display: none !important; }
+        #mpCard .facts { margin-top: 4px !important; }
+    }
     #tGas   { display: none; }               /* 가속 자동 */
 
     /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
@@ -2068,6 +2093,8 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
             <button class="mpArrow r" id="mpNext" aria-label="다음 코스"></button>
         </div>
         <div id="mpDots"></div>
+        <!-- 버전 171 : 연속 접속 7칸. 오늘 칸이 빛나고, 받은 칸에는 체크가 붙는다 -->
+        <div id="streakBar"><div id="streakDays"></div><div id="streakNote"></div></div>
       </section>
 
       <!-- ─── 2장 : 자동차 ─── -->
@@ -2541,7 +2568,8 @@ const EN = {
 '체크포인트': 'Checkpoint',
 '헤모글로빈은 매일 접속 · 1등으로 모아요': 'Earn haemoglobin by visiting daily and finishing first',
 '헤모글로빈을 받았어요': 'You got haemoglobin',
-'후진 중': 'REVERSING', '잠김': 'LOCKED', '완주하면 열려요': 'to unlock', '잠긴 코스예요': 'This course is locked',
+'후진 중': 'REVERSING', '연속 접속': 'Daily streak', '뽑기권': 'ticket', '하루 쉬었지만 이어 줬어요': 'you missed a day, but your streak continues',
+'오늘 한 판을 완주하면 받아요': 'Finish one race today to claim', '오늘 받았어요': 'Claimed today', '잠김': 'LOCKED', '완주하면 열려요': 'to unlock', '잠긴 코스예요': 'This course is locked',
 '새 코스가 열렸어요!': 'New course unlocked!',
 '적혈이': 'Reddy', '백구': 'Whitey', '효소맨': 'Enzyme', '몸속 기관을 달려라!': 'Race through a living body!', '팡!': 'BAM!',
 '희귀 이상 뽑기권': 'Rare-or-better draw ticket',
@@ -3739,6 +3767,16 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 171, d: '9월 28일', t: [
+        '연속 접속 보상 — 7칸이 한 주기예요. 1일 🔴40 · 2일 🔴50 · 3일 🔴60+200P · 4일 🔴60 · 5일 🔴70 · 6일 🔴80 · 7일 🔴100+뽑기권',
+        'Daily streak rewards on a seven-day cycle: 40 / 50 / 60 + 200 P / 60 / 70 / 80 / 100 + a rare-or-better ticket',
+        '하루 한 판을 완주해야 받아요. 켜고 끄기만 하면 주지 않아요',
+        'You claim the day by finishing one race: opening and closing the game is not enough',
+        '하루 빠져도 일주일에 한 번은 이어 줘요',
+        'Miss a day and your streak is saved once a week',
+        '코스 고르는 화면에 7칸이 보여요. 오늘 칸이 빛나고 받은 칸은 초록색이에요',
+        'The seven days are shown on the course screen: today glows, claimed days turn green'
+    ] },
     { v: 170, d: '9월 28일', t: [
         '브레이크(후진) 버튼에서 손을 떼면 반드시 풀린다 — 손가락이 버튼 밖에서 떨어져도 후진이 이어지지 않는다',
         'Letting go of the brake (reverse) button always releases it, even if your finger slides off the button first',
@@ -5256,6 +5294,28 @@ const SKIN_TIERS = [
     { id: 'legend', name: '전설', color: '#ffd166', rate: 1 }
 ];
 const SKIN_PRICE = 100, SKIN_REFUND = 30, SKIN_PITY = 100, SKIN_PITY_RARE = 10;   // 헤모글로빈
+
+/* ---- 연속 접속 보상 (버전 171) ----
+   7 칸이 한 주기다. 마지막 칸을 받으면 다음 날 다시 1 칸부터 — 끝이 없어 계속 돌아온다.
+   숫자 기준 : 뽑기 한 번 100, 하루에 모을 수 있는 헤모글로빈이 100 쯤.
+   즉 한 주를 다 채우면 뽑기 네 번어치(🔴460 + 뽑기권 1장)가 된다.
+
+   '한 판 완주' 를 조건으로 둔 이유 :
+     예전에는 켜기만 해도 50 을 줬다. 그러면 게임을 열었다가 바로 끄는 것이 가장 이득이다.
+     한 판을 뛰어야 주면, 받으러 왔다가 그대로 한 판 더 하게 된다.
+
+   '하루 봐주기' 를 둔 이유 :
+     하루 빠졌다고 1 일차로 되돌리면 대부분 거기서 그만둔다. 일주일에 한 번은 메워 준다. */
+const STREAK_REWARDS = [
+    { dia: 40 },
+    { dia: 50 },
+    { dia: 60, points: 200 },        // 3일째 — 차 강화 한 단계
+    { dia: 60 },
+    { dia: 70 },
+    { dia: 80 },
+    { dia: 100, ticket: 1 }          // 7일째 — 희귀 이상 뽑기권
+];
+const STREAK_FORGIVE_DAYS = 7;       // 봐주기는 이 기간에 한 번
 /* 화폐 '헤모글로빈' — 둥글고 빨간 적혈구 모양 동전. 사용자 "신체장기니까. 헤모글로빈? 둥글고 빨간 화폐" (저장 이름은 save.dia 그대로) */
 const HEMO = '<i class="hemo" title="헤모글로빈"></i>';
 const SKINS = [
@@ -5444,7 +5504,8 @@ let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, 
              cars: ['rbc'], car: 'rbc', vol: .7, music: true, lang: null, level: 'easy',
              lv10: true,     // 강화가 10단계 기준이라는 표시 (위 loadSave 참고)
              skins: [], skinOf: {}, pity: 0, pity10: 0,     // 가진 스킨 · 차마다 입힌 스킨 · 전설 없이 뽑은 횟수
-             dia: 0, diaWelcome: false, lastLogin: '', streak: 0, winDay: '', winN: 0, tickets: 0, doneCars: [] };
+             dia: 0, diaWelcome: false, lastLogin: '', streak: 0, winDay: '', winN: 0, tickets: 0, doneCars: [],
+             streakDay: '', forgiveLeft: 1 };      // 버전 171 : 연속 접속 보상 (마지막 받은 날 · 남은 봐주기)
 
 function loadSave() {
     try {
@@ -5505,6 +5566,8 @@ function loadSave() {
             save.winDay = typeof d.winDay === 'string' ? d.winDay : '';
             save.winN = Math.round(num(d.winN, 0, 99, 0));
             save.tickets = Math.round(num(d.tickets, 0, 999, 0));
+            save.streakDay = typeof d.streakDay === 'string' ? d.streakDay : '';
+            save.forgiveLeft = Math.round(num(d.forgiveLeft, 0, 3, 1));
             save.doneCars = (Array.isArray(d.doneCars) ? d.doneCars : []).filter(x => real.has(x));
             if (Array.isArray(d.devPrevSkins)) save.devPrevSkins = d.devPrevSkins.filter(x => realSkin.has(x));
             save.vol = typeof d.vol === 'number' ? clamp(d.vol, 0, 1) : .7;
@@ -12785,8 +12848,12 @@ function endRace() {
         if (save.winDay !== td) { save.winDay = td; save.winN = 0; }
         if (save.winN < DIA_WIN_MAX) { save.winN++; save.dia += DIA_WIN; diaGot = DIA_WIN; }
     }
+    const st = claimStreak();                     // 버전 171 : 연속 접속 보상은 완주해야 받는다
     writeSave();
     offerDouble(total);
+    if (st) setTimeout(() => showToast(
+        T('연속 접속') + ' ' + st.day + T('일째') + (st.forgiven ? ' · ' + T('하루 쉬었지만 이어 줬어요') : ''),
+        '🔴' + st.dia + (st.points ? ' · ' + st.points + ' P' : '') + (st.ticket ? ' · 🎟 ' + T('희귀 이상 뽑기권') : '')), 2600);
 
     el('resPoints').innerHTML =
         `${T('주행')} <b>${player.earned}</b>` +
@@ -13160,11 +13227,28 @@ function setStep(n) {
     // 양 끝에서는 손잡이를 감춘다 (없애면 자리가 흔들려서 보이지만 않게 한다)
     el('stepPrev').classList.toggle('ghost', setupStep === 0);
     el('stepNext').classList.toggle('ghost', setupStep === pages.length - 1);
+    if (setupStep === 0) renderStreak();
     if (setupStep === 1) renderCarPick();
     if (setupStep === 2) refreshModeUI();
 }
 
+/* 연속 접속 7칸 그리기 (버전 171) */
+function renderStreak() {
+    const box = el('streakDays'); if (!box) return;
+    const st = streakSlot();
+    box.innerHTML = STREAK_REWARDS.map((r, i) => {
+        const cls = i < st.idx || (st.done && i === st.idx) ? 'got' : (i === st.idx ? 'now' : '');
+        const extra = r.points ? r.points + ' P' : (r.ticket ? T('뽑기권') : '');
+        return `<div class="stDay ${cls}"><b>${i + 1}</b><span>🔴${r.dia}</span>` +
+               (extra ? `<em>+${extra}</em>` : '') + `</div>`;
+    }).join('');
+    el('streakNote').textContent = st.done
+        ? T('연속 접속') + ' ' + save.streak + T('일째') + ' · ' + T('오늘 받았어요')
+        : T('오늘 한 판을 완주하면 받아요');
+}
+
 function buildMenu() {
+    renderStreak();
     drawMapCard(0);
     setStep(0);
     renderCarPick();
@@ -14306,27 +14390,45 @@ el('devUndo').onclick = () => {
 devRefresh();
 /* ---- 다이아 (스킨 전용) ----
    처음 한 번 300 · 매일 첫 접속 50 · 연속 7일째마다 +150 · 레이스 1등 10 (하루 5번까지). 돈으로는 팔지 않는다. */
-const DIA_WELCOME = 300, DIA_DAILY = 50, DIA_STREAK7 = 150, DIA_WIN = 10, DIA_WIN_MAX = 5;
+const DIA_WELCOME = 300, DIA_WIN = 10, DIA_WIN_MAX = 5;
 function dayKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function dailyReward() {
-    const got = [];
-    if (!save.diaWelcome) { save.diaWelcome = true; save.dia += DIA_WELCOME; got.push(T('스킨 뽑기 선물') + ' 🔴' + DIA_WELCOME); }
-    const now = new Date(), today = dayKey(now);
-    if (save.lastLogin !== today) {
-        const y = new Date(now); y.setDate(y.getDate() - 1);
-        save.streak = save.lastLogin === dayKey(y) ? save.streak + 1 : 1;
-        save.lastLogin = today;
-        let n = DIA_DAILY;
-        if (save.streak % 7 === 0) n += DIA_STREAK7;
-        save.dia += n;
-        got.push(T('매일 접속') + ' ' + save.streak + T('일째') + ' 🔴' + n);
-    }
-    if (!got.length) return;
-    writeSave();
-    renderCarPick();
-    setTimeout(() => showToast('🔴 ' + T('헤모글로빈을 받았어요'), got.join(' · ')), 1500);
+    if (save.diaWelcome) return;
+    save.diaWelcome = true; save.dia += DIA_WELCOME;
+    writeSave(); renderCarPick();
+    setTimeout(() => showToast('🔴 ' + T('헤모글로빈을 받았어요'), T('스킨 뽑기 선물') + ' 🔴' + DIA_WELCOME), 1500);
 }
 dailyReward();
+
+/* 오늘 몇 칸째인가 (아직 못 받았으면 받게 될 칸) */
+function streakSlot() {
+    const done = save.streakDay === dayKey(new Date());
+    const n = save.streak || 0;
+    return { done, day: done ? n : n + 1, idx: ((done ? n - 1 : n) % STREAK_REWARDS.length + STREAK_REWARDS.length) % STREAK_REWARDS.length };
+}
+
+/* 한 판을 완주하면 부른다. 오늘 몫을 이미 받았으면 아무 일도 하지 않는다. */
+function claimStreak() {
+    const today = dayKey(new Date());
+    if (save.streakDay === today) return null;
+    const now = new Date();
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    const y2 = new Date(now); y2.setDate(y2.getDate() - 2);
+    const prev = save.streakDay || '';
+    let forgiven = false;
+    if (prev === dayKey(y) || !prev) save.streak = (save.streak || 0) + 1;      // 어제 했으면 이어진다
+    else if (prev === dayKey(y2) && (save.forgiveLeft || 0) > 0) {             // 하루 빠짐 — 한 번 봐준다
+        save.streak = (save.streak || 0) + 1; save.forgiveLeft--; forgiven = true;
+    } else save.streak = 1;                                                     // 그 밖에는 처음부터
+    if (!prev || save.streak % STREAK_FORGIVE_DAYS === 1) save.forgiveLeft = 1;  // 주기마다 봐주기 한 번 충전
+    save.streakDay = today;
+    const r = STREAK_REWARDS[(save.streak - 1) % STREAK_REWARDS.length];
+    save.dia += r.dia || 0;
+    save.points += r.points || 0;
+    if (r.ticket) save.tickets = (save.tickets || 0) + r.ticket;
+    writeSave();
+    return { day: save.streak, forgiven, ...r };
+}
 el('diagCopy').onclick = () => {
     const t = el('diagText').textContent;
     if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
