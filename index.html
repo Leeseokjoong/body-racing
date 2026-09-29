@@ -3824,6 +3824,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 175, d: '9월 29일', t: [
+        '광고를 청소년 등급까지만 받도록 맞췄어요. 성인 등급 광고는 나오지 않아요',
+        'Ads are now limited to the teen rating; adult-rated ads no longer appear',
+        '데이트 · 선정성 · 카지노 · 체중 감량 같은 민감한 광고 13종을 막았어요',
+        'Thirteen sensitive ad categories are blocked, including dating, suggestive, casino and weight loss'
+    ] },
     { v: 174, d: '9월 29일', t: [
         '포인트를 다시 잡았어요 — 한 판에 버는 것이 줄고, 차값이 올랐어요. 다음 차까지 네댓 판이에요',
         'Points rebalanced: you earn less per race and karts cost more, so the next kart is four or five races away',
@@ -12371,7 +12377,10 @@ const AD = {
        나중에 문제가 되면 계정째 정지된다. 나중에 UMP(동의 창)를 붙여
        유럽만 따로 처리하면 그때 'general' 로 올릴 수 있다. */
     audience: 'teen',
-    rating: 'PG',         // 광고 등급 상한. G(전체) · PG · T · MA
+    rating: 'T',          /* 광고 등급 상한. G(전체) · PG · T(청소년) · MA(성인)
+                             버전 175 : PG → T. 중학생 게임이라 청소년 등급이 맞다(사용자 판단).
+                             AdMob 계정 쪽 상한도 '청소년' 으로 맞춰 두었다 —
+                             둘 중 더 엄격한 쪽이 적용되므로 한쪽만 올리면 소용이 없다. */
 
     skipAfter: 5,         // 건너뛰기가 열리기까지(초)
     everyRaces: 2,        // 몇 판마다 띄울지 (버전 174 : 1 → 2. 사용자 "2판 정도 전면광고 나오게 해")
