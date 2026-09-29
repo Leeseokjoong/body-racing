@@ -2295,7 +2295,7 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
             <!-- 광고를 봐야만 눌리는 보너스. 스스로 고르는 것이라 광고가 방해로 느껴지지 않고,
                  보상형은 단가도 전면광고보다 높다. 광고가 없으면 이 줄은 아예 안 보인다. -->
             <div class="line" id="resDouble" style="display:none">
-                <button class="btn small" id="doubleBtn">광고 보고 포인트 더 받기</button>
+                <button class="btn small" id="doubleBtn">광고 보고 포인트 2배</button>
             </div>
             <div class="line" id="resCollect"></div>
             <div id="garage"></div>
@@ -2530,6 +2530,7 @@ const EN = {
 '광고': 'Ad', '5초 후 건너뛰기': 'Skip in 5s', '초 후 건너뛰기': 's until skip',
 '건너뛰기': 'Skip', '광고 자리': 'Ad slot', '개인정보처리방침': 'Privacy Policy',
 '광고 보고 포인트 더 받기': 'Watch ad for bonus points', '보너스 포인트': 'Bonus points',
+'광고 보고 포인트 2배': 'Watch an ad to double your points',
 '게임을 종료할까요?': 'Quit the game?', '화면을 누르면 계속': 'Tap to continue', '종료': 'Quit', '취소': 'Cancel',
 '레이스를 그만두고 메뉴로 나갈까요?': 'Quit this race and go back to the menu?', '계속 달리기': 'Keep racing',
 // 셋팅 페이지
@@ -3823,6 +3824,14 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 174, d: '9월 29일', t: [
+        '포인트를 다시 잡았어요 — 한 판에 버는 것이 줄고, 차값이 올랐어요. 다음 차까지 네댓 판이에요',
+        'Points rebalanced: you earn less per race and karts cost more, so the next kart is four or five races away',
+        '광고를 보면 그 판 포인트를 한 번 더 받아요 (예전에는 절반만 줬어요)',
+        'Watching an ad now doubles the points from that race (it used to add only half)',
+        '레이스를 두 판 할 때마다 전면 광고가 나와요. 앱을 껐다 켜도 판 수가 이어져요',
+        'A full-screen ad appears every two races, and the count now carries over between sessions'
+    ] },
     { v: 173, d: '9월 29일', t: [
         '주간 랭킹이 생겼어요 — 매주 코스 하나가 이번 주 챌린지가 되고, 가장 빠른 한 바퀴로 겨뤄요',
         'Weekly rankings: one course becomes the challenge each week and your fastest single lap competes',
@@ -5298,23 +5307,23 @@ const CARS = [
       desc: '산소를 나르는 기본기. 무엇 하나 모나지 않아 처음 배우기 좋습니다.' },
     /* 2번째 자리는 콜라겐 프레임(오프로드 버기) — 사용자(2026-09-11) "콜라게 프레임 2번째 자동차로 옮겨".
        혈소판 터프와 자리 · 가격 · 능력치 · 성능 설명을 맞바꿨다. 그림 · 소리 · 이름 · 기관 설명은 각자 그대로. */
-    { id: 'collagen', hold: 1.10, name: '타이탄 프레임', cell: '콜라겐', cellEn: 'Collagen', motif: '콜', motifEn: 'C', color: '#ff5a36', sprite: 'collagen', cost: 260,
+    { id: 'collagen', hold: 1.10, name: '타이탄 프레임', cell: '콜라겐', cellEn: 'Collagen', motif: '콜', motifEn: 'C', color: '#ff5a36', sprite: 'collagen', cost: 800,
       voice: 'heavy', pitch: 0.86, skid: 2, skidPitch: 0.92,
       speed: 1.00, accel: 1.06, grip: 1.14, boost: 1.00,
       desc: '몸을 지탱하는 단백질. 접지력이 높아 벽에 잘 안 밀리고 코너가 안정적입니다.' },
-    { id: 'wbc', hold: 1.05,   name: '화이트 팬텀', cell: '백혈구', cellEn: 'White blood cell',  motif: '백', motifEn: 'W', color: '#2ec4c0', sprite: 'wbc',  cost: 520,
+    { id: 'wbc', hold: 1.05,   name: '화이트 팬텀', cell: '백혈구', cellEn: 'White blood cell',  motif: '백', motifEn: 'W', color: '#2ec4c0', sprite: 'wbc',  cost: 1500,
       voice: 'guard', pitch: 0.91, skid: 3, skidPitch: 0.97,   // 가드. 기본보다 한 단 낮고 두툼하다
       speed: 1.05, accel: 1.04, grip: 1.06, boost: 1.10,
       desc: '몸을 지키는 세포. 균형이 좋고 부스터가 조금 더 오래갑니다.' },
-    { id: 'o2', hold: 0.95,    name: '에어 블레이드', cell: '산소', cellEn: 'Oxygen',    motif: '산', motifEn: 'O', color: '#ff9a1f', sprite: 'o2',  cost: 900,
+    { id: 'o2', hold: 0.95,    name: '에어 블레이드', cell: '산소', cellEn: 'Oxygen',    motif: '산', motifEn: 'O', color: '#ff9a1f', sprite: 'o2',  cost: 2500,
       voice: 'light', pitch: 1.16, skid: 4, skidPitch: 1.12,   // 가볍고 빠르다. 높고 매끈하게
       speed: 1.12, accel: 1.10, grip: 0.96, boost: 1.14,
       desc: '폐포에서 갓 실은 산소. 아주 빠르지만 접지력이 낮아 손이 바빠집니다.' },
-    { id: 'nerve', hold: 1.15, name: '뉴로 볼트', cell: '신경', cellEn: 'Nerve',  motif: '신', motifEn: 'N', color: '#8ee03a', sprite: 'nerve',  cost: 1400,
+    { id: 'nerve', hold: 1.15, name: '뉴로 볼트', cell: '신경', cellEn: 'Nerve',  motif: '신', motifEn: 'N', color: '#8ee03a', sprite: 'nerve',  cost: 3800,
       voice: 'sharp', pitch: 1.24, skid: 4, skidPitch: 1.18,   // 가장 날카롭다. 높고 금속성 타격이 세다
       speed: 1.10, accel: 1.22, grip: 1.04, boost: 1.20,
       desc: '전기 신호처럼 튀어 나갑니다. 가속과 부스터가 최고 수준.' },
-    { id: 'atp', hold: 1.20,   name: '하이퍼 코어', cell: 'ATP', cellEn: 'ATP',   motif: 'A', motifEn: 'A', color: '#9d5cff', sprite: 'atp', cost: 2200,
+    { id: 'atp', hold: 1.20,   name: '하이퍼 코어', cell: 'ATP', cellEn: 'ATP',   motif: 'A', motifEn: 'A', color: '#9d5cff', sprite: 'atp', cost: 5400,
       voice: 'prime', pitch: 1.08, skid: 2, skidPitch: 1.05,   // 전부 최고. 밝으면서 매끈하다
       speed: 1.20, accel: 1.18, grip: 1.10, boost: 1.25,
       desc: '세포가 쓰는 에너지 그 자체. 어느 코스에서나 잘 달리는 만능 카트.' },
@@ -5325,19 +5334,19 @@ const CARS = [
        그래서 위쪽은 '더 센 차' 가 아니라 '다른 차' 로 만든다 —
        미끄러운 코스에는 혈소판, 직선이 긴 코스에는 미토콘드리아처럼
        코스마다 갈아타는 재미가 생긴다. 진짜 만능은 맨 마지막 하나뿐이다. */
-    { id: 'insulin', hold: 1.10, name: '슈가 러시', cell: '인슐린', cellEn: 'Insulin', motif: '인', motifEn: 'I', color: '#ffd21f', sprite: 'insulin', cost: 3200,
+    { id: 'insulin', hold: 1.10, name: '슈가 러시', cell: '인슐린', cellEn: 'Insulin', motif: '인', motifEn: 'I', color: '#ffd21f', sprite: 'insulin', cost: 7200,
       voice: 'light', pitch: 1.10, skid: 4, skidPitch: 1.06,
       speed: 1.12, accel: 1.14, grip: 1.02, boost: 1.42,
       desc: '혈당을 나르는 호르몬. 부스터가 눈에 띄게 오래갑니다. 터보를 자주 쓰는 사람에게.' },
-    { id: 'plt', hold: 1.34,   name: '아이언 클롯', cell: '혈소판', cellEn: 'Platelet',  motif: '판', motifEn: 'P', color: '#b9bcc8', sprite: 'plt',   cost: 4400,
+    { id: 'plt', hold: 1.34,   name: '아이언 클롯', cell: '혈소판', cellEn: 'Platelet',  motif: '판', motifEn: 'P', color: '#b9bcc8', sprite: 'plt',   cost: 9200,
       voice: 'heavy', pitch: 0.82, skid: 2, skidPitch: 0.90,   // 가장 무겁다. 낮고 둔탁하게 울퉁불퉁
       speed: 1.10, accel: 1.08, grip: 1.40, boost: 1.06,
       desc: '상처를 막는 세포. 거의 안 미끄러지고 드리프트를 아주 길게 뭅니다.' },
-    { id: 'mito', hold: 1.12, name: '파워 리액터', cell: '미토콘드리아', cellEn: 'Mitochondria', motif: '미', motifEn: 'M', color: '#f2f2f2', sprite: 'mito', cost: 6000,
+    { id: 'mito', hold: 1.12, name: '파워 리액터', cell: '미토콘드리아', cellEn: 'Mitochondria', motif: '미', motifEn: 'M', color: '#f2f2f2', sprite: 'mito', cost: 11500,
       voice: 'sharp', pitch: 1.18, skid: 3, skidPitch: 1.14,
       speed: 1.26, accel: 1.44, grip: 1.00, boost: 1.18,
       desc: '세포의 발전소. 튀어 나가는 힘이 압도적이지만 접지력을 포기했습니다.' },
-    { id: 'dna', hold: 1.30, name: '헬릭스 제로', cell: 'DNA', cellEn: 'DNA', motif: 'D', motifEn: 'D', color: '#ff2e3f', sprite: 'dna', cost: 8500,
+    { id: 'dna', hold: 1.30, name: '헬릭스 제로', cell: 'DNA', cellEn: 'DNA', motif: 'D', motifEn: 'D', color: '#ff2e3f', sprite: 'dna', cost: 14000,
       voice: 'prime', pitch: 1.12, skid: 1, skidPitch: 1.08,
       speed: 1.34, accel: 1.30, grip: 1.24, boost: 1.32,
       desc: '생명의 설계도. 모든 수치가 최고인 마지막 카트입니다.' }
@@ -5586,7 +5595,8 @@ let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, 
              /* 버전 173 : 주간 랭킹.
                 uid 는 이 기기를 가리키는 임의의 글자 — 이름도 아니고 계정도 아니다.
                 rankName 은 게임이 뽑아 준 이름의 '번호' 두 개다(글자를 직접 쓰게 하지 않는다). */
-             uid: '', rankName: null, rankPaid: [], rankUp: {}, rankSeen: '' };
+             uid: '', rankName: null, rankPaid: [], rankUp: {}, rankSeen: '',
+             adCount: 0 };                         // 버전 174 : 지금까지 판 수 (전면 광고 간격)
 
 function loadSave() {
     try {
@@ -5650,6 +5660,7 @@ function loadSave() {
             save.newSkins = Array.isArray(d.newSkins) ? d.newSkins.filter(x => typeof x === 'string').slice(0, 60) : [];
             save.uid = typeof d.uid === 'string' && d.uid.length <= 16 ? d.uid : '';
             save.rankSeen = typeof d.rankSeen === 'string' ? d.rankSeen : '';
+            save.adCount = Math.round(num(d.adCount, 0, 1e7, 0));
             save.rankName = Array.isArray(d.rankName) && d.rankName.length === 3 ? d.rankName.map(x => Math.round(num(x, 0, 9999, 0))) : null;
             save.rankPaid = (Array.isArray(d.rankPaid) ? d.rankPaid : []).filter(x => typeof x === 'string').slice(-8);
             save.rankUp = (d.rankUp && typeof d.rankUp === 'object') ? d.rankUp : {};
@@ -6669,7 +6680,7 @@ function updateKart(k, dt) {
                 cam.kick = Math.max(cam.kick || 0, .3 + q * .5);
                 cam.flash = Math.max(cam.flash || 0, .1 + q * .28);
                 for (let i = 0; i < 3 + q * 7; i++) addDriftSmoke(k);
-                k.earned += 3 + Math.round(q * 4);
+                k.earned += 1 + Math.round(q * 2);      // 버전 174 : 3+4q → 1+2q (한 판 수입의 가장 큰 몫이었다)
                 popup(k.x, k.y, k.turbo.length >= TURBO_MAX ? '터보 가득!' : '터보 충전 ' + k.turbo.length,
                       q > .78 ? '#ff5a2c' : '#ffe066');
                 playBeep(880 + q * 420, .07);
@@ -7070,7 +7081,7 @@ function updateProgress(k) {
                 const last = k.lap >= track.laps;
                 playBeep(last ? 1600 : 1250, last ? .22 : .14);
                 flashBig(last ? T('마지막 바퀴!') : 'LAP ' + k.lap);
-                cam.flash = 1; k.earned += 10;
+                cam.flash = 1; k.earned += 5;          // 버전 174 : 바퀴 10 → 5
             }
         }
     } else if (k.si >= N - 3) finishKart(k);
@@ -7112,7 +7123,7 @@ function checkPickups(k) {
             k.collected[kind.icon] = (k.collected[kind.icon] || 0) + 1;
             if (k.slots.length < 3) k.slots.push(kind);
             if (k.isPlayer) {
-                sfxPickup(); k.earned += 2;
+                sfxPickup(); k.earned += 1;            // 버전 174 : 아이템 2 → 1
                 /* 그 효과를 처음 얻었으면 무엇을 하는 것인지 알려 준다 — 쓰기 전에.
                    예전에는 설명이 '쓰고 난 뒤' 에 나와서, 무엇인지 모른 채 눌러 버렸다. */
                 const tip = EFFECT_TIP[kind.effect];
@@ -12363,9 +12374,9 @@ const AD = {
     rating: 'PG',         // 광고 등급 상한. G(전체) · PG · T · MA
 
     skipAfter: 5,         // 건너뛰기가 열리기까지(초)
-    everyRaces: 1,        // 몇 판마다 띄울지
+    everyRaces: 2,        // 몇 판마다 띄울지 (버전 174 : 1 → 2. 사용자 "2판 정도 전면광고 나오게 해")
     minGap: 45,           // 이 시간(초) 안에는 다시 띄우지 않는다
-    firstFree: 1,         // 처음 몇 판은 광고 없이 (첫인상을 지킨다)
+    firstFree: 1,         // 처음 몇 판은 광고 없이 (첫인상을 지킨다 — 이 게임을 처음 켠 사람 기준)
     maxWait: 4,           // 광고가 이 시간 안에 안 뜨면 그냥 넘어간다
     _count: 0, _last: 0
 };
@@ -12394,7 +12405,9 @@ function bannerSpace(h) {
    두 배로 줘 봤더니 전부 사는 데 걸리는 판이 159판에서 80판으로 반토막 났다.
    예전에 '다 찍고 나니 더 찍을 게 없다' 던 그 문제가 그대로 돌아온다.
    절반이면 106판 — 광고를 볼 이유는 충분하면서 살 것이 남는다. */
-const AD_BONUS = .5;
+/* 버전 174 : 0.5 → 1.0. 광고를 보면 그 판에서 번 만큼을 한 번 더 준다(진짜 2배).
+   판당 수입을 3분의 1로 내렸으므로, 답답할 때 광고 한 번으로 풀 수 있는 길을 열어 둔다. */
+const AD_BONUS = 1;
 let doubleReady = 0;          // 이번 판에 더 줄 수 있는 포인트 (0 이면 이미 받았거나 없음)
 function offerDouble(total) {
     doubleReady = Math.round(total * AD_BONUS);
@@ -12404,7 +12417,7 @@ function offerDouble(total) {
     if (!row || !btn || !a || !a.showReward || total <= 0) { if (row) row.style.display = 'none'; return; }
     row.style.display = '';
     btn.disabled = false;
-    btn.textContent = T('광고 보고 포인트 더 받기') + ' (+' + total + 'P)';
+    btn.textContent = T('광고 보고 포인트 2배') + ' (+' + total + 'P)';
     // 미리 받아 둔다 — 누른 뒤에 받으면 몇 초씩 멈춘 것처럼 보인다
     a.prepareReward().catch(() => {});
     btn.onclick = () => {
@@ -12429,7 +12442,12 @@ function showAdBreak(done) {
     let called = false;
     const finish = () => { if (called) return; called = true; bgmAd = false; bgmTick(); done(); };
 
-    AD._count++;
+    /* 버전 174 : 예전에는 이 값을 메모리에만 세서 앱을 껐다 켜면 0 으로 돌아갔다.
+       한두 판 하고 끄는 사람에게는 firstFree 에 걸려 전면 광고가 한 번도 뜨지 않았다
+       (실제로 일주일 동안 요청 0 건, 배너만 213 회). 저장에 남겨 이어 센다. */
+    AD._count = (save.adCount || 0) + 1;
+    save.adCount = AD._count;
+    writeSave();
     const now = Date.now();
     // 처음 몇 판은 그냥 보내 준다. 첫인상이 광고면 두 번째 실행이 없다.
     if (AD._count <= AD.firstFree) return finish();
@@ -12906,14 +12924,16 @@ function endRace() {
     const id = track.sys.id;
     /* 사용자(2026-09-11) : "아직도 포인트 너무 후한것 같은데" — 판마다 버는 것을 모두 절반쯤으로.
        드리프트 8+10q → 3+4q · 바퀴 25 → 10 · 아이템 5 → 2 · 순위 · 기록 · 등급 보너스도 절반. */
-    const rankBonus = TA.on ? 0 : ([60, 40, 25, 15][player.rank - 1] || 10);
+    /* 버전 174 (사용자 : "포인트를 너무 후하게 줘서 게임 안에 할 게 없어 나가면 안 된다") —
+       판당 수입을 3분의 1로 내리고 차값을 올려, 다음 차까지 4~5판을 달리게 했다. */
+    const rankBonus = TA.on ? 0 : ([25, 16, 10, 5][player.rank - 1] || 4);
     let isBest, bestBonus;
     if (TA.on) {
         isBest = TA.fresh;
-        bestBonus = TA.fresh ? 80 : 0;
+        bestBonus = TA.fresh ? 35 : 0;
     } else {
         isBest = !save.best[id] || player.finishTime < save.best[id];
-        bestBonus = isBest ? 50 : 0;
+        bestBonus = isBest ? 20 : 0;
         const firstClear = !save.best[id];                 // 버전 168 : 이번에 처음 완주했나
         tally('race_finish', { course: id, rank: player.rank, first_clear: firstClear ? 1 : 0 });
         if (isBest) save.best[id] = player.finishTime;
@@ -12923,7 +12943,7 @@ function endRace() {
             if (nextId) setTimeout(() => showToast(T('새 코스가 열렸어요!'), T(SYSTEMS[nextId].name)), 900);
         }
     }
-    const gradeBonus = { S: 80, A: 50, B: 30, C: 15, D: 5 }[G.grade];
+    const gradeBonus = { S: 35, A: 22, B: 13, C: 7, D: 2 }[G.grade];
     /* 어려운 단계일수록 많이 준다. 이것이 없으면 다들 쉬움에만 머무른다 —
        올라갈 이유를 점수로 준다. 타임 어택은 봇이 없으니 배수도 없다. */
     const LV = curLevel();
