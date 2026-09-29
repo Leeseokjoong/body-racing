@@ -181,7 +181,9 @@
         background: linear-gradient(180deg, #fffdf2, #ffeec9); color: #3a2a10;
         border: 4px solid #2a1a08; border-radius: 18px; padding: 11px 22px;
         max-width: min(560px, 88vw); text-align: center; box-shadow: 6px 8px 0 rgba(0,0,0,.35);
-        opacity: 0; transition: opacity .25s, transform .25s; z-index: 6; pointer-events: none;
+        opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+        /* 버전 172 : 메뉴(20) · 스킨 뽑기(30) 위로 올린다 — 차고에서 띄운 알림이 가려졌었다 */
+        z-index: 40;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
     #toast .tt { font-size: 19px; font-weight: 900; color: #b8451f; margin-bottom: 2px; }
@@ -315,6 +317,13 @@
         #mpCard .route { display: none !important; }
         #mpCard .facts { margin-top: 4px !important; }
     }
+    /* 버전 172 : 뽑은 카드의 '어디에 입히나' 줄과 차고의 NEW 표 */
+    .skWhere { font-size: 12px; color: #9fd0ff; margin: 2px 0 5px; }
+    .skWorn { font-size: 13px; font-weight: 900; color: #7ee081; margin-top: 4px; }
+    .cxSk.new { position: relative; overflow: visible; }
+    .cxSk.new::after { content: 'N'; position: absolute; top: -5px; right: -5px; width: 15px; height: 15px;
+        border-radius: 50%; background: #ff5a2c; color: #fff; font-size: 10px; font-weight: 900;
+        line-height: 15px; text-align: center; box-shadow: 0 0 6px rgba(255,90,44,.8); }
     #tGas   { display: none; }               /* 가속 자동 */
 
     /* 화면이 낮으면 조금 줄여 맵을 더 보여 준다 */
@@ -1966,7 +1975,6 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
 
     <div id="zoomHint">W 가속 · A/D 좌우 · S 브레이크(계속 누르면 후진) · <b style="color:#ffe066">SPACE 드리프트</b> · 휠 줌 · M 전체 맵</div>
     <div id="subtitle"><div class="sname"></div><div class="sdesc"></div></div>
-    <div id="toast"><div class="tt"></div><div class="td"></div></div>
     <button id="exitRace" title="메뉴로 나가기">나가기</button>
     <div id="wrongWay">반대 방향! 돌아가세요</div>
     <!-- 끊기면 알려 준다. 아무 말 없이 상대가 멈추면 게임이 고장 난 줄 안다. -->
@@ -2062,6 +2070,9 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
     <div id="rotateHint"><div class="phone"></div><div class="rt">화면을 가로로 눕혀 주세요</div></div>
     <button class="btn" id="tapStartBtn">화면을 눌러 시작</button>
 </div>
+
+<!-- 버전 172 : 알림 띠를 HUD 밖으로 뺀다 — HUD 는 레이스 밖에서 숨겨져 차고 알림이 안 보였다 -->
+<div id="toast"><div class="tt"></div><div class="td"></div></div>
 
 <div class="overlay" id="menu">
     <div id="opts">
@@ -2427,7 +2438,7 @@ const EN = {
 '드리프트로 탈출!': 'Drift to escape!', '진행도': 'Progress',
 '아이템 슬롯': 'Items', '사용': 'use', '아이템': 'Items', '장애물': 'Hazards',
 '반대 방향! 돌아가세요': 'WRONG WAY! Turn around',
-'마지막 바퀴!': 'FINAL LAP!', '🏁 마지막 바퀴!': 'FINAL LAP!',
+'마지막 바퀴!': 'FINAL LAP!',
 '한계!': 'Limit!', '부스터': 'Boost', '터보!': 'TURBO!', '슈퍼 터보!!': 'SUPER TURBO!!',
 '터보 가득!': 'Turbo full!', '떨쳐낸다!': 'Broke free!',
 '냠! 다시 출발!': 'Yum! Off again!', '쿵!': 'Bonk!', '빙글!': 'Spin!',
@@ -2568,7 +2579,8 @@ const EN = {
 '체크포인트': 'Checkpoint',
 '헤모글로빈은 매일 접속 · 1등으로 모아요': 'Earn haemoglobin by visiting daily and finishing first',
 '헤모글로빈을 받았어요': 'You got haemoglobin',
-'후진 중': 'REVERSING', '연속 접속': 'Daily streak', '뽑기권': 'ticket', '하루 쉬었지만 이어 줬어요': 'you missed a day, but your streak continues',
+'후진 중': 'REVERSING', '에만 입혀요': 'only', '어느 차에나 입혀요': 'Fits every kart', '지금 입히기': 'Wear now',
+'지금 입고 있어요': 'Wearing it now', '입혔어요': 'Wearing it', '새 스킨': 'New skins', '차고에서 입힐 수 있어요': 'You can wear them in the Garage', '연속 접속': 'Daily streak', '뽑기권': 'ticket', '하루 쉬었지만 이어 줬어요': 'you missed a day, but your streak continues',
 '오늘 한 판을 완주하면 받아요': 'Finish one race today to claim', '오늘 받았어요': 'Claimed today', '잠김': 'LOCKED', '완주하면 열려요': 'to unlock', '잠긴 코스예요': 'This course is locked',
 '새 코스가 열렸어요!': 'New course unlocked!',
 '적혈이': 'Reddy', '백구': 'Whitey', '효소맨': 'Enzyme', '몸속 기관을 달려라!': 'Race through a living body!', '팡!': 'BAM!',
@@ -3767,8 +3779,18 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 172, d: '9월 29일', t: [
+        '뽑은 스킨 카드에 어느 차에 입히는지 적었어요. 버튼도 "지금 입히기 · 차 이름" 으로 바뀌었어요',
+        'The skin you drew now says which kart it fits, and the button reads "Wear now - <kart>"',
+        '입히면 "입혔어요" 알림이 뜨고, 안 입히고 닫으면 차고에서 입힐 수 있다고 알려 줘요',
+        'Wearing it shows a confirmation, and closing without wearing points you to the Garage',
+        '차고 스킨 줄에서 가진 스킨이 맨 앞으로 왔어요. 새로 뽑은 스킨에는 빨간 N 표가 붙어요',
+        'In the Garage your own skins come first, and a new one is marked with a red N',
+        '화면에 있던 이모지를 모두 뺐어요. 헤모글로빈은 게임에서 그린 표시로 보여요',
+        'Removed every emoji from the screen; hemoglobin now uses the icon drawn by the game'
+    ] },
     { v: 171, d: '9월 28일', t: [
-        '연속 접속 보상 — 7칸이 한 주기예요. 1일 🔴40 · 2일 🔴50 · 3일 🔴60+200P · 4일 🔴60 · 5일 🔴70 · 6일 🔴80 · 7일 🔴100+뽑기권',
+        '연속 접속 보상 — 7칸이 한 주기예요. 헤모글로빈 1일 40 · 2일 50 · 3일 60+200P · 4일 60 · 5일 70 · 6일 80 · 7일 100+뽑기권',
         'Daily streak rewards on a seven-day cycle: 40 / 50 / 60 + 200 P / 60 / 70 / 80 / 100 + a rare-or-better ticket',
         '하루 한 판을 완주해야 받아요. 켜고 끄기만 하면 주지 않아요',
         'You claim the day by finishing one race: opening and closing the game is not enough',
@@ -5298,7 +5320,7 @@ const SKIN_PRICE = 100, SKIN_REFUND = 30, SKIN_PITY = 100, SKIN_PITY_RARE = 10; 
 /* ---- 연속 접속 보상 (버전 171) ----
    7 칸이 한 주기다. 마지막 칸을 받으면 다음 날 다시 1 칸부터 — 끝이 없어 계속 돌아온다.
    숫자 기준 : 뽑기 한 번 100, 하루에 모을 수 있는 헤모글로빈이 100 쯤.
-   즉 한 주를 다 채우면 뽑기 네 번어치(🔴460 + 뽑기권 1장)가 된다.
+   즉 한 주를 다 채우면 뽑기 네 번어치(헤모글로빈 460 + 뽑기권 1장)가 된다.
 
    '한 판 완주' 를 조건으로 둔 이유 :
      예전에는 켜기만 해도 50 을 줬다. 그러면 게임을 열었다가 바로 끄는 것이 가장 이득이다.
@@ -5505,7 +5527,8 @@ let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, 
              lv10: true,     // 강화가 10단계 기준이라는 표시 (위 loadSave 참고)
              skins: [], skinOf: {}, pity: 0, pity10: 0,     // 가진 스킨 · 차마다 입힌 스킨 · 전설 없이 뽑은 횟수
              dia: 0, diaWelcome: false, lastLogin: '', streak: 0, winDay: '', winN: 0, tickets: 0, doneCars: [],
-             streakDay: '', forgiveLeft: 1 };      // 버전 171 : 연속 접속 보상 (마지막 받은 날 · 남은 봐주기)
+             streakDay: '', forgiveLeft: 1,        // 버전 171 : 연속 접속 보상 (마지막 받은 날 · 남은 봐주기)
+             newSkins: [] };                       // 버전 172 : 뽑고 아직 입혀 보지 않은 스킨
 
 function loadSave() {
     try {
@@ -5566,6 +5589,7 @@ function loadSave() {
             save.winDay = typeof d.winDay === 'string' ? d.winDay : '';
             save.winN = Math.round(num(d.winN, 0, 99, 0));
             save.tickets = Math.round(num(d.tickets, 0, 999, 0));
+            save.newSkins = Array.isArray(d.newSkins) ? d.newSkins.filter(x => typeof x === 'string').slice(0, 60) : [];
             save.streakDay = typeof d.streakDay === 'string' ? d.streakDay : '';
             save.forgiveLeft = Math.round(num(d.forgiveLeft, 0, 3, 1));
             save.doneCars = (Array.isArray(d.doneCars) ? d.doneCars : []).filter(x => real.has(x));
@@ -9913,6 +9937,8 @@ function showToast(title, desc) {
     t.querySelector('.tt').textContent = T(title);
     t.querySelector('.td').textContent = T(desc || '');
     t.classList.add('show'); toastTimer = 4.5;
+    clearTimeout(showToast._t);                      // 메뉴에서는 게임 시계가 안 돌아 스스로 꺼져야 한다
+    showToast._t = setTimeout(() => { t.classList.remove('show'); toastTimer = 0; }, 4500);
 }
 /* 기관·혈관을 지날 때 화면 아래에 자막을 띄운다 */
 function showSubtitle(name, desc) {
@@ -12853,7 +12879,7 @@ function endRace() {
     offerDouble(total);
     if (st) setTimeout(() => showToast(
         T('연속 접속') + ' ' + st.day + T('일째') + (st.forgiven ? ' · ' + T('하루 쉬었지만 이어 줬어요') : ''),
-        '🔴' + st.dia + (st.points ? ' · ' + st.points + ' P' : '') + (st.ticket ? ' · 🎟 ' + T('희귀 이상 뽑기권') : '')), 2600);
+        T('헤모글로빈') + ' ' + st.dia + (st.points ? ' · ' + st.points + ' P' : '') + (st.ticket ? ' · ' + T('희귀 이상 뽑기권') : '')), 2600);
 
     el('resPoints').innerHTML =
         `${T('주행')} <b>${player.earned}</b>` +
@@ -13239,7 +13265,7 @@ function renderStreak() {
     box.innerHTML = STREAK_REWARDS.map((r, i) => {
         const cls = i < st.idx || (st.done && i === st.idx) ? 'got' : (i === st.idx ? 'now' : '');
         const extra = r.points ? r.points + ' P' : (r.ticket ? T('뽑기권') : '');
-        return `<div class="stDay ${cls}"><b>${i + 1}</b><span>🔴${r.dia}</span>` +
+        return `<div class="stDay ${cls}"><b>${i + 1}</b><span><i class="hemo"></i>${r.dia}</span>` +
                (extra ? `<em>+${extra}</em>` : '') + `</div>`;
     }).join('');
     el('streakNote').textContent = st.done
@@ -13307,7 +13333,7 @@ function renderCarPick(dir) {
         `<div class="cxStage"><button class="cxArrow l" id="cxPrev" aria-label="prev"></button>
             <div class="cxView" id="cxView"><div class="cxBig">${(EN[c.name] || c.id).toUpperCase()}</div>
                 <canvas class="cxCar${owned ? '' : ' lock'}${dir ? (dir > 0 ? ' inR' : ' inL') : ''}" width="900" height="330"></canvas>
-                ${owned ? '' : `<div class="cxLock">🔒 ${T('잠김')}<small>${c.cost} P</small></div>`}
+                ${owned ? '' : `<div class="cxLock">${T('잠김')}<small>${c.cost} P</small></div>`}
                 <div class="cxIdx">${i + 1} / ${CARS.length}</div></div>
             <button class="cxArrow r" id="cxNext" aria-label="next"></button></div>` +
         `<div class="cxInfo"><div class="cxName" style="color:${c.color}">${T(c.name)}<small>${LANG === 'en' ? c.cellEn : c.cell}</small></div>
@@ -13321,12 +13347,15 @@ function renderCarPick(dir) {
         }).join('') +
         `</div><div class="cxSkHead"><span>${T('스킨 입히기')}</span><b>${sk ? `<em style="color:${tierOf(sk).color}">${skinName(sk)}</em>` : T('기본')}</b>` +
             `<i>${mineSk.filter(k => save.skins.includes(k.id)).length}/${mineSk.length}</i></div>` +
+        /* 버전 172 : 가진 스킨을 앞에, 아직 못 뽑은 '?' 는 뒤에.
+           예전에는 '?' 8 칸이 앞을 막아 방금 뽑은 스킨이 화면 밖으로 밀려났다 —
+           그래서 무엇을 뽑았는지, 어디서 입히는지가 보이지 않았다. */
         `<div class="cxSkins" id="cxSkins">` +
             `<button class="cxSk${sk ? '' : ' on'}" data-wear="" title="${T('기본')}"><img src="assets/kart_${c.sprite}.webp" alt=""></button>` +
-            mineSk.map(k => save.skins.includes(k.id)
-                ? `<button class="cxSk${sk && sk.id === k.id ? ' on' : ''}" data-wear="${k.id}" style="--tc:${tierOf(k).color}" title="${skinName(k)}"><img src="${skinThumb(c.sprite, k.id)}" alt=""></button>`
-                : `<button class="cxSk lock" data-draw="1" style="--tc:${tierOf(k).color}" title="${T(tierOf(k).name)}">?</button>`).join('') +
-            shared.map(k => `<button class="cxSk${sk && sk.id === k.id ? ' on' : ''}" data-wear="${k.id}" style="--tc:${tierOf(k).color}" title="${skinName(k)}"><img src="${skinThumb(c.sprite, k.id)}" alt=""></button>`).join('') +
+            mineSk.filter(k => save.skins.includes(k.id)).concat(shared).map(k =>
+                `<button class="cxSk${sk && sk.id === k.id ? ' on' : ''}${(save.newSkins || []).includes(k.id) ? ' new' : ''}" data-wear="${k.id}" style="--tc:${tierOf(k).color}" title="${skinName(k)}"><img src="${skinThumb(c.sprite, k.id)}" alt=""></button>`).join('') +
+            mineSk.filter(k => !save.skins.includes(k.id)).map(k =>
+                `<button class="cxSk lock" data-draw="1" style="--tc:${tierOf(k).color}" title="${T(tierOf(k).name)}">?</button>`).join('') +
         `</div>
             <button class="cpBuy ${picked ? 'on' : (owned || can) ? 'can' : ''}" id="cpBuyBtn" ${picked || owned || can ? '' : 'disabled'}>${
                 picked ? T('이 차로 달리는 중') : owned ? T('이 차로 바꾸기') : can ? `${c.cost} P` : `${c.cost} P (${c.cost - save.points} P ${T('모자람')})`
@@ -13353,9 +13382,19 @@ function renderCarPick(dir) {
     view.onpointerdown = e => { sx = e.clientX; };
     view.onpointerup = e => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); };
     view.onpointercancel = () => { sx = null; };
+    // 버전 172 : 새로 뽑은 스킨이 줄 밖에 있으면 그리로 밀어 준다
+    const strip = box.querySelector('#cxSkins');
+    const newBtn = strip && strip.querySelector('.cxSk.new');
+    if (strip && newBtn) setTimeout(() => {
+        /* offsetLeft 는 기준 칸이 달라 엉뚱한 값이 나왔다 — 화면에 그려진 자리로 센다 */
+        const sr = strip.getBoundingClientRect(), br = newBtn.getBoundingClientRect();
+        const want = strip.scrollLeft + (br.left - sr.left) - (sr.width - br.width) / 2;
+        strip.scrollLeft = Math.max(0, want);
+    }, 30);
     box.querySelectorAll('[data-wear]').forEach(n => { n.onclick = () => {
         const id = n.dataset.wear;
         if (id) save.skinOf[c.id] = id; else delete save.skinOf[c.id];
+        if (id) save.newSkins = (save.newSkins || []).filter(x => x !== id);
         writeSave(); playBeep(1150, .08); renderCarPick();
     }; });
     box.querySelectorAll('[data-draw]').forEach(n => { n.onclick = () => openSkinShop(c.id); });
@@ -13542,7 +13581,7 @@ function renderSkinShop() {
     pb.classList.toggle('can', !pb.disabled);
     const tb = el('skTicket');
     tb.classList.toggle('hidden', !save.tickets);
-    tb.textContent = `🎟 ${T('희귀 이상 뽑기권')} ×${save.tickets}`;
+    tb.textContent = `${T('희귀 이상 뽑기권')} ×${save.tickets}`;
     tb.disabled = skinBusy;
     el('skOdds').innerHTML = SKIN_TIERS.map(t => `<b style="color:${t.color}">${T(t.name)} ${t.rate}%</b>`).join(' · ') +
         `<br>${T('{p}번 안에 전설 1번 · {r}번마다 희귀 이상 1번 보장').replace('{p}', SKIN_PITY).replace('{r}', SKIN_PITY_RARE)} (${save.pity}/${SKIN_PITY}) · ${T('가진 스킨이 또 나오면 헤모글로빈 {n}개 돌려받기').replace('{n}', SKIN_REFUND)}` +
@@ -13567,7 +13606,7 @@ function renderSkinShop() {
     const cnt = arr => arr.filter(k => save.skins.includes(k.id)).length + '/' + arr.length;
     el('skGrid').innerHTML =
         `<div class="skCell${cur ? '' : ' on'}" data-sk=""><img src="assets/kart_${car.sprite}.webp" alt=""><i>${T('기본')}</i></div>` +
-        (mine.length ? `<div class="skSec">${T('전용 스킨')} ${cnt(mine)}${save.doneCars.includes(car.id) ? ' · 🎟 ' + T('완성') : ''}</div>` + mine.map(cell).join('') : '') +
+        (mine.length ? `<div class="skSec">${T('전용 스킨')} ${cnt(mine)}${save.doneCars.includes(car.id) ? ' · ' + T('완성') : ''}</div>` + mine.map(cell).join('') : '') +
         `<div class="skSec">${T('공용 스킨')} ${cnt(shared)}</div>` + shared.map(cell).join('');
     el('skGrid').querySelectorAll('[data-sk]').forEach(n => {
         n.onclick = () => {
@@ -13611,13 +13650,20 @@ function showSkinCard(k, car, dup) {
         <div class="skFact">${skinFact(k)}</div>` +
         (dup === null ? '' : dup ? `<div class="skDup">${T('이미 가진 스킨')} · ${HEMO}+${SKIN_REFUND}</div>`
                                  : `<div class="skNew">${T('새 스킨!')}${save.cars.includes(on.id) ? '' : ' · ' + T('차를 사면 탈 수 있어요')}</div>`) +
-        (skinOf(on.id) !== k.id ? `<button class="btn small" id="skWear">${T('이 차에 입히기')}</button>` : '');
+        /* 버전 172 : 무엇을 뽑았고 어디에 입히는지 한 줄로 못 박는다 (사용자 "명확히 전달되지 않아") */
+        `<div class="skWhere">${k.car ? T(on.name) + ' ' + T('에만 입혀요') : T('어느 차에나 입혀요')}</div>` +
+        (skinOf(on.id) !== k.id
+            ? `<button class="btn small" id="skWear">${T('지금 입히기')} · ${T(on.name)}</button>`
+            : `<div class="skWorn">${T('지금 입고 있어요')}</div>`);
     el('skCap').className = 'skCap pop';
     c.classList.remove('hidden');
     drawSideStage(c.querySelector('.skSide'), on, k);   // 버전 152 : 위 모습 작은 그림 대신 옆모습을 크게 (전설은 네온까지)
     const wb = el('skWear');
     if (wb) wb.onclick = () => {
-        save.skinOf[on.id] = k.id; writeSave(); playBeep(1300, .1);
+        save.skinOf[on.id] = k.id;
+        save.newSkins = (save.newSkins || []).filter(x => x !== k.id);      // 입혔으니 NEW 를 뗀다
+        writeSave(); playBeep(1300, .1);
+        showToast(T('입혔어요'), T(on.name) + ' · ' + skinName(k));
         skinCar = on.id; renderSkinShop(); showSkinCard(k, on, null);
     };
 }
@@ -13628,7 +13674,7 @@ function checkCompletion() {
         if (!mine.length || save.doneCars.includes(c.id) || !mine.every(k => save.skins.includes(k.id))) continue;
         save.doneCars.push(c.id); save.tickets++;
         writeSave();
-        showToast('🎟 ' + T('희귀 이상 뽑기권'), T(c.name) + ' · ' + T('전용 스킨을 모두 모았어요!'));
+        showToast(T('희귀 이상 뽑기권'), T(c.name) + ' · ' + T('전용 스킨을 모두 모았어요!'));
         if (audioCtx) sfxWin(true);
     }
 }
@@ -13832,6 +13878,7 @@ function pullSkin(ticket) {
     const dup = save.skins.includes(k.id);
     if (dup) save.dia += SKIN_REFUND; else save.skins.push(k.id);
     if (k.car) skinCar = k.car;                     // 뽑은 스킨의 차 도감으로
+    if (!dup) { save.newSkins = (save.newSkins || []).concat(k.id).slice(-60); }   // 버전 172 : 차고에서 NEW 로 보여 준다
     writeSave();                                     // 뽑자마자 저장 — 연출 도중 앱을 꺼도 잃지 않는다
 
     skinBusy = true;
@@ -13843,7 +13890,12 @@ function pullSkin(ticket) {
 }
 el('skPull').onclick = () => pullSkin(false);
 el('skTicket').onclick = () => pullSkin(true);
-el('skClose').onclick = closeSkinShop;
+el('skClose').onclick = () => {
+    /* 버전 172 : 뽑고 그냥 닫으면 스킨이 어디로 갔는지 모른다 — 차고를 가리켜 준다 */
+    const n = (save.newSkins || []).length;
+    closeSkinShop();
+    if (n) setTimeout(() => showToast(T('새 스킨') + ' ' + n, T('차고에서 입힐 수 있어요')), 400);
+};
 el('skGarage').onclick = () => { closeSkinShop(); carPreview = skinCar; if (state === 'menu') { setStep(1); renderCarPick(); } };
 el('skOpen').onclick = () => openSkinShop(typeof carPreview === 'string' && carPreview ? carPreview : save.car);
 
@@ -14396,7 +14448,7 @@ function dailyReward() {
     if (save.diaWelcome) return;
     save.diaWelcome = true; save.dia += DIA_WELCOME;
     writeSave(); renderCarPick();
-    setTimeout(() => showToast('🔴 ' + T('헤모글로빈을 받았어요'), T('스킨 뽑기 선물') + ' 🔴' + DIA_WELCOME), 1500);
+    setTimeout(() => showToast(T('헤모글로빈을 받았어요'), T('스킨 뽑기 선물') + ' ' + DIA_WELCOME), 1500);
 }
 dailyReward();
 
