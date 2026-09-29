@@ -716,22 +716,45 @@
                color: #e8f0ff; font-size: 18px; font-weight: 700; }
     #exitAsk .row { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
 
-    #whatsNew, #keysWin { position: fixed; inset: 0; z-index: 1001; display: flex;
+    #whatsNew, #keysWin, #rankWin { position: fixed; inset: 0; z-index: 1001; display: flex;
                 align-items: center; justify-content: center; padding: 16px;
                 background: rgba(4,10,20,.82); }
-    #whatsNew .wnBox, #keysWin .wnBox {
+    #whatsNew .wnBox, #keysWin .wnBox, #rankWin .wnBox {
         width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column;
         background: #101621; border: 2px solid #394b5e; border-radius: 14px; overflow: hidden;
     }
-    #whatsNew .wnHead, #keysWin .wnHead { display: flex; align-items: center; justify-content: space-between;
+    #whatsNew .wnHead, #keysWin .wnHead, #rankWin .wnHead { display: flex; align-items: center; justify-content: space-between;
                         padding: 11px 14px; background: rgba(255,255,255,.06); font-size: 15px; }
-    #whatsNew .wnHead button, #keysWin .wnHead button { background: #324b62; color: #fff; border: 0; border-radius: 8px;
+    #whatsNew .wnHead button, #keysWin .wnHead button, #rankWin .wnHead button { background: #324b62; color: #fff; border: 0; border-radius: 8px;
                                padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
-    #whatsNew .wnList, #keysWin .wnList { overflow-y: auto; padding: 6px 14px 14px; }
+    #whatsNew .wnList, #keysWin .wnList, #rankWin .wnList { overflow-y: auto; padding: 6px 14px 14px; }
     #whatsNew .wnV, #keysWin .wnV { margin-top: 12px; font-size: 12px; color: #ffd166; font-weight: 700; }
     #whatsNew .wnV .wnD, #keysWin .wnV .wnD { color: #7f97b8; font-weight: 400; margin-left: 6px; }
     #whatsNew .wnI, #keysWin .wnI { font-size: 13px; color: #cfe6ff; line-height: 1.6; margin-top: 3px;
                      padding-left: 11px; border-left: 2px solid rgba(120,170,240,.3); }
+
+    /* 버전 173 : 주간 랭킹 */
+    .rkTop { font-size: 12px; color: #9fb3c8; margin: 2px 0 9px; line-height: 1.6; }
+    .rkTop b { color: #ffd166; }
+    .rkRow { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 9px;
+             background: rgba(18,24,34,.7); border: 2px solid #26313f; margin-bottom: 5px; font-size: 13px; }
+    .rkRow .n { width: 26px; text-align: center; font-weight: 900; color: #7f93ab; }
+    .rkRow .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #cfe6ff; }
+    .rkRow .tm { font-weight: 900; color: #ffd166; font-variant-numeric: tabular-nums; }
+    .rkRow.me { border-color: #4a88ff; background: rgba(24,44,80,.85); }
+    .rkRow.me .nm { color: #fff; }
+    .rkRow.p1 .n { color: #ffd166; } .rkRow.p2 .n { color: #d6e2ee; } .rkRow.p3 .n { color: #e0a878; }
+    .rkNone { font-size: 13px; color: #9fb3c8; text-align: center; padding: 18px 6px; line-height: 1.7; }
+    .rkMine { margin-top: 10px; font-size: 12px; color: #9fd0ff; text-align: center; }
+    .rkName { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+              font-size: 12px; color: #9fb3c8; }
+    .rkName b { color: #cfe6ff; font-size: 13px; }
+    .rkName button { background: #324b62; color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+    /* 코스 카드 위 '이번 주 챌린지' 딱지 */
+    #mpCard .facts .fact.mpWeek { color: #08111d; font-weight: 900; cursor: pointer;
+                   background: linear-gradient(180deg, #ffe38a, #ffc23c); border-color: #8a5a10;
+                   animation: mpWeekGlow 1.8s ease-in-out infinite; }
+    @keyframes mpWeekGlow { 0%, 100% { box-shadow: 0 0 0 rgba(255,209,102,0); } 50% { box-shadow: 0 0 10px rgba(255,209,102,.75); } }
 
     /* ================= 음량 · 전체 화면 ================= */
     #opts {
@@ -2017,6 +2040,12 @@ body.racing #build, body:has(#result:not(.hidden)) #build { display: none; }
         </div>
     </div>
 </div></div>
+<!-- 버전 173 : 이번 주 랭킹 -->
+<div id="rankWin" class="hidden"><div class="wnBox">
+    <div class="wnHead"><b id="rkTitle">이번 주 랭킹</b><button id="rkClose">닫기</button></div>
+    <div class="wnList"><div id="rkBody"></div></div>
+</div></div>
+
 <div id="whatsNew" class="hidden"><div class="wnBox">
     <div class="wnHead"><b>무엇이 바뀌었나</b><button id="wnClose">닫기</button></div>
     <div class="wnList" id="wnList"></div>
@@ -2308,7 +2337,8 @@ if (window.ONLINE_ON) Promise.all([
 ]).then(([A, D]) => {
 const { initializeApp } = A;
 const { getDatabase, ref, set, get, update, onValue, onDisconnect, remove, serverTimestamp,
-        runTransaction, onChildAdded, onChildChanged, onChildRemoved } = D;
+        runTransaction, onChildAdded, onChildChanged, onChildRemoved,
+        query, orderByValue, limitToFirst } = D;          // 버전 173 : 주간 랭킹 상위 열 줄만 받기
 
 const firebaseConfig = {
     apiKey: "AIzaSyB1wLITGu0wxG8QNGI-oxyELvoWCLolfJI",
@@ -2323,6 +2353,7 @@ try {
     const fbApp = initializeApp(firebaseConfig);
     window.FB = { db: getDatabase(fbApp), ref, set, get, update, onValue, onDisconnect, remove,
                   serverTimestamp, runTransaction, onChildAdded, onChildChanged, onChildRemoved };
+    window.FB_Q = { query, orderByValue, limitToFirst };
 } catch (e) { window.FB = null; }
 }).catch(() => { window.FB = null; });
 </script>
@@ -2579,7 +2610,20 @@ const EN = {
 '체크포인트': 'Checkpoint',
 '헤모글로빈은 매일 접속 · 1등으로 모아요': 'Earn haemoglobin by visiting daily and finishing first',
 '헤모글로빈을 받았어요': 'You got haemoglobin',
-'후진 중': 'REVERSING', '에만 입혀요': 'only', '어느 차에나 입혀요': 'Fits every kart', '지금 입히기': 'Wear now',
+'후진 중': 'REVERSING',
+/* 버전 173 : 주간 랭킹 */
+'이번 주 랭킹': 'Weekly Rank', '지난주 랭킹': 'Last week', '이번 주 코스': "This week's course",
+'가장 빠른 한 바퀴로 겨뤄요': 'Fastest single lap wins',
+'10위 안에 들면 다음 주에 뽑기권과 헤모글로빈을 받아요': 'Finish in the top 10 and collect a ticket and hemoglobin next week',
+'남은 기간': 'Time left',
+'불러오는 중': 'Loading', '지금은 순위를 불러올 수 없어요': 'The rankings are not available right now',
+'인터넷을 확인해 주세요': 'Please check your connection',
+'아직 아무도 기록이 없어요': 'No times yet this week', '첫 기록의 주인공이 되어 보세요!': 'Be the first to set one!',
+'내 기록': 'Your time', '아직 10위 밖이에요': 'not in the top 10 yet',
+'이번 주 코스를 달리면 기록이 올라가요': "Race this week's course to join the ranking",
+'이번 주에는 누구나 이 코스를 달릴 수 있어요': 'This course is open to everyone this week',
+'내 이름': 'Your racer name', '아직 없어요': 'none yet', '다시 뽑기': 'Reroll',
+'이름 없는 주자': 'Unnamed racer', '에만 입혀요': 'only', '어느 차에나 입혀요': 'Fits every kart', '지금 입히기': 'Wear now',
 '지금 입고 있어요': 'Wearing it now', '입혔어요': 'Wearing it', '새 스킨': 'New skins', '차고에서 입힐 수 있어요': 'You can wear them in the Garage', '연속 접속': 'Daily streak', '뽑기권': 'ticket', '하루 쉬었지만 이어 줬어요': 'you missed a day, but your streak continues',
 '오늘 한 판을 완주하면 받아요': 'Finish one race today to claim', '오늘 받았어요': 'Claimed today', '잠김': 'LOCKED', '완주하면 열려요': 'to unlock', '잠긴 코스예요': 'This course is locked',
 '새 코스가 열렸어요!': 'New course unlocked!',
@@ -3779,6 +3823,16 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 173, d: '9월 29일', t: [
+        '주간 랭킹이 생겼어요 — 매주 코스 하나가 이번 주 챌린지가 되고, 가장 빠른 한 바퀴로 겨뤄요',
+        'Weekly rankings: one course becomes the challenge each week and your fastest single lap competes',
+        '10위 안에 들면 다음 주에 뽑기권과 헤모글로빈을 받아요 (1위 3장+300 · 2~3위 2장+200 · 4~10위 1장+100)',
+        'Finish in the top 10 and collect rewards next week: 3 tickets + 300 for first, 2 + 200 for second and third, 1 + 100 for fourth to tenth',
+        '이번 주 챌린지 코스는 아직 못 연 사람도 달릴 수 있어요',
+        "This week's challenge course is open even if you have not unlocked it yet",
+        '이름은 게임이 뽑아 줘요. 마음에 안 들면 다시 뽑기를 누르세요',
+        'The game gives you a racer name; press Reroll if you want another one'
+    ] },
     { v: 172, d: '9월 29일', t: [
         '뽑은 스킨 카드에 어느 차에 입히는지 적었어요. 버튼도 "지금 입히기 · 차 이름" 으로 바뀌었어요',
         'The skin you drew now says which kart it fits, and the button reads "Wear now - <kart>"',
@@ -5528,7 +5582,11 @@ let save = { points: 0, lv: { speed: 0, accel: 0, grip: 0, boost: 0, hold: 0 }, 
              skins: [], skinOf: {}, pity: 0, pity10: 0,     // 가진 스킨 · 차마다 입힌 스킨 · 전설 없이 뽑은 횟수
              dia: 0, diaWelcome: false, lastLogin: '', streak: 0, winDay: '', winN: 0, tickets: 0, doneCars: [],
              streakDay: '', forgiveLeft: 1,        // 버전 171 : 연속 접속 보상 (마지막 받은 날 · 남은 봐주기)
-             newSkins: [] };                       // 버전 172 : 뽑고 아직 입혀 보지 않은 스킨
+             newSkins: [],                         // 버전 172 : 뽑고 아직 입혀 보지 않은 스킨
+             /* 버전 173 : 주간 랭킹.
+                uid 는 이 기기를 가리키는 임의의 글자 — 이름도 아니고 계정도 아니다.
+                rankName 은 게임이 뽑아 준 이름의 '번호' 두 개다(글자를 직접 쓰게 하지 않는다). */
+             uid: '', rankName: null, rankPaid: [], rankUp: {}, rankSeen: '' };
 
 function loadSave() {
     try {
@@ -5590,6 +5648,11 @@ function loadSave() {
             save.winN = Math.round(num(d.winN, 0, 99, 0));
             save.tickets = Math.round(num(d.tickets, 0, 999, 0));
             save.newSkins = Array.isArray(d.newSkins) ? d.newSkins.filter(x => typeof x === 'string').slice(0, 60) : [];
+            save.uid = typeof d.uid === 'string' && d.uid.length <= 16 ? d.uid : '';
+            save.rankSeen = typeof d.rankSeen === 'string' ? d.rankSeen : '';
+            save.rankName = Array.isArray(d.rankName) && d.rankName.length === 3 ? d.rankName.map(x => Math.round(num(x, 0, 9999, 0))) : null;
+            save.rankPaid = (Array.isArray(d.rankPaid) ? d.rankPaid : []).filter(x => typeof x === 'string').slice(-8);
+            save.rankUp = (d.rankUp && typeof d.rankUp === 'object') ? d.rankUp : {};
             save.streakDay = typeof d.streakDay === 'string' ? d.streakDay : '';
             save.forgiveLeft = Math.round(num(d.forgiveLeft, 0, 3, 1));
             save.doneCars = (Array.isArray(d.doneCars) ? d.doneCars : []).filter(x => real.has(x));
@@ -12827,6 +12890,7 @@ function endRace() {
         const newLapRecord = !prevBestLap || fastest < prevBestLap;
         save.bestLap = save.bestLap || {};
         if (newLapRecord) save.bestLap[track.sys.id] = fastest;
+        rankSend(track.sys.id, fastest);          // 버전 173 : 이번 주 코스면 주간 랭킹에 올린다
         el('lapBox').innerHTML = '<table>' + lt.map((v, i) =>
             `<tr class="${v === fastest ? 'best' : ''}"><td class="n">LAP ${i + 1}</td>` +
             `<td class="t">${fmtTime(v)}${v === fastest ? ' ' + T('최속') : ''}</td></tr>`).join('') +
@@ -13161,6 +13225,143 @@ cvs.addEventListener('touchend', () => { pinchDist = 0; });
 /* 코스 고르는 순서 = 쉬운 것부터 (2026-09-11, 사용자 "난위도 별 순서조정해야겠다").
    초보처럼 모는 시험 차(difficulty.js)로 두 바퀴씩 달려 잰 순서 — 벽 충돌 · 벽에 붙은 시간 · 멈칫 · 도로 폭 · 급커브.
    청각계는 달팽이관 길이 좁아(반폭 124) 바퀴마다 벽 충돌 10번으로 가장 어렵다. 표에 없는 코스는 뒤에 붙는다. */
+/* ============================================================================
+   주간 랭킹 (버전 173) — 아들 피드백 "일주일 랭킹 10위 안에 들면 아이템 달라"
+
+   규칙
+     · 매주 코스 하나가 '이번 주 챌린지' 가 된다. 9개 코스를 차례로 돈다.
+     · 그 코스의 가장 빠른 한 바퀴(베스트 랩)로 순위를 매긴다.
+     · 주가 바뀌면 지난주 10위 안에 든 사람에게 뽑기권과 헤모글로빈을 준다.
+
+   설계에서 조심한 것
+     · 이름을 직접 쓰게 하지 않는다. 게임이 만든 이름 중에서 고르게 한다 —
+       욕설도 개인정보도 올라올 수 없고, 보는 사람의 언어로 번역되어 보인다.
+     · 기기 시계를 믿지 않는다. 파이어베이스가 알려 주는 서버 시각으로 주를 가른다.
+       (시계를 돌려 지난주 보상을 또 받는 것을 막는다)
+     · 순위표는 빠른 10명만 받아 온다 — 사람이 늘어도 요금이 늘지 않는다.
+   ========================================================================== */
+const RANK_TOP = 10;                                  // 보상을 주는 등수
+const RANK_MIN_LAP = 12000;                           // 사람이 낼 수 없는 기록은 올리지 않는다
+const RANK_REWARD = i =>                              // 0 = 1위
+    i === 0 ? { ticket: 3, dia: 300 } : (i <= 2 ? { ticket: 2, dia: 200 } : { ticket: 1, dia: 100 });
+/* 이름 조각 — 서버에는 번호만 올라가고, 보는 사람의 언어로 다시 조립된다 */
+const RN_A = [['날쌘', 'Swift'], ['붉은', 'Crimson'], ['번개', 'Thunder'], ['씩씩한', 'Brave'],
+              ['재빠른', 'Nimble'], ['거침없는', 'Relentless'], ['단단한', 'Sturdy'], ['반짝이는', 'Shining'],
+              ['조용한', 'Silent'], ['뜨거운', 'Blazing'], ['가벼운', 'Featherlight'], ['영리한', 'Clever']];
+const RN_B = [['적혈구', 'Red Cell'], ['백혈구', 'White Cell'], ['산소', 'Oxygen'], ['신경', 'Nerve'],
+              ['콜라겐', 'Collagen'], ['인슐린', 'Insulin'], ['혈소판', 'Platelet'], ['헤모글로빈', 'Hemoglobin'],
+              ['미토콘드리아', 'Mitochondria'], ['ATP', 'ATP'], ['판막', 'Valve'], ['효소', 'Enzyme']];
+/* 등수·남은 기간 표기 — '위' 는 사전에서 Stomach 이라 T() 를 쓰면 안 된다 */
+const rankPos = i => LANG === 'en' ? '#' + (i + 1) : (i + 1) + '위';
+const rollRankName = () => [Math.floor(Math.random() * RN_A.length),
+                           Math.floor(Math.random() * RN_B.length),
+                           100 + Math.floor(Math.random() * 900)];
+function rankNameOf(code) {
+    if (!code || code.length < 3) return '?';
+    const i = LANG === 'en' ? 1 : 0;
+    return (RN_A[code[0] % RN_A.length][i]) + ' ' + (RN_B[code[1] % RN_B.length][i]) + ' ' + code[2];
+}
+/* 서버 시각 — 파이어베이스가 알려 주는 차이를 더해 쓴다. 못 받으면 기기 시계 그대로. */
+let svOffset = 0;
+const svNow = () => Date.now() + svOffset;
+const WEEK0 = Date.UTC(2026, 0, 5);                   // 2026-01-05 월요일 0시(UTC)
+const weekNo = t => Math.floor(((t === undefined ? svNow() : t) - WEEK0) / 604800000);
+const weekKey = n => 'w' + (n === undefined ? weekNo() : n);
+const weekMapId = n => MAP_ORDER[((n === undefined ? weekNo() : n) % MAP_ORDER.length + MAP_ORDER.length) % MAP_ORDER.length];
+/* 이번 주가 끝나기까지 남은 시간 */
+function weekLeft() {
+    const end = WEEK0 + (weekNo() + 1) * 604800000;
+    const h = Math.max(0, Math.floor((end - svNow()) / 3600000));
+    return h >= 24 ? Math.floor(h / 24) + (LANG === 'en' ? 'd' : '일') : h + (LANG === 'en' ? 'h' : '시간');
+}
+function myUid() {
+    if (!save.uid) { save.uid = 'u' + Math.random().toString(36).slice(2, 10); writeSave(); }
+    return save.uid;
+}
+
+/* ── 파이어베이스와 주고받기.
+      온라인이 꺼져 있거나 인터넷이 없으면 조용히 아무 일도 하지 않는다 —
+      랭킹이 안 될 뿐, 게임은 그대로 돌아가야 한다. */
+function rankDb() { return (window.FB && window.FB.db) ? window.FB : null; }
+
+/* 서버 시각 맞추기 (한 번) */
+(function syncClock() {
+    let tries = 0;
+    const go = () => {
+        const F = rankDb();
+        if (!F) { if (++tries < 20) setTimeout(go, 500); return; }
+        try {
+            F.onValue(F.ref(F.db, '.info/serverTimeOffset'), snap => {
+                const v = snap.val();
+                if (typeof v === 'number' && Math.abs(v) < 4 * 864e5) svOffset = v;
+            });
+        } catch (e) { /* 못 맞춰도 기기 시계로 간다 */ }
+    };
+    go();
+})();
+
+/* 내 기록 올리기 — 이번 주 코스에서, 예전보다 빠를 때만.
+   게임 안의 시간은 초(44.53)다. 서버에는 밀리초 정수로 넣는다 —
+   소수는 순서를 매길 때 눈속임이 생기고, 규칙에서 범위를 잡기도 어렵다. */
+function rankSend(mapId, lapSec) {
+    const F = rankDb();
+    const lapMs = Math.round(lapSec * 1000);
+    if (!F || mapId !== weekMapId() || !(lapMs > RANK_MIN_LAP) || lapMs > 6e5) return;
+    const wk = weekKey(), uid = myUid();
+    if (save.rankUp[wk] && save.rankUp[wk] <= lapMs) return;          // 이미 더 빠른 것을 올렸다
+    if (!save.rankName) save.rankName = rollRankName();
+    const who = save.rankName.join(',') + ',' + save.car + ',' + save.level;
+    try {
+        F.set(F.ref(F.db, 'rank/' + wk + '/t/' + uid), lapMs);
+        F.set(F.ref(F.db, 'rank/' + wk + '/w/' + uid), who);
+        save.rankUp[wk] = lapMs;
+        // 지난 기록은 오래 들고 있을 필요가 없다
+        Object.keys(save.rankUp).forEach(k => { if (k !== wk && k !== weekKey(weekNo() - 1)) delete save.rankUp[k]; });
+        writeSave();
+    } catch (e) { /* 실패해도 게임은 계속 */ }
+}
+
+/* 빠른 열 명 받아 오기. 사람이 몇 명이든 열 줄만 온다. */
+async function rankTop(wk) {
+    const F = rankDb();
+    if (!F) return null;
+    try {
+        const { query, orderByValue, limitToFirst } = window.FB_Q || {};
+        const base = F.ref(F.db, 'rank/' + wk + '/t');
+        const snap = await F.get(query ? query(base, orderByValue(), limitToFirst(RANK_TOP)) : base);
+        const t = snap.val() || {};
+        let rows = Object.keys(t).map(uid => ({ uid, ms: t[uid] })).filter(r => typeof r.ms === 'number');
+        rows.sort((a, b) => a.ms - b.ms);
+        rows = rows.slice(0, RANK_TOP);
+        const ws = await F.get(F.ref(F.db, 'rank/' + wk + '/w'));
+        const w = ws.val() || {};
+        rows.forEach(r => {
+            const p = (w[r.uid] || '').split(',');
+            r.name = p.length >= 3 ? rankNameOf([+p[0], +p[1], +p[2]]) : T('이름 없는 주자');
+            r.car = p[3] || ''; r.lv = p[4] || '';
+        });
+        return rows;
+    } catch (e) { return null; }
+}
+
+/* 지난주 결과 확인 — 10위 안이면 보상을 준다 (한 주에 한 번만) */
+async function rankPayout() {
+    const wk = weekKey(weekNo() - 1);
+    if (save.rankPaid.includes(wk)) return;
+    if (!save.rankUp[wk]) { return; }                 // 지난주에 달리지 않았다
+    const rows = await rankTop(wk);
+    if (!rows) return;                                // 못 받아 왔으면 다음에 다시
+    save.rankPaid = save.rankPaid.concat(wk).slice(-8);
+    const i = rows.findIndex(r => r.uid === save.uid);
+    if (i < 0) { writeSave(); return; }
+    const p = RANK_REWARD(i);
+    save.tickets = Math.min(999, save.tickets + p.ticket);
+    save.dia += p.dia;
+    writeSave();
+    setTimeout(() => showToast(T('지난주 랭킹') + ' ' + rankPos(i),
+        T('희귀 이상 뽑기권') + ' ' + p.ticket + ' · ' + T('헤모글로빈') + ' ' + p.dia), 2200);
+}
+
 const MAP_ORDER = ['circulatory', 'visual', 'digestive', 'nervous', 'urinary', 'liver', 'glomerulus', 'respiratory', 'auditory'];
 const MAP_IDS = () => MAP_ORDER.filter(id => SYSTEMS[id]).concat(Object.keys(SYSTEMS).filter(id => !MAP_ORDER.includes(id)));
 
@@ -13172,6 +13373,8 @@ const MAP_IDS = () => MAP_ORDER.filter(id => SYSTEMS[id]).concat(Object.keys(SYS
 const mapDone = id => !!(save.best && save.best[id]);
 function mapLocked(id) {
     if (save.allMaps || mapDone(id)) return false;
+    // 버전 173 : 이번 주 챌린지 코스는 그 주 동안 누구나 달릴 수 있다
+    if (window.ONLINE_ON && id === weekMapId()) return false;
     const ids = MAP_IDS(), i = ids.indexOf(id);
     if (i <= 0) return false;                       // 첫 코스는 늘 열려 있다
     return !mapDone(ids[i - 1]);
@@ -13202,11 +13405,16 @@ function drawMapCard(dir) {
         `<div class="route">${sys.flow.map(f => T(f.name)).join(' → ')}</div>` +
         (mapLocked(sys.id) ? `<div class="mpLock">${T('잠김')} · ${prevMapName(sys.id)} ${T('완주하면 열려요')}</div>` : '') +
         `<div class="facts">` +
+            /* 버전 173 : 이번 주 챌린지면 맨 앞에 딱지. 눌러서 순위표 — 정보 칸 줄에 두어야
+               카드가 눕는 폰 가로에서도 코스 이름을 덮지 않는다. */
+            (window.ONLINE_ON && sys.id === weekMapId() ? `<button class="fact mpWeek" id="mpWeek">${T('이번 주 랭킹')}</button>` : '') +
             `<span class="fact">${T('바퀴')}<b>${sys.laps}</b></span>` +
             `<span class="fact">${T('체크포인트')}<b>${sys.flow.length}</b></span>` +
             `<span class="fact">${T('아이템')}<b>${sys.pickups.length}</b></span>` +
             (best ? `<span class="fact">${T('최고 랩')}<b>${fmtTime(best)}</b></span>` : '') +
         `</div>`;
+    const wkBtn = card.querySelector('#mpWeek');
+    if (wkBtn) wkBtn.onclick = e => { e.stopPropagation(); openRank(); };
     card.classList.toggle('locked', mapLocked(sys.id));
     drawPreview(card.querySelector('canvas'), sys);
 
@@ -13253,9 +13461,58 @@ function setStep(n) {
     // 양 끝에서는 손잡이를 감춘다 (없애면 자리가 흔들려서 보이지만 않게 한다)
     el('stepPrev').classList.toggle('ghost', setupStep === 0);
     el('stepNext').classList.toggle('ghost', setupStep === pages.length - 1);
-    if (setupStep === 0) renderStreak();
+    if (setupStep === 0) {
+        renderStreak();
+        /* 그 주에 처음 열면 이번 주 챌린지 코스를 펼쳐 준다 (한 주에 한 번) */
+        if (window.ONLINE_ON && save.rankSeen !== weekKey()) {
+            save.rankSeen = weekKey(); writeSave();
+            const i = MAP_IDS().indexOf(weekMapId());
+            if (i >= 0) { mapAt = i; drawMapCard(0); }
+            setTimeout(() => showToast(T('이번 주 랭킹'), T(SYSTEMS[weekMapId()].name) + ' · ' + T('남은 기간') + ' ' + weekLeft()), 700);
+        }
+    }
     if (setupStep === 1) renderCarPick();
     if (setupStep === 2) refreshModeUI();
+}
+
+/* 이번 주 랭킹 창 (버전 173) */
+async function openRank() {
+    const win = el('rankWin'), body = el('rkBody');
+    if (!win) return;
+    win.classList.remove('hidden');
+    playBeep(880, .05);
+    const sys = SYSTEMS[weekMapId()];
+    const mine = save.rankUp[weekKey()];
+    const head = `<div class="rkTop">${T('이번 주 코스')} <b>${T(sys.name)}</b> · ` +
+        `${T('가장 빠른 한 바퀴로 겨뤄요')}<br>${T('10위 안에 들면 다음 주에 뽑기권과 헤모글로빈을 받아요')} · ` +
+        `${T('남은 기간')} <b>${weekLeft()}</b><br>${T('이번 주에는 누구나 이 코스를 달릴 수 있어요')}</div>`;
+    body.innerHTML = head + `<div class="rkNone">${T('불러오는 중')}</div>`;
+    const rows = await rankTop(weekKey());
+    if (win.classList.contains('hidden')) return;              // 그새 닫았다
+    const list = !rows ? `<div class="rkNone">${T('지금은 순위를 불러올 수 없어요')}<br>${T('인터넷을 확인해 주세요')}</div>`
+        : (!rows.length ? `<div class="rkNone">${T('아직 아무도 기록이 없어요')}<br>${T('첫 기록의 주인공이 되어 보세요!')}</div>`
+        : rows.map((r, i) => `<div class="rkRow ${r.uid === save.uid ? 'me ' : ''}p${i + 1}">` +
+              `<span class="n">${i + 1}</span><span class="nm">${r.name}</span>` +
+              `<span class="tm">${fmtTime(r.ms / 1000)}</span></div>`).join(''));
+    const meIn = rows && rows.some(r => r.uid === save.uid);
+    const mineLine = mine
+        ? `<div class="rkMine">${T('내 기록')} <b>${fmtTime(mine / 1000)}</b>${meIn ? '' : ' · ' + T('아직 10위 밖이에요')}</div>`
+        : `<div class="rkMine">${T('이번 주 코스를 달리면 기록이 올라가요')}</div>`;
+    const nameLine = `<div class="rkName">${T('내 이름')} <b id="rkMyName">${save.rankName ? rankNameOf(save.rankName) : T('아직 없어요')}</b>` +
+        `<button id="rkRoll">${T('다시 뽑기')}</button></div>`;
+    body.innerHTML = head + list + mineLine + nameLine;
+    const rb = el('rkRoll');
+    if (rb) rb.onclick = () => {
+        save.rankName = rollRankName();
+        el('rkMyName').textContent = rankNameOf(save.rankName);
+        // 이미 올린 기록이 있으면 서버의 이름도 같이 바꿔 준다
+        const F = rankDb();
+        if (F && save.rankUp[weekKey()]) {
+            try { F.set(F.ref(F.db, 'rank/' + weekKey() + '/w/' + myUid()),
+                        save.rankName.join(',') + ',' + save.car + ',' + save.level); } catch (e) {}
+        }
+        writeSave(); playBeep(1100, .05);
+    };
 }
 
 /* 연속 접속 7칸 그리기 (버전 171) */
@@ -13890,6 +14147,9 @@ function pullSkin(ticket) {
 }
 el('skPull').onclick = () => pullSkin(false);
 el('skTicket').onclick = () => pullSkin(true);
+el('rkClose').onclick = () => { el('rankWin').classList.add('hidden'); playBeep(520, .05); };
+el('rankWin').onclick = e => { if (e.target.id === 'rankWin') el('rankWin').classList.add('hidden'); };
+
 el('skClose').onclick = () => {
     /* 버전 172 : 뽑고 그냥 닫으면 스킨이 어디로 갔는지 모른다 — 차고를 가리켜 준다 */
     const n = (save.newSkins || []).length;
@@ -14451,6 +14711,7 @@ function dailyReward() {
     setTimeout(() => showToast(T('헤모글로빈을 받았어요'), T('스킨 뽑기 선물') + ' ' + DIA_WELCOME), 1500);
 }
 dailyReward();
+if (window.ONLINE_ON) setTimeout(rankPayout, 3000);   // 버전 173 : 지난주 랭킹 보상
 
 /* 오늘 몇 칸째인가 (아직 못 받았으면 받게 될 칸) */
 function streakSlot() {
