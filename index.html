@@ -1762,6 +1762,10 @@
 
 /* ================= 버전 154 : 차고 · 스킨 뽑기 역할 나누기 =================
    차고(2장) = 차 고르기 + 그 차에 스킨 입히기 · 스킨 뽑기 = 뽑기만. 전에는 가진 스킨을 보려면 뽑기 창에 들어가야 했다. */
+/* 버전 177 : 가진 스킨 수를 눈에 띄게, 못 가진 것과는 금으로 가른다 */
+.cxSkHead i b.hv { color: #7ee081; font-size: 13px; }
+.cxSkCut { flex: 0 0 2px; align-self: stretch; margin: 2px 4px; border-radius: 2px;
+           background: repeating-linear-gradient(180deg, #46586c 0 4px, transparent 4px 8px); }
 .cxSkHead { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; font-size: 11px; color: #cfe6ff; }
 .cxSkHead b { font-size: 12.5px; color: #fff; } .cxSkHead b em { font-style: normal; }
 .cxSkHead i { margin-left: auto; font-style: normal; color: #9fd0ff; font-weight: bold; }
@@ -2625,7 +2629,7 @@ const EN = {
 '이번 주에는 누구나 이 코스를 달릴 수 있어요': 'This course is open to everyone this week',
 '내 이름': 'Your racer name', '아직 없어요': 'none yet', '다시 뽑기': 'Reroll',
 '이름 없는 주자': 'Unnamed racer', '에만 입혀요': 'only', '어느 차에나 입혀요': 'Fits every kart', '지금 입히기': 'Wear now',
-'지금 입고 있어요': 'Wearing it now', '입혔어요': 'Wearing it', '새 스킨': 'New skins', '차고에서 입힐 수 있어요': 'You can wear them in the Garage', '연속 접속': 'Daily streak', '뽑기권': 'ticket', '하루 쉬었지만 이어 줬어요': 'you missed a day, but your streak continues',
+'지금 입고 있어요': 'Wearing it now', '가진 스킨': 'Owned', '입혔어요': 'Wearing it', '새 스킨': 'New skins', '차고에서 입힐 수 있어요': 'You can wear them in the Garage', '연속 접속': 'Daily streak', '뽑기권': 'ticket', '하루 쉬었지만 이어 줬어요': 'you missed a day, but your streak continues',
 '오늘 한 판을 완주하면 받아요': 'Finish one race today to claim', '오늘 받았어요': 'Claimed today', '잠김': 'LOCKED', '완주하면 열려요': 'to unlock', '잠긴 코스예요': 'This course is locked',
 '새 코스가 열렸어요!': 'New course unlocked!',
 '적혈이': 'Reddy', '백구': 'Whitey', '효소맨': 'Enzyme', '몸속 기관을 달려라!': 'Race through a living body!', '팡!': 'BAM!',
@@ -3824,6 +3828,12 @@ Object.assign(EN, {
    맨 위가 지금 판이다. 아래 CHANGES[0].v 가 화면 왼쪽 아래 숫자가 된다 —
    판을 올릴 때는 여기 한 줄만 새로 얹으면 된다. */
 const CHANGES = [
+    { v: 177, d: '9월 30일', t: [
+        '차고에서 이 차에 입힐 수 있는 스킨을 몇 개 가졌는지 보여 줘요 (전용 + 공용을 함께 세요)',
+        'The Garage now shows how many skins you own for this kart, counting both kart-only and universal ones',
+        '가진 스킨과 아직 못 뽑은 스킨 사이에 금이 그어져요',
+        'A divider separates the skins you own from the ones you have not drawn yet'
+    ] },
     { v: 176, d: '9월 30일', t: [
         '레이스 끝에 뜨는 광고가 보상형으로 바뀌었어요. 끝까지 보면 60 P 를 받아요',
         'The ad after a race is now a rewarded one: watch it through and you get 60 P',
@@ -13637,7 +13647,12 @@ function renderCarPick(dir) {
     const owned = save.cars.includes(c.id), can = !owned && save.points >= c.cost, picked = save.car === c.id;
     const sk = skinById(skinOf(c.id));
     const mineSk = gachaPool().filter(k => k.car === c.id);                         // 이 차 전용 (없는 것도 ? 로)
-    const shared = gachaPool().filter(k => !k.car && save.skins.includes(k.id));    // 공용은 가진 것만
+    const sharedAll = gachaPool().filter(k => !k.car);                              // 아무 차에나 입히는 공용 전체
+    const shared = sharedAll.filter(k => save.skins.includes(k.id));                 // 그중 가진 것
+    /* 버전 177 : 이 차에 입힐 수 있는 스킨은 '전용 + 공용' 이다.
+       예전 숫자는 전용만 세어, 공용을 세 개 가져도 화면에는 0 으로 보였다. */
+    const canWear = mineSk.length + sharedAll.length;
+    const hasWear = mineSk.filter(k => save.skins.includes(k.id)).length + shared.length;
     box.innerHTML =
         `<div class="cxStage"><button class="cxArrow l" id="cxPrev" aria-label="prev"></button>
             <div class="cxView" id="cxView"><div class="cxBig">${(EN[c.name] || c.id).toUpperCase()}</div>
@@ -13655,7 +13670,7 @@ function renderCarPick(dir) {
                 <span class="gv">${Math.round(c[s2.key] * 100)}</span></div>`;
         }).join('') +
         `</div><div class="cxSkHead"><span>${T('스킨 입히기')}</span><b>${sk ? `<em style="color:${tierOf(sk).color}">${skinName(sk)}</em>` : T('기본')}</b>` +
-            `<i>${mineSk.filter(k => save.skins.includes(k.id)).length}/${mineSk.length}</i></div>` +
+            `<i>${T('가진 스킨')} <b class="hv">${hasWear}</b>/${canWear}</i></div>` +
         /* 버전 172 : 가진 스킨을 앞에, 아직 못 뽑은 '?' 는 뒤에.
            예전에는 '?' 8 칸이 앞을 막아 방금 뽑은 스킨이 화면 밖으로 밀려났다 —
            그래서 무엇을 뽑았는지, 어디서 입히는지가 보이지 않았다. */
@@ -13663,6 +13678,8 @@ function renderCarPick(dir) {
             `<button class="cxSk${sk ? '' : ' on'}" data-wear="" title="${T('기본')}"><img src="assets/kart_${c.sprite}.webp" alt=""></button>` +
             mineSk.filter(k => save.skins.includes(k.id)).concat(shared).map(k =>
                 `<button class="cxSk${sk && sk.id === k.id ? ' on' : ''}${(save.newSkins || []).includes(k.id) ? ' new' : ''}" data-wear="${k.id}" style="--tc:${tierOf(k).color}" title="${skinName(k)}"><img src="${skinThumb(c.sprite, k.id)}" alt=""></button>`).join('') +
+            /* 버전 177 : 여기서부터는 아직 못 뽑은 것. 금을 그어 한눈에 갈라 보이게 한다. */
+            (mineSk.some(k => !save.skins.includes(k.id)) ? `<span class="cxSkCut"></span>` : '') +
             mineSk.filter(k => !save.skins.includes(k.id)).map(k =>
                 `<button class="cxSk lock" data-draw="1" style="--tc:${tierOf(k).color}" title="${T(tierOf(k).name)}">?</button>`).join('') +
         `</div>
